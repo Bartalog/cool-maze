@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<head>
+  <title>Cool Maze - Send your document from mobile to computer</title>
+  <script src="https://js.pusher.com/3.0/pusher.min.js"></script>
+  <script src="static/js/qrcodejs/qrcode.min.js"></script>
+
+
+  <script>
+    var pusher = new Pusher('e36002cfca53e4619c15', {
+      encrypted: true
+    });
+
+    var channel = pusher.subscribe('chan1234');
+    channel.bind('my_event', function(data) {
+      alert(data.message);
+    });
+  </script>
+
+
+  <div id="qrcode"></div>
+  <script type="text/javascript">
+   new QRCode(document.getElementById("qrcode"), "abcdefg");
+  </script>
+
+</head>
