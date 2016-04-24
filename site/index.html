@@ -1,25 +1,33 @@
 <!DOCTYPE html>
+<html>
 <head>
   <title>Cool Maze - Send your document from mobile to computer</title>
   <script src="https://js.pusher.com/3.0/pusher.min.js"></script>
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="qrcode"></div>
 
+  <script type="text/javascript">
 
-  <script>
+    // Get a good random value
+    var r1 = new Uint32Array(1);
+    window.crypto.getRandomValues(r1);
+    var r = r1[0] % 100000;
+    var chanID = '' + r;
+    // TODO if getRandomValues capability not present, then get a number from a server somewhere.
+
     var pusher = new Pusher('e36002cfca53e4619c15', {
       encrypted: true
     });
 
-    var channel = pusher.subscribe('chan1234');
-    channel.bind('my_event', function(data) {
+    var channel = pusher.subscribe(chanID);
+    var event = 'maze-cast';
+    channel.bind(event, function(data) {
       alert(data.message);
     });
+
+   new QRCode(document.getElementById("qrcode"), chanID);
   </script>
-
-
-  <div id="qrcode"></div>
-  <script type="text/javascript">
-   new QRCode(document.getElementById("qrcode"), "abcdefg");
-  </script>
-
-</head>
+</body>
+</html>
