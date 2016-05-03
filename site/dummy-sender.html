@@ -27,7 +27,8 @@
      var channel = pusher.subscribe(chanID);
      var triggered = channel.trigger(event, message);
 */
-      var backendURL = "http://localhost:8080";
+//      var backendURL = "http://localhost:8080";
+      var backendURL = "http://cool-maze.appspot.com";
       var service = "/dispatch";
       $.post( backendURL + service,
       {

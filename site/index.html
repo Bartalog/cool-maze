@@ -24,10 +24,20 @@
     var channel = pusher.subscribe(chanID);
     var event = 'maze-cast';
     channel.bind(event, function(data) {
-      alert(data.message);
+      var msg = data.message;
+      if(startsWith(msg,'http') || startsWith(msg,'www.')) {
+         var url = msg;
+         window.location = url;
+      }else{
+         alert(data.message);
+      }
     });
 
    new QRCode(document.getElementById("qrcode"), chanID);
+
+   function startsWith(str, word) {
+     return str.lastIndexOf(word, 0) === 0;
+   }
   </script>
 </body>
 </html>
