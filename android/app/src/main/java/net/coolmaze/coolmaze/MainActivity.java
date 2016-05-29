@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -18,9 +19,17 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,11 +56,11 @@ public class MainActivity extends AppCompatActivity {
         // Create the storage directory if it does not exist
         if (! mediaStorageDir.exists()){
             if ( ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
-                Log.w("MyCameraApp", "permission not granted :(");
+                Log.w("CoolMazeCamera", "permission not granted :(");
                 return null;
             }
             if (! mediaStorageDir.mkdirs()){
-                Log.w("MyCameraApp", "failed to create directory " + mediaStorageDir);
+                Log.w("CoolMazeCamera", "failed to create directory " + mediaStorageDir);
                 return null;
             }
         }
@@ -60,12 +69,15 @@ public class MainActivity extends AppCompatActivity {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         File mediaFile;
         if (type == FileColumns.MEDIA_TYPE_IMAGE){
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "CoolMaze_"+ timeStamp + ".jpg");
+            String path = mediaStorageDir.getPath() + File.separator + "CoolMaze_"+ timeStamp + ".jpg";
+            mediaFile = new File(path);
+            Log.i("CoolMazeCamera", "Media file is [" + path + "]");
         } else if(type == FileColumns.MEDIA_TYPE_VIDEO) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_"+ timeStamp + ".mp4");
+            String path = mediaStorageDir.getPath() + File.separator + "VID_"+ timeStamp + ".mp4";
+            mediaFile = new File(path);
+            Log.i("CoolMazeCamera", "Media file is [" + path + "]");
         } else {
+            Log.i("CoolMazeCamera", "Unexpected type " + type);
             return null;
         }
 
@@ -87,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
 
-
+/*
                 // create Intent to take a picture and return control to the calling application
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
@@ -96,10 +108,12 @@ public class MainActivity extends AppCompatActivity {
 
                 // start the image capture Intent
                 startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
-
+*/
+                new Signaller().execute();
             }
         });
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -121,5 +135,49 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public class Signaller extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            sendMessage("56796", "From my S6 :)");
+            return null;
+        }
+
+        void sendMessage(String chanID, String message){
+            String backendURL = "http://cool-maze.appspot.com";
+            String service = "/dispatch";
+
+            try {
+                URL url = new URL(backendURL + service);
+
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setReadTimeout(15000);
+                conn.setConnectTimeout(15000);
+                conn.setRequestMethod("POST");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+
+
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                writer.write("chanID="+chanID+"&message="+ URLEncoder.encode(message, "UTF-8"));
+
+                writer.flush();
+                writer.close();
+                os.close();
+                int responseCode=conn.getResponseCode();
+
+                if (responseCode == HttpsURLConnection.HTTP_OK) {
+                    Log.i("CoolMazeSignal", "Successful POST");
+                }
+                else {
+                    Log.e("CoolMazeSignal", "POST request response code " + responseCode);
+                }
+            } catch (Exception e) {
+                Log.e("CoolMazeSignal", "POST request", e);
+            }
+        }
     }
 }
