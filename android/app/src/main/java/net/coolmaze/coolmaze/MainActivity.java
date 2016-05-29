@@ -33,6 +33,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
 
+    private String messageToSignal = "<?>";
 
     private static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 100;
     private Uri fileUri;
@@ -112,6 +113,19 @@ public class MainActivity extends AppCompatActivity {
                 new Signaller().execute();
             }
         });
+
+
+        // Get intent, action and MIME type
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
+
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if ("text/plain".equals(type)) {
+                messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
+            }
+            // TODO other types
+        }
     }
 
 
@@ -141,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
-            sendMessage("56796", "From my S6 :)");
+            sendMessage("56796", messageToSignal);
             return null;
         }
 
@@ -180,4 +194,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
 }
