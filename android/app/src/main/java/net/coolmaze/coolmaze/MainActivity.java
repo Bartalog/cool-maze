@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
 
-/*
+
                 // create Intent to take a picture and return control to the calling application
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
@@ -109,8 +109,6 @@ public class MainActivity extends AppCompatActivity {
 
                 // start the image capture Intent
                 startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
-*/
-                new Signaller().execute();
             }
         });
 
@@ -124,9 +122,17 @@ public class MainActivity extends AppCompatActivity {
             if ("text/plain".equals(type)) {
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
             }
-            // TODO other types
+            // TODO other types of "share with": files, etc.
         }
     }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i("CoolMazeSignal", "onActivityResult(" + requestCode + ", " + resultCode
+                + ", " + data + ")");
+
+        new Signaller().execute();
+    }
+
 
 
     @Override
@@ -155,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
-            sendMessage("56796", messageToSignal);
+            sendMessage("84710", messageToSignal);
             return null;
         }
 
