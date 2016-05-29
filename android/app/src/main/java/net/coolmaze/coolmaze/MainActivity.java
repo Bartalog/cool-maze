@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -34,6 +35,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class MainActivity extends AppCompatActivity {
 
     private String messageToSignal = "<?>";
+    private String chanIDToSignal = "<?>";
 
     private static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 100;
     private Uri fileUri;
@@ -100,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
 
+                EditText chanID_text = (EditText) findViewById(R.id.editChanID);
+                chanIDToSignal = chanID_text.getText().toString();
 
                 // create Intent to take a picture and return control to the calling application
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -161,7 +165,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
-            sendMessage("84710", messageToSignal);
+            sendMessage(chanIDToSignal, messageToSignal);
+            //sendMessage("84710", messageToSignal);
             return null;
         }
 
