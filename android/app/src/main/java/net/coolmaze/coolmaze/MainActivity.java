@@ -9,7 +9,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Vibrator;
-import android.provider.MediaStore;
 import android.provider.MediaStore.Files.FileColumns;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -42,57 +41,6 @@ public class MainActivity extends AppCompatActivity {
 
     private String messageToSignal = "<?>";
     private String chanIDToSignal = "<?>";
-
-    private static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 100;
-    private Uri fileUri;
-
-    /** Create a file Uri for saving an image or video */
-    private Uri getOutputMediaFileUri(int type){
-        return Uri.fromFile(getOutputMediaFile(type));
-    }
-
-
-    /** Create a File for saving an image or video */
-    private File getOutputMediaFile(int type){
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
-
-        //File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyCameraApp");
-        File mediaStorageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
-
-        // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if ( ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
-                Log.w("CoolMazeCamera", "permission not granted :(");
-                return null;
-            }
-            if (! mediaStorageDir.mkdirs()){
-                Log.w("CoolMazeCamera", "failed to create directory " + mediaStorageDir);
-                return null;
-            }
-        }
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File mediaFile;
-        if (type == FileColumns.MEDIA_TYPE_IMAGE){
-            String path = mediaStorageDir.getPath() + File.separator + "CoolMaze_"+ timeStamp + ".jpg";
-            mediaFile = new File(path);
-            Log.i("CoolMazeCamera", "Media file is [" + path + "]");
-        } else if(type == FileColumns.MEDIA_TYPE_VIDEO) {
-            String path = mediaStorageDir.getPath() + File.separator + "VID_"+ timeStamp + ".mp4";
-            mediaFile = new File(path);
-            Log.i("CoolMazeCamera", "Media file is [" + path + "]");
-        } else {
-            Log.i("CoolMazeCamera", "Unexpected type " + type);
-            return null;
-        }
-
-        return mediaFile;
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -211,15 +159,16 @@ public class MainActivity extends AppCompatActivity {
                 writer.flush();
                 writer.close();
                 out.close();
-                int responseCode=conn.getResponseCode();
 
-                if (responseCode == HttpsURLConnection.HTTP_OK) {
-                    Log.i("CoolMazeSignal", "Successful POST");
-                    Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    v.vibrate(500);
-                } else {
+                int responseCode=conn.getResponseCode();
+                if (responseCode != HttpsURLConnection.HTTP_OK) {
                     Log.e("CoolMazeSignal", "POST request response code " + responseCode);
+                    return;
                 }
+
+                Log.i("CoolMazeSignal", "Successful POST");
+                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                v.vibrate(500);
             } catch (Exception e) {
                 Log.e("CoolMazeSignal", "POST request", e);
             }
