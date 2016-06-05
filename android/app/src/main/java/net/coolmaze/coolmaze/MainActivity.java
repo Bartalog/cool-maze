@@ -125,6 +125,8 @@ public class MainActivity extends AppCompatActivity {
             }
             // TODO other types of "share with": files, etc.
         }
+
+        new IntentIntegrator(MainActivity.this).initiateScan();
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
