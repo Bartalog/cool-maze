@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -108,17 +109,6 @@ public class MainActivity extends AppCompatActivity {
                 EditText chanID_text = (EditText) findViewById(R.id.editChanID);
                 chanIDToSignal = chanID_text.getText().toString();
 
-                /*
-                // create Intent to take a picture and return control to the calling application
-                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-                fileUri = getOutputMediaFileUri(FileColumns.MEDIA_TYPE_IMAGE); // create a file to save the image
-                intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
-
-                // start the image capture Intent
-                startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
-                */
-
                 new IntentIntegrator(MainActivity.this).initiateScan();
             }
         });
@@ -145,6 +135,9 @@ public class MainActivity extends AppCompatActivity {
         if (scanResult != null) {
             Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
             chanIDToSignal = scanResult.getContents();
+
+            EditText chanID_text = (EditText) findViewById(R.id.editChanID);
+            chanID_text.setText(chanIDToSignal, TextView.BufferType.EDITABLE);
         }else{
             Log.w("CoolMazeSignal", "IntentResult parsing by ZXing failed :(");
         }
@@ -181,7 +174,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(Void... params) {
             sendMessage(chanIDToSignal, messageToSignal);
-            //sendMessage("84710", messageToSignal);
             return null;
         }
 
@@ -200,13 +192,13 @@ public class MainActivity extends AppCompatActivity {
                 conn.setDoOutput(true);
 
 
-                OutputStream os = conn.getOutputStream();
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                OutputStream out = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
                 writer.write("chanID="+chanID+"&message="+ URLEncoder.encode(message, "UTF-8"));
 
                 writer.flush();
                 writer.close();
-                os.close();
+                out.close();
                 int responseCode=conn.getResponseCode();
 
                 if (responseCode == HttpsURLConnection.HTTP_OK) {
