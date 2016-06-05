@@ -20,6 +20,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.OutputStream;
@@ -105,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 EditText chanID_text = (EditText) findViewById(R.id.editChanID);
                 chanIDToSignal = chanID_text.getText().toString();
 
+                /*
                 // create Intent to take a picture and return control to the calling application
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
@@ -113,6 +117,9 @@ public class MainActivity extends AppCompatActivity {
 
                 // start the image capture Intent
                 startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
+                */
+
+                new IntentIntegrator(MainActivity.this).initiateScan();
             }
         });
 
@@ -133,6 +140,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i("CoolMazeSignal", "onActivityResult(" + requestCode + ", " + resultCode
                 + ", " + data + ")");
+
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (scanResult != null) {
+            Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
+            chanIDToSignal = scanResult.getContents();
+        }else{
+            Log.w("CoolMazeSignal", "IntentResult parsing by ZXing failed :(");
+        }
 
         new Signaller().execute();
     }
