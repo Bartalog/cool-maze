@@ -1,12 +1,14 @@
 package net.coolmaze.coolmaze;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Files.FileColumns;
 import android.support.design.widget.FloatingActionButton;
@@ -213,8 +215,9 @@ public class MainActivity extends AppCompatActivity {
 
                 if (responseCode == HttpsURLConnection.HTTP_OK) {
                     Log.i("CoolMazeSignal", "Successful POST");
-                }
-                else {
+                    Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    v.vibrate(500);
+                } else {
                     Log.e("CoolMazeSignal", "POST request response code " + responseCode);
                 }
             } catch (Exception e) {
