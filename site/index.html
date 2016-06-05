@@ -7,6 +7,7 @@
 </head>
 <body>
   <div id="qrcode"></div>
+  <input type="text" readonly="readonly" id="chanid-hint" size="5">
 
   <script type="text/javascript">
 
@@ -34,6 +35,7 @@
     });
 
    new QRCode(document.getElementById("qrcode"), chanID);
+   document.getElementById("chanid-hint").value = chanID;
 
    function startsWith(str, word) {
      return str.lastIndexOf(word, 0) === 0;
