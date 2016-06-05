@@ -57,9 +57,12 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	be, err := client.Trigger(channelID, event, data)
 	if err != nil {
 		c.Errorf("%v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Encountered error:", err)
 		return
 	}
 	c.Infof("Events = %v", be)
+	fmt.Fprintln(w, "Done :)")
 }
 
 var secret string
