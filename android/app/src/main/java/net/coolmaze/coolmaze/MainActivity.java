@@ -133,16 +133,24 @@ public class MainActivity extends AppCompatActivity {
         Log.i("CoolMazeSignal", "onActivityResult(" + requestCode + ", " + resultCode
                 + ", " + data + ")");
 
-        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if (scanResult != null) {
-            Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
-            chanIDToSignal = scanResult.getContents();
-
-            EditText chanID_text = (EditText) findViewById(R.id.editChanID);
-            chanID_text.setText(chanIDToSignal, TextView.BufferType.EDITABLE);
-        }else{
-            Log.w("CoolMazeSignal", "IntentResult parsing by ZXing failed :(");
+        if (resultCode == RESULT_CANCELED) {
+            // User was on the Scan screen, but hit her Back button or similar
+            Log.i("CoolMazeSignal", "Scan was canceled by user");
+            finish();
+            return;
         }
+
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (scanResult == null) {
+            Log.e("CoolMazeSignal", "IntentResult parsing by ZXing failed :(");
+            return;
+        }
+
+        Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
+        chanIDToSignal = scanResult.getContents();
+
+        EditText chanID_text = (EditText) findViewById(R.id.editChanID);
+        chanID_text.setText(chanIDToSignal, TextView.BufferType.EDITABLE);
 
         new Signaller().execute();
     }
