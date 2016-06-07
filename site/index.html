@@ -8,6 +8,8 @@
 <body>
   <div id="qrcode"></div>
   <input type="text" readonly="readonly" id="chanid-hint" size="5">
+  <br/>
+  <textarea id="inbox" readonly="readonly" rows="3" cols="50"></textarea>
 
   <script type="text/javascript">
 
@@ -30,7 +32,9 @@
          var url = msg;
          window.location = url;
       }else{
-         alert(data.message);
+         //alert(data.message);
+         console.log("Received message: " + data.message);
+         document.getElementById("inbox").value = data.message;
       }
     });
 
