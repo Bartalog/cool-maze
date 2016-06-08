@@ -4,9 +4,17 @@
   <title>Cool Maze - Send your document from mobile to computer</title>
   <script src="https://js.pusher.com/3.0/pusher.min.js"></script>
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
+  <style>
+  body {
+  }
+  #qrcode {
+  }
+  </style>
 </head>
 <body>
-  <div id="qrcode"></div>
+  <div>
+    <div id="qrcode"> </div>
+  </div>
   <input type="text" readonly="readonly" id="chanid-hint" size="5">
   <br/>
   <textarea id="inbox" readonly="readonly" rows="3" cols="50"></textarea>
@@ -38,7 +46,19 @@
       }
     });
 
-   new QRCode(document.getElementById("qrcode"), chanID);
+  var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * 8 / 10;
+  var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * 8 / 10;
+  var c = 400;
+  if ( w>0 )
+    c = w;
+  if ( h>0 && h<c )
+    c = h;
+
+   new QRCode("qrcode", {
+      text: chanID,
+      width: c,
+      height: c
+   });
    document.getElementById("chanid-hint").value = chanID;
 
    function startsWith(str, word) {
