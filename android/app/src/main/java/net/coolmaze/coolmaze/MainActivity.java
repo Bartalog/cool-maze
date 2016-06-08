@@ -99,6 +99,10 @@ public class MainActivity extends AppCompatActivity {
         Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
         chanIDToSignal = scanResult.getContents();
 
+        // This short vibration means "Hey cool, you've just scanned something!"
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(100);
+
         EditText chanID_text = (EditText) findViewById(R.id.editChanID);
         chanID_text.setText(chanIDToSignal, TextView.BufferType.EDITABLE);
 
@@ -167,6 +171,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 Log.i("CoolMazeSignal", "Successful POST");
+                // This long vibration should means "The target has received your message!",
+                // ...but it doesn't, yet.
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 v.vibrate(500);
             } catch (Exception e) {
