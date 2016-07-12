@@ -6,17 +6,35 @@
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
   <style>
   body {
+    text-align: center;
   }
+  input[readonly]
+  {
+    background-color: white;
+  }
+
   #qrcode {
+    text-align: center;
+  }
+  #qrcode img {
+    margin: auto;
+  }
+  #chanid-hint {
+    border: none;
+    float: right;
+    color: #777;
+  }
+  #inbox {
+    margin-top: 12px;
+    border: none;
   }
   </style>
 </head>
 <body>
+  <input type="text" readonly="readonly" id="chanid-hint" size="5">
   <div>
     <div id="qrcode"> </div>
   </div>
-  <input type="text" readonly="readonly" id="chanid-hint" size="5">
-  <br/>
   <textarea id="inbox" readonly="readonly" rows="3" cols="50"></textarea>
 
   <script type="text/javascript">
