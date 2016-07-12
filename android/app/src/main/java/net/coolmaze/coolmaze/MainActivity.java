@@ -45,6 +45,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        scanAndSend();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        scanAndSend();
+    }
+
+    protected void scanAndSend() {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -171,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 Log.i("CoolMazeSignal", "Successful POST");
-                // This long vibration should means "The target has received your message!",
+                // This long vibration should mean "The target has received your message!",
                 // ...but it doesn't, yet.
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 v.vibrate(500);
