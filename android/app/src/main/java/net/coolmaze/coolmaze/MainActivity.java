@@ -6,6 +6,9 @@ import android.os.AsyncTask;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -27,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        //setContentView(R.layout.activity_main);
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
@@ -44,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void scanAndSend(Intent intent) {
-
         switch (intent.getType()) {
             case "text/plain":
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
@@ -53,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
             default:
                 return;
         }
-
         new IntentIntegrator(MainActivity.this).initiateScan();
     }
 
@@ -81,6 +81,10 @@ public class MainActivity extends AppCompatActivity {
         v.vibrate(100);
 
         new Signaller().execute();
+
+        // Show some feedback on the screen
+        setContentView(R.layout.activity_main);
+        showSpinning();
     }
 
 
@@ -127,10 +131,38 @@ public class MainActivity extends AppCompatActivity {
                 // ...but it doesn't, yet.
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 v.vibrate(500);
+                showSuccess();
             } catch (Exception e) {
                 Log.e("CoolMazeSignal", "POST request", e);
             }
         }
     }
 
+    void showSpinning(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ProgressBar progress = ((ProgressBar) findViewById(R.id.progressBar));
+                if(progress!=null)
+                    progress.setVisibility(View.VISIBLE);
+                ImageView check = ((ImageView) findViewById(R.id.checkMark));
+                if(check!=null)
+                    check.setVisibility(View.INVISIBLE);
+            }
+        });
+    }
+
+    void showSuccess(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ProgressBar progress = ((ProgressBar) findViewById(R.id.progressBar));
+                if(progress!=null)
+                    progress.setVisibility(View.INVISIBLE);
+                ImageView check = ((ImageView) findViewById(R.id.checkMark));
+                if(check!=null)
+                    check.setVisibility(View.VISIBLE);
+            }
+        });
+    }
 }

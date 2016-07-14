@@ -13,4 +13,20 @@
     tools:showIn="@layout/activity_main"
     tools:context="net.coolmaze.coolmaze.MainActivity">
 
+    <ProgressBar
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/progressBar"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="88dp"
+        android:progress="55"
+        android:visibility="visible" />
+
+    <ImageView
+        android:src="@drawable/check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/checkMark" />
 </RelativeLayout>
