@@ -3,7 +3,6 @@ package net.coolmaze.coolmaze;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -28,30 +27,38 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        scanAndSend();
-    }
-
-    protected void scanAndSend() {
-        setContentView(R.layout.activity_main);
+        //setContentView(R.layout.activity_main);
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
-        String action = intent.getAction();
-        String type = intent.getType();
+        Log.i("CoolMazeSignal", "onResume(): Intent="+intent);
+        if ( intent == null )
+            return;
 
-        if (Intent.ACTION_SEND.equals(action) && type != null) {
-            if ("text/plain".equals(type)) {
+        if ( !Intent.ACTION_SEND.equals(intent.getAction()) )
+            return;  // MAIN, etc.
+
+        scanAndSend(intent);
+        // "consume the intent" so it won't be processed again
+        setIntent(null);
+    }
+
+    protected void scanAndSend(Intent intent) {
+
+        switch (intent.getType()) {
+            case "text/plain":
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
-            }
+                break;
             // TODO other types of "share with": files, etc.
+            default:
+                return;
         }
 
         new IntentIntegrator(MainActivity.this).initiateScan();
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i("CoolMazeSignal", "onActivityResult(" + requestCode + ", " + resultCode
-                + ", " + data + ")");
+        Log.i("CoolMazeSignal", "onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
 
         if (resultCode == RESULT_CANCELED) {
             // User was on the Scan screen, but hit her Back button or similar
