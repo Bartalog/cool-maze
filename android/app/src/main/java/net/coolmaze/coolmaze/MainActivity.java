@@ -26,12 +26,6 @@ public class MainActivity extends AppCompatActivity {
     private String chanIDToSignal = "<?>";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        scanAndSend();
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
         scanAndSend();
@@ -92,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         void sendMessage(String chanID, String message){
+            Log.i("CoolMazeSignal", "Sending to " + chanID + " message [" + message + "]");
             String backendURL = "http://cool-maze.appspot.com";
             String service = "/dispatch";
 
