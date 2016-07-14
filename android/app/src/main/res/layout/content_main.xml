@@ -13,20 +13,4 @@
     tools:showIn="@layout/activity_main"
     tools:context="net.coolmaze.coolmaze.MainActivity">
 
-    <TextView
-        android:text="Hello World Bz Bz!"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/textView" />
-
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="number"
-        android:ems="10"
-        android:id="@+id/editChanID"
-        android:layout_below="@+id/textView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="140dp"
-        android:text="36649" />
 </RelativeLayout>
