@@ -3,6 +3,8 @@ package net.coolmaze.coolmaze;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -132,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 v.vibrate(500);
                 showSuccess();
+                closeCountdown(2);
             } catch (Exception e) {
                 Log.e("CoolMazeSignal", "POST request", e);
             }
@@ -164,5 +167,15 @@ public class MainActivity extends AppCompatActivity {
                     check.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    void closeCountdown(int seconds) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                finish();
+            }
+        }, 1000 * seconds);
     }
 }
