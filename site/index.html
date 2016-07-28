@@ -77,23 +77,27 @@
     if ( h>0 && h<c )
       c = h;
 
-     new QRCode("qrcode", {
-        text: chanID,
-        width: c,
-        height: c
-     });
+    new QRCode("qrcode", {
+      text: chanID,
+      width: c,
+      height: c
+    });
 
-     document.getElementById("chanid-hint").value = chanID;
+    document.getElementById("chanid-hint").value = chanID;
 
-     var cc = c/4;
-     document.getElementById("overprint-logo").style.width = cc + "px";
-     document.getElementById("overprint-logo").style.height = cc + "px";
-     document.getElementById("overprint-logo").style.top = ((1.5)*cc) + "px";
-     document.getElementById("overprint-logo").style.marginLeft = (-cc/2) + "px";
+    var cc = c/4;
+    document.getElementById("overprint-logo").style.width = cc + "px";
+    document.getElementById("overprint-logo").style.height = cc + "px";
+    document.getElementById("overprint-logo").style.top = ((1.5)*cc) + "px";
+    document.getElementById("overprint-logo").style.marginLeft = (-cc/2) + "px";
 
-     function startsWith(str, word) {
-       return str.lastIndexOf(word, 0) === 0;
-     }
+    function startsWith(str, word) {
+     return str.lastIndexOf(word, 0) === 0;
+    }
+
+    var wakeup = new XMLHttpRequest();
+    wakeup.open("GET", "http://cool-maze.appspot.com/wakeup", true);
+    wakeup.send(null);
   </script>
 </body>
 </html>
