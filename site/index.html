@@ -69,27 +69,50 @@
       }
     });
 
-    var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * 8 / 10;
-    var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * 8 / 10;
-    var c = 400;
-    if ( w>0 )
-      c = w;
-    if ( h>0 && h<c )
-      c = h;
+    function render(){
+      var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * 8 / 10;
+      var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * 8 / 10;
+      var c = 400;
+      if ( w>0 )
+        c = w;
+      if ( h>0 && h<c )
+        c = h;
 
-    new QRCode("qrcode", {
-      text: chanID,
-      width: c,
-      height: c
-    });
+      clearQR();
+      new QRCode("qrcode", {
+        text: chanID,
+        width: c,
+        height: c
+      });
 
-    document.getElementById("chanid-hint").value = chanID;
+      document.getElementById("chanid-hint").value = chanID;
 
-    var cc = c/4;
-    document.getElementById("overprint-logo").style.width = cc + "px";
-    document.getElementById("overprint-logo").style.height = cc + "px";
-    document.getElementById("overprint-logo").style.top = ((1.5)*cc) + "px";
-    document.getElementById("overprint-logo").style.marginLeft = (-cc/2) + "px";
+      var cc = c/4;
+      document.getElementById("overprint-logo").style.width = cc + "px";
+      document.getElementById("overprint-logo").style.height = cc + "px";
+      document.getElementById("overprint-logo").style.top = ((1.5)*cc) + "px";
+      document.getElementById("overprint-logo").style.marginLeft = (-cc/2) + "px";
+    }
+
+    render();
+
+    // Go fullscreen -> bigger QR
+    var resizeTimeOut = null;
+    window.onresize = function(){
+        if (resizeTimeOut != null)
+            clearTimeout(resizeTimeOut);
+        resizeTimeOut = setTimeout(function(){
+            render();
+        }, 300);
+    };
+
+    function clearQR() {
+      var node = document.getElementById("qrcode");
+      while (node.firstChild) {
+          node.removeChild(node.firstChild);
+      }
+      node.innerHTML='<img src="static/img/red_arrow.png" id="overprint-logo" />';
+    }
 
     function startsWith(str, word) {
      return str.lastIndexOf(word, 0) === 0;
