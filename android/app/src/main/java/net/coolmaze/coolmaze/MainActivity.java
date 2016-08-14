@@ -19,7 +19,6 @@ import com.google.zxing.integration.android.IntentResult;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -72,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
                 new IntentIntegrator(MainActivity.this).initiateScan();
                 return;
             case "image":
+            case "video":
                 Uri localFile = intent.getData();
                 if ( localFile == null ) {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
                         if ( clip.getItemCount() == 0 ) {
                             Log.e("CoolMazeSignal", "ClipData having 0 item :(");
                             return;
-                        }
+                    }
                         ClipData.Item item = clip.getItemAt(0);
                         localFile = item.getUri();
                     }else{
@@ -90,8 +90,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.w("CoolMazeSignal", "Initiating upload of " + localFile + " ...");
                 gentleUploadStep1(localFile, type);
                 return;
-            // TODO other types of "share with": files, etc.
             default:
+                // TODO other types of files?
                 Log.w("CoolMazeSignal", "Intent type isZZ " + intent.getType());
                 return;
         }
