@@ -42,7 +42,12 @@ import cz.msebera.android.httpclient.message.BasicHeader;
 
 public class MainActivity extends AppCompatActivity {
 
-    static final String backendURL = "https://cool-maze.appspot.com";
+    static final String FRONTPAGE_DOMAIN = "coolmaze.net";
+    //static final String FRONTPAGE_DOMAIN = "coolmaze.io";   maybe later
+    static final String FRONTPAGE_URL = "https://" + FRONTPAGE_DOMAIN;
+    static final String BACKEND_URL = "https://cool-maze.appspot.com";
+
+    static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
 
     private String messageToSignal = "<?>";
     private String chanIDToSignal = "<?>";
@@ -72,7 +77,9 @@ public class MainActivity extends AppCompatActivity {
         switch (typeCat) {
             case "text":
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
-                new IntentIntegrator(MainActivity.this).initiateScan();
+                new IntentIntegrator(MainActivity.this)
+                        .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
+                        .initiateScan();
                 return;
             case "image":
             case "video":
@@ -162,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i("CoolMazeSignal", "Sending to " + chanID + " message [" + message + "]");
 
             try {
-                URL url = new URL(backendURL + "/dispatch");
+                URL url = new URL(BACKEND_URL + "/dispatch");
 
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setReadTimeout(15000);
@@ -238,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
-        String signedUrlsCreationUrl = backendURL + "/new-gcs-urls";
+        String signedUrlsCreationUrl = BACKEND_URL + "/new-gcs-urls";
         AsyncHttpClient client = new AsyncHttpClient();
         RequestParams params = new RequestParams();
         params.put("type", mimeType);
@@ -303,7 +310,9 @@ public class MainActivity extends AppCompatActivity {
 
                 // When the target desktop receives the URL, it immediately follows it
                 messageToSignal = resourceGetUrl;
-                new IntentIntegrator(MainActivity.this).initiateScan();
+                new IntentIntegrator(MainActivity.this)
+                        .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
+                        .initiateScan();
             }
 
             @Override
