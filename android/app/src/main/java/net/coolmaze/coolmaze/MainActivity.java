@@ -38,7 +38,7 @@ import cz.msebera.android.httpclient.entity.FileEntity;
 
 public class MainActivity extends AppCompatActivity {
 
-    static final String backendURL = "http://cool-maze.appspot.com";
+    static final String backendURL = "https://cool-maze.appspot.com";
 
     private String messageToSignal = "<?>";
     private String chanIDToSignal = "<?>";
@@ -136,10 +136,9 @@ public class MainActivity extends AppCompatActivity {
 
         void sendMessage(String chanID, String message){
             Log.i("CoolMazeSignal", "Sending to " + chanID + " message [" + message + "]");
-            String service = "/dispatch";
 
             try {
-                URL url = new URL(backendURL + service);
+                URL url = new URL(backendURL + "/dispatch");
 
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setReadTimeout(15000);
