@@ -19,6 +19,8 @@ import com.google.zxing.integration.android.IntentResult;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -34,6 +36,7 @@ import org.json.JSONObject;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.FileEntity;
+import cz.msebera.android.httpclient.entity.InputStreamEntity;
 import cz.msebera.android.httpclient.message.BasicHeader;
 
 public class MainActivity extends AppCompatActivity {
@@ -72,8 +75,9 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case "image":
             case "video":
-                Uri localFile = intent.getData();
-                if ( localFile == null ) {
+            case "application":
+                Uri localFileUri = intent.getData();
+                if ( localFileUri == null ) {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                         ClipData clip = intent.getClipData();
                         if ( clip.getItemCount() == 0 ) {
@@ -81,14 +85,14 @@ public class MainActivity extends AppCompatActivity {
                             return;
                     }
                         ClipData.Item item = clip.getItemAt(0);
-                        localFile = item.getUri();
+                        localFileUri = item.getUri();
                     }else{
                         Log.e("CoolMazeSignal", "Intent.getClipData() needs at least JELLY_BEAN :(");
                         return;
                     }
                 }
-                Log.w("CoolMazeSignal", "Initiating upload of " + localFile + " ...");
-                gentleUploadStep1(localFile, type);
+                Log.w("CoolMazeSignal", "Initiating upload of " + localFileUri + " ...");
+                gentleUploadStep1(localFileUri, type);
                 return;
             default:
                 // TODO other types of files?
@@ -215,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
         }, 1000 * seconds);
     }
 
-    private void gentleUploadStep1(final Uri localFile, final String type) {
+    private void gentleUploadStep1(final Uri localFileUri, final String type) {
         String signedUrlsCreationUrl = backendURL + "/new-gcs-urls";
         AsyncHttpClient client = new AsyncHttpClient();
         RequestParams params = new RequestParams();
@@ -233,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject json = new JSONObject(jsonStr);
                     String urlPut = json.getString("urlPut");
                     String urlGet = json.getString("urlGet");
-                    gentleUploadStep2(urlPut, urlGet, localFile, type);
+                    gentleUploadStep2(urlPut, urlGet, localFileUri, type);
                 } catch (JSONException e) {
                     Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + jsonStr);
                 }
@@ -254,7 +258,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String type) {
         File localFile = new File(localFileUri.getPath());
-        FileEntity entity = new FileEntity(localFile);
+        // FileEntity entity = new FileEntity(localFile);
+        // Resource URIs like "content://..." don't work well as Files, better as InputStreams
+        InputStream inputStream;
+        try {
+            inputStream = getContentResolver().openInputStream(localFileUri);
+        } catch (FileNotFoundException e) {
+            Log.e("CoolMazeSignal", "Not found :( " + e);
+            return;
+        }
+        InputStreamEntity entity = new InputStreamEntity(inputStream);
         String contentType = type;
         Context context = null; // ?
 
@@ -269,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                Log.e("CoolMazeSignal", "Upload resource success :)");
+                Log.i("CoolMazeSignal", "Upload resource success :)");
 
                 // When the target desktop receives the URL, it immediately follows it
                 messageToSignal = resourceGetUrl;

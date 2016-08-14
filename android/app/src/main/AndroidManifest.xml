@@ -24,6 +24,7 @@
                 <data android:mimeType="text/*"/>
                 <data android:mimeType="image/*"/>
                 <data android:mimeType="video/*"  />
+                <data android:mimeType="application/*"/>
                 <!-- TODO any other arbitrary file ...? -->
             </intent-filter>
 
