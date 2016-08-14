@@ -1,7 +1,9 @@
 package net.coolmaze.coolmaze;
 
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,6 +18,8 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -24,7 +28,17 @@ import java.net.URLEncoder;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import com.loopj.android.http.*;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.FileEntity;
+
 public class MainActivity extends AppCompatActivity {
+
+    static final String backendURL = "http://cool-maze.appspot.com";
 
     private String messageToSignal = "<?>";
     private String chanIDToSignal = "<?>";
@@ -48,15 +62,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void scanAndSend(Intent intent) {
-        switch (intent.getType()) {
-            case "text/plain":
+        String[] typeParts = intent.getType().split("/");
+        String typeCat = typeParts[0];
+        switch (typeCat) {
+            case "text":
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
-                break;
+                new IntentIntegrator(MainActivity.this).initiateScan();
+                return;
+            case "image":
+                Uri localFile = intent.getData();
+                if ( localFile == null ) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+                        ClipData clip = intent.getClipData();
+                        if ( clip.getItemCount() == 0 ) {
+                            Log.e("CoolMazeSignal", "ClipData having 0 item :(");
+                            return;
+                        }
+                        ClipData.Item item = clip.getItemAt(0);
+                        localFile = item.getUri();
+                    }else{
+                        Log.e("CoolMazeSignal", "Intent.getClipData() needs at least JELLY_BEAN :(");
+                        return;
+                    }
+                }
+                Log.w("CoolMazeSignal", "Initiating upload of " + localFile + " ...");
+                gentleUploadStep1(localFile);
+                return;
             // TODO other types of "share with": files, etc.
             default:
+                Log.w("CoolMazeSignal", "Intent type isZZ " + intent.getType());
                 return;
         }
-        new IntentIntegrator(MainActivity.this).initiateScan();
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -100,7 +136,6 @@ public class MainActivity extends AppCompatActivity {
 
         void sendMessage(String chanID, String message){
             Log.i("CoolMazeSignal", "Sending to " + chanID + " message [" + message + "]");
-            String backendURL = "http://cool-maze.appspot.com";
             String service = "/dispatch";
 
             try {
@@ -177,5 +212,78 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         }, 1000 * seconds);
+    }
+
+    private void gentleUploadStep1(final Uri localFile) {
+        String signedUrlsCreationUrl = backendURL + "/new-gcs-urls";
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.post(signedUrlsCreationUrl, new AsyncHttpResponseHandler() {
+
+            @Override
+            public void onStart() {
+                // called before request is started
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                Log.i("CoolMazeSignal", "Signed URLs request success :) \n ");
+                String jsonStr = new String(response);
+                try {
+                    JSONObject json = new JSONObject(jsonStr);
+                    String urlPut = json.getString("urlPut");
+                    String urlGet = json.getString("urlGet");
+                    gentleUploadStep2(urlPut,urlGet,localFile);
+                } catch (JSONException e) {
+                    Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + jsonStr);
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                Log.e("CoolMazeSignal", "Signed URLs request failed :( " + e);
+            }
+
+            @Override
+            public void onRetry(int retryNo) {
+                // called when request is retried
+            }
+        });
+
+    }
+
+    private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri) {
+        File localFile = new File(localFileUri.getPath());
+        FileEntity entity = new FileEntity(localFile);
+        String contentType = "";
+        Context context = null; // ?
+
+        Log.i("CoolMazeSignal", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.put(context, resourcePutUrl, entity, contentType, new AsyncHttpResponseHandler() {
+
+            @Override
+            public void onStart() {
+                // called before request is started
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                Log.e("CoolMazeSignal", "Upload resource success :)");
+
+                // When the target desktop receives the URL, it immediately follows it
+                messageToSignal = resourceGetUrl;
+                new IntentIntegrator(MainActivity.this).initiateScan();
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                Log.e("CoolMazeSignal", "Upload resource failed :( " + e);
+            }
+
+            @Override
+            public void onRetry(int retryNo) {
+                // called when request is retried
+            }
+        });
     }
 }
