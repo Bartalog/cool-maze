@@ -75,8 +75,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 
 func createUrls(c context.Context, contentType string) (urlPut, urlGet string, err error) {
 	objectName := randomString()
-	log.Infof(c, "Creating urls for tmp object name %s", objectName)
-	log.Infof(c, "  With content-type [%s]", contentType)
+	log.Infof(c, "Creating urls for tmp object name %s with content-type [%s]", objectName, contentType)
 
 	urlPut, err = storage.SignedURL(bucket, objectName, &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccount,

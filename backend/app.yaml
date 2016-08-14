@@ -6,9 +6,13 @@ api_version: go1
 handlers:
 - url: /dispatch
   script: _go_app
+  secure: always
 - url: /ack
   script: _go_app
+  secure: always
 - url: /wakeup
   script: _go_app
+  secure: always
 - url: /new-gcs-urls
   script: _go_app
+  secure: always
