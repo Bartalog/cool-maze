@@ -11,6 +11,7 @@ import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
@@ -92,13 +93,30 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 Log.w("CoolMazeSignal", "Initiating upload of " + localFileUri + " ...");
-                gentleUploadStep1(localFileUri, type);
+                setContentView(R.layout.activity_main);
+                showSpinning();
+
+                String mimeType = extractMimeType(intent, localFileUri);
+                gentleUploadStep1(localFileUri, mimeType);
                 return;
             default:
                 // TODO other types of files?
                 Log.w("CoolMazeSignal", "Intent type isZZ " + intent.getType());
                 return;
         }
+    }
+
+    String extractMimeType(Intent intent, Uri localFileUri) {
+        // Trying strategies that work in most cases: photos, videos, pdf, etc,
+        // should work fine for "file://..." and "content://..." as well.
+        String mimeType = intent.getType();
+        if ( mimeType==null || "".equals(mimeType) || mimeType.endsWith("/*") ){
+            //String resolved = MimeTypeMap.getSingleton().getExtensionFromMimeType(getContentResolver().getType(localFileUri));
+            String resolved = getContentResolver().getType(localFileUri);
+            if ( resolved!=null )
+                mimeType = resolved;
+        }
+        return mimeType;
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -219,11 +237,11 @@ public class MainActivity extends AppCompatActivity {
         }, 1000 * seconds);
     }
 
-    private void gentleUploadStep1(final Uri localFileUri, final String type) {
+    private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
         String signedUrlsCreationUrl = backendURL + "/new-gcs-urls";
         AsyncHttpClient client = new AsyncHttpClient();
         RequestParams params = new RequestParams();
-        params.put("type", type);
+        params.put("type", mimeType);
         client.post(signedUrlsCreationUrl, params, new AsyncHttpResponseHandler() {
             @Override
             public void onStart() {
@@ -237,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject json = new JSONObject(jsonStr);
                     String urlPut = json.getString("urlPut");
                     String urlGet = json.getString("urlGet");
-                    gentleUploadStep2(urlPut, urlGet, localFileUri, type);
+                    gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
                 } catch (JSONException e) {
                     Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + jsonStr);
                 }
@@ -256,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String type) {
+    private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String mimeType) {
         File localFile = new File(localFileUri.getPath());
         // FileEntity entity = new FileEntity(localFile);
         // Resource URIs like "content://..." don't work well as Files, better as InputStreams
@@ -268,14 +286,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         InputStreamEntity entity = new InputStreamEntity(inputStream);
-        String contentType = type;
         Context context = null; // ?
 
         Log.i("CoolMazeSignal", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
         AsyncHttpClient client = new AsyncHttpClient();
         Header[] headers = new Header[1];
-        headers[0] = new BasicHeader("Content-Type", type);
-        client.put(context, resourcePutUrl, headers, entity, contentType, new AsyncHttpResponseHandler() {
+        headers[0] = new BasicHeader("Content-Type", mimeType);
+        client.put(context, resourcePutUrl, headers, entity, mimeType, new AsyncHttpResponseHandler() {
             @Override
             public void onStart() {
             }
