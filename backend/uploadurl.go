@@ -86,7 +86,12 @@ func createUrls(c context.Context) (urlPut, urlGet string, err error) {
 		return
 	}
 
-	// TODO urlGet
+	urlGet, err = storage.SignedURL(bucket, objectName, &storage.SignedURLOptions{
+		GoogleAccessID: serviceAccount,
+		PrivateKey:     pkey,
+		Method:         "GET",
+		Expires:        time.Now().Add(11 * time.Minute),
+	})
 
 	return
 }
