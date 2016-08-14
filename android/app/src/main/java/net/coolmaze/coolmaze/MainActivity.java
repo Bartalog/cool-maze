@@ -35,6 +35,7 @@ import org.json.JSONObject;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.FileEntity;
+import cz.msebera.android.httpclient.message.BasicHeader;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -62,7 +63,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void scanAndSend(Intent intent) {
-        String[] typeParts = intent.getType().split("/");
+        String type = intent.getType();
+        String[] typeParts = type.split("/");
         String typeCat = typeParts[0];
         switch (typeCat) {
             case "text":
@@ -86,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 Log.w("CoolMazeSignal", "Initiating upload of " + localFile + " ...");
-                gentleUploadStep1(localFile);
+                gentleUploadStep1(localFile, type);
                 return;
             // TODO other types of "share with": files, etc.
             default:
@@ -213,14 +215,14 @@ public class MainActivity extends AppCompatActivity {
         }, 1000 * seconds);
     }
 
-    private void gentleUploadStep1(final Uri localFile) {
+    private void gentleUploadStep1(final Uri localFile, final String type) {
         String signedUrlsCreationUrl = backendURL + "/new-gcs-urls";
         AsyncHttpClient client = new AsyncHttpClient();
-        client.post(signedUrlsCreationUrl, new AsyncHttpResponseHandler() {
-
+        RequestParams params = new RequestParams();
+        params.put("type", type);
+        client.post(signedUrlsCreationUrl, params, new AsyncHttpResponseHandler() {
             @Override
             public void onStart() {
-                // called before request is started
             }
 
             @Override
@@ -231,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject json = new JSONObject(jsonStr);
                     String urlPut = json.getString("urlPut");
                     String urlGet = json.getString("urlGet");
-                    gentleUploadStep2(urlPut,urlGet,localFile);
+                    gentleUploadStep2(urlPut, urlGet, localFile, type);
                 } catch (JSONException e) {
                     Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + jsonStr);
                 }
@@ -250,19 +252,19 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri) {
+    private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String type) {
         File localFile = new File(localFileUri.getPath());
         FileEntity entity = new FileEntity(localFile);
-        String contentType = "";
+        String contentType = type;
         Context context = null; // ?
 
         Log.i("CoolMazeSignal", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
         AsyncHttpClient client = new AsyncHttpClient();
-        client.put(context, resourcePutUrl, entity, contentType, new AsyncHttpResponseHandler() {
-
+        Header[] headers = new Header[1];
+        headers[0] = new BasicHeader("Content-Type", type);
+        client.put(context, resourcePutUrl, headers, entity, contentType, new AsyncHttpResponseHandler() {
             @Override
             public void onStart() {
-                // called before request is started
             }
 
             @Override
@@ -276,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                Log.e("CoolMazeSignal", "Upload resource failed :( " + e);
+                Log.e("CoolMazeSignal", "Upload resource failed :( " + e + " " + new String(errorResponse));
             }
 
             @Override

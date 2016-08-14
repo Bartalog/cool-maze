@@ -54,9 +54,11 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Only POST method is accepted")
 		return
 	}
-	// TODO request param containing resource nature
+	// Warning: this contentType will be part of the crypted
+	// signature, and the client will have to match it exactly
+	contentType := r.FormValue("type")
 
-	urlPut, urlGet, err := createUrls(c)
+	urlPut, urlGet, err := createUrls(c, contentType)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -71,7 +73,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, response)
 }
 
-func createUrls(c context.Context) (urlPut, urlGet string, err error) {
+func createUrls(c context.Context, contentType string) (urlPut, urlGet string, err error) {
 	objectName := randomString()
 	log.Infof(c, "Creating urls for tmp object name %s", objectName)
 
@@ -80,7 +82,7 @@ func createUrls(c context.Context) (urlPut, urlGet string, err error) {
 		PrivateKey:     pkey,
 		Method:         "PUT",
 		Expires:        time.Now().Add(10 * time.Minute),
-		//ContentType:  TODO adapt according to resource nature
+		ContentType:    contentType,
 	})
 	if err != nil {
 		return
