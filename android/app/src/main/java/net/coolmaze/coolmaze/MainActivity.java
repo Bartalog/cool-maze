@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -98,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.w("CoolMazeSignal", "Initiating upload of " + localFileUri + " ...");
                 setContentView(R.layout.activity_main);
                 showSpinning();
+                showCaption("Uploading...");
 
                 String mimeType = extractMimeType(intent, localFileUri);
                 gentleUploadStep1(localFileUri, mimeType);
@@ -175,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
         // Show some feedback on the screen
         setContentView(R.layout.activity_main);
         showSpinning();
+        showCaption("Sending to target...");
     }
 
     void showSpinning(){
@@ -192,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void showSuccess(){
+        showCaption("Sent!");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -201,6 +205,16 @@ public class MainActivity extends AppCompatActivity {
                 ImageView check = ((ImageView) findViewById(R.id.checkMark));
                 if(check!=null)
                     check.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    void showCaption(final String title){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toolbar toolbar = ((Toolbar) findViewById(R.id.toolbar));
+                toolbar.setTitle(title);
             }
         });
     }
