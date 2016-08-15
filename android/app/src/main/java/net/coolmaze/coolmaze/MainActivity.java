@@ -40,7 +40,6 @@ public class MainActivity extends AppCompatActivity {
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
 
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
-
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
 
     private String messageToSignal = "<?>";
@@ -104,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             default:
                 // TODO other types of files?
-                Log.w("CoolMazeSignal", "Intent type isZZ " + intent.getType());
+                Log.w("CoolMazeSignal", "Intent type is " + intent.getType());
                 return;
         }
     }
@@ -118,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
             String resolved = getContentResolver().getType(localFileUri);
             if ( resolved!=null )
                 mimeType = resolved;
+            else
+                ; // TODO guess from file extension
         }
         return mimeType;
     }
@@ -165,37 +166,28 @@ public class MainActivity extends AppCompatActivity {
             Log.i("CoolMazeSignal", "Sending to " + chanID + " message [" + message + "]");
 
             try {
-                URL url = new URL(BACKEND_URL + "/dispatch");
+                RequestParams params = new RequestParams();
+                params.put("chanID", chanID);
+                params.put("message", message);
+                // conn.setReadTimeout(15000);
+                // conn.setConnectTimeout(15000);
+                new SyncHttpClient().post(BACKEND_URL + "/dispatch", params, new AsyncHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                        Log.i("CoolMazeSignal", "sendMessage successful POST");
+                        // This long vibration should mean "The target has received your message!",
+                        // ...but it doesn't, yet.
+                        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                        v.vibrate(500);
+                        showSuccess();
+                        closeCountdown(2);
+                    }
 
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setReadTimeout(15000);
-                conn.setConnectTimeout(15000);
-                conn.setRequestMethod("POST");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-
-
-                OutputStream out = conn.getOutputStream();
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
-                writer.write("chanID="+chanID+"&message="+ URLEncoder.encode(message, "UTF-8"));
-
-                writer.flush();
-                writer.close();
-                out.close();
-
-                int responseCode=conn.getResponseCode();
-                if (responseCode != HttpsURLConnection.HTTP_OK) {
-                    Log.e("CoolMazeSignal", "POST request response code " + responseCode);
-                    return;
-                }
-
-                Log.i("CoolMazeSignal", "Successful POST");
-                // This long vibration should mean "The target has received your message!",
-                // ...but it doesn't, yet.
-                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                v.vibrate(500);
-                showSuccess();
-                closeCountdown(2);
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                        Log.e("CoolMazeSignal", "sendMessage POST request response code " + statusCode);
+                    }
+                });
             } catch (Exception e) {
                 Log.e("CoolMazeSignal", "POST request", e);
             }
@@ -241,28 +233,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
-        String signedUrlsCreationUrl = BACKEND_URL + "/new-gcs-urls";
-        AsyncHttpClient client = new AsyncHttpClient();
-        RequestParams params = new RequestParams();
-        params.put("type", mimeType);
-        client.post(signedUrlsCreationUrl, params, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                Log.i("CoolMazeSignal", "Signed URLs request success :) \n ");
-                try {
-                    String urlPut = response.getString("urlPut");
-                    String urlGet = response.getString("urlGet");
-                    gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
-                } catch (JSONException e) {
-                    Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + response);
-                }
-            }
+        new AsyncHttpClient().post(
+            BACKEND_URL + "/new-gcs-urls",
+                new RequestParams("type", mimeType),
+                new JsonHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        Log.i("CoolMazeSignal", "Signed URLs request success :) \n ");
+                        try {
+                            String urlPut = response.getString("urlPut");
+                            String urlGet = response.getString("urlGet");
+                            gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
+                        } catch (JSONException e) {
+                            Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + response);
+                        }
+                    }
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                Log.e("CoolMazeSignal", "Signed URLs request failed :( " + errorResponse);
-            }
-        });
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                        Log.e("CoolMazeSignal", "Signed URLs request failed :( " + errorResponse);
+                    }
+                });
 
     }
 
@@ -281,26 +272,29 @@ public class MainActivity extends AppCompatActivity {
         Context context = null; // ?
 
         Log.i("CoolMazeSignal", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
-        AsyncHttpClient client = new AsyncHttpClient();
-        Header[] headers = new Header[1];
-        headers[0] = new BasicHeader("Content-Type", mimeType);
-        client.put(context, resourcePutUrl, headers, entity, mimeType, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                Log.i("CoolMazeSignal", "Upload resource success :)");
+        new AsyncHttpClient().put(
+                context,
+                resourcePutUrl,
+                new Header[]{ new BasicHeader("Content-Type", mimeType) },
+                entity,
+                mimeType,
+                new AsyncHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                        Log.i("CoolMazeSignal", "Upload resource success :)");
 
-                // When the target desktop receives the URL, it immediately follows it
-                messageToSignal = resourceGetUrl;
-                new IntentIntegrator(MainActivity.this)
-                        .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
-                        .initiateScan();
-            }
+                        // When the target desktop receives the URL, it immediately follows it
+                        messageToSignal = resourceGetUrl;
+                        new IntentIntegrator(MainActivity.this)
+                                .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
+                                .initiateScan();
+                    }
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                Log.e("CoolMazeSignal", "Upload resource failed :( " + e + " " + new String(errorResponse));
-            }
-        });
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                        Log.e("CoolMazeSignal", "Upload resource failed :( " + e + " " + new String(errorResponse));
+                    }
+                });
     }
 
     private void wakeupBackend() {
