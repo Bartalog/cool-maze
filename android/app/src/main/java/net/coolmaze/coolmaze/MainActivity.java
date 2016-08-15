@@ -11,13 +11,10 @@ import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,16 +24,11 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-
 import javax.net.ssl.HttpsURLConnection;
-
 import com.loopj.android.http.*;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.entity.FileEntity;
 import cz.msebera.android.httpclient.entity.InputStreamEntity;
 import cz.msebera.android.httpclient.message.BasicHeader;
 
@@ -253,24 +245,22 @@ public class MainActivity extends AppCompatActivity {
         AsyncHttpClient client = new AsyncHttpClient();
         RequestParams params = new RequestParams();
         params.put("type", mimeType);
-        client.post(signedUrlsCreationUrl, params, new AsyncHttpResponseHandler() {
+        client.post(signedUrlsCreationUrl, params, new JsonHttpResponseHandler() {
             @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 Log.i("CoolMazeSignal", "Signed URLs request success :) \n ");
-                String jsonStr = new String(response);
                 try {
-                    JSONObject json = new JSONObject(jsonStr);
-                    String urlPut = json.getString("urlPut");
-                    String urlGet = json.getString("urlGet");
+                    String urlPut = response.getString("urlPut");
+                    String urlGet = response.getString("urlGet");
                     gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
                 } catch (JSONException e) {
-                    Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + jsonStr);
+                    Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + response);
                 }
             }
 
             @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                Log.e("CoolMazeSignal", "Signed URLs request failed :( " + e);
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                Log.e("CoolMazeSignal", "Signed URLs request failed :( " + errorResponse);
             }
         });
 
