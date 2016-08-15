@@ -146,32 +146,14 @@ public class MainActivity extends AppCompatActivity {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         v.vibrate(100);
 
-        new Signaller().execute();
-
-        // Show some feedback on the screen
-        setContentView(R.layout.activity_main);
-        showSpinning();
-    }
-
-
-    public class Signaller extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            sendMessage(chanIDToSignal, messageToSignal);
-            return null;
-        }
-
-        void sendMessage(String chanID, String message){
-            Log.i("CoolMazeSignal", "Sending to " + chanID + " message [" + message + "]");
-
-            try {
-                RequestParams params = new RequestParams();
-                params.put("chanID", chanID);
-                params.put("message", message);
-                // conn.setReadTimeout(15000);
-                // conn.setConnectTimeout(15000);
-                new SyncHttpClient().post(BACKEND_URL + "/dispatch", params, new AsyncHttpResponseHandler() {
+        Log.i("CoolMazeSignal", "Sending to " + chanIDToSignal + " message [" + messageToSignal + "]");
+        RequestParams params = new RequestParams("chanID", chanIDToSignal, "message", messageToSignal);
+        // conn.setReadTimeout(15000);
+        // conn.setConnectTimeout(15000);
+        new AsyncHttpClient().post(
+                BACKEND_URL + "/dispatch",
+                params,
+                new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
                         Log.i("CoolMazeSignal", "sendMessage successful POST");
@@ -188,10 +170,10 @@ public class MainActivity extends AppCompatActivity {
                         Log.e("CoolMazeSignal", "sendMessage POST request response code " + statusCode);
                     }
                 });
-            } catch (Exception e) {
-                Log.e("CoolMazeSignal", "POST request", e);
-            }
-        }
+
+        // Show some feedback on the screen
+        setContentView(R.layout.activity_main);
+        showSpinning();
     }
 
     void showSpinning(){
@@ -234,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
         new AsyncHttpClient().post(
-            BACKEND_URL + "/new-gcs-urls",
+                BACKEND_URL + "/new-gcs-urls",
                 new RequestParams("type", mimeType),
                 new JsonHttpResponseHandler() {
                     @Override
