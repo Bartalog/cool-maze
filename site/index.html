@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <title>Cool Maze - Send your document from mobile to computer</title>
   <script src="https://js.pusher.com/3.0/pusher.min.js"></script>
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
@@ -8,18 +9,23 @@
   <style>
   body {
     text-align: center;
+    /*background-color: #64d8ff;*/
   }
   input[readonly]
   {
     background-color: white;
   }
-
+  #qr-zone {
+    /*clear: both;*/
+  }
   #qrcode {
     text-align: center;
   }
   #qrcode img {
+    /*float: left;*/
     margin: auto;
-    margin-top: 20px;
+    /*margin-top: 20px;*/
+    border-radius: 4px;
   }
   #overprint-logo {
     position: absolute;
@@ -28,21 +34,82 @@
     border: none;
     float: right;
     color: #ccc;
+    display: none;
+  }
+  #txt-msg-zone {
+    margin-left: 10%;
+    width: 80%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: white;
+    text-align: center;
+    border-radius: 15px;
   }
   #inbox {
     margin-top: 12px;
     border: none;
+    font-size: 3em;
+  }
+  #help {
+    float: left;
+    margin-left: 10px;
+    margin-bottom: 8px;
+    background-color: white;
+    border: 1px solid #AAA;
+    padding: 8px;
+    text-align: left;
+    border-radius: 15px;
+  }
+  #question-mark {
+    font-weight: bolder;
+    font-size: 2em;
+  }
+  #help-contents {
+    width: 100%;
+  }
+  #help-contents img.right {
+    float: right;
+    /*text-align: center;*/
+    margin: 12px;
+  }
+  .rounded {
+    border: 1px solid #AAA;
+    border-radius: 5px;
+    padding-left: 2px;
+    padding-right: 2px;
+    white-space: nowrap;
   }
   </style>
 </head>
 <body>
+  <div id="help">
+    <div id="question-mark">?</div>
+    <div id="help-contents" style="display: none;">
+      <img src="static/img/schema.png" width="296" height="400" class="right" />
+      <p>You can share a document really easily from your mobile device to a desktop computer or video projector</p>
+      <p>
+        <ol>
+          <li>Download <strong>Cool Maze app</strong> on your mobile</li>
+          <li>Open <strong>coolmaze.net</strong> in your desktop browser</li>
+          <li>On mobile resource (photo, video, URL, PDF), select <span class="rounded"><strong><i>Share via</i></strong></span> > <span class="rounded"><img src="static/img/coolmaze_128.png" style="width: 1em; padding-top: 2px;" /> <strong>Cool Maze</strong></span></li>
+          <li>Scan the QR-code</li>
+        </ol>
+      </p>
+      <p>That's it. No login, no passwords, no ads.</p>
+      <p>Note that the two devices (source and target) must have internet connection</p>
+    </div>
+  </div>
   <input type="text" readonly="readonly" id="chanid-hint" size="5">
-  <div>
+  <div id="qr-zone">
     <div id="qrcode"> 
       <img src="static/img/red_arrow.png" id="overprint-logo" />
     </div>
   </div>
-  <textarea id="inbox" readonly="readonly" rows="3" cols="50"></textarea>
+  <div id="txt-msg-zone" style="display: none;">
+    <h3>Received text message</h3>
+    <textarea id="inbox" readonly="readonly" rows="12" cols="32"></textarea>
+  </div>
 
   <script type="text/javascript">
 
@@ -67,6 +134,7 @@
          //alert(data.message);
          console.log("Received message: " + data.message);
          document.getElementById("inbox").value = data.message;
+         show("txt-msg-zone");
       }
     });
 
@@ -122,6 +190,53 @@
     var wakeup = new XMLHttpRequest();
     wakeup.open("GET", "https://cool-maze.appspot.com/wakeup", true);
     wakeup.send(null);
+
+    function show(id) {
+      // Show either "qr-zone", or "help-contents", or "txt-msg-zone".
+      var qrzone = document.getElementById("qr-zone");
+      var help = document.getElementById("help");
+      var helpContents = document.getElementById("help-contents");
+      var msg = document.getElementById("txt-msg-zone");
+
+      var dispQr = "none";
+      var dispHelpContents = "none";
+      var dispMsg = "none";
+      var bgcolor = "#64d8ff";
+      switch(id) {
+        case "qr-zone":
+          dispQr = "block";
+          bgcolor = "white"; // or keep it always blue...?
+          break;
+        case "help-contents":
+          dispHelpContents = "block";
+          break;
+        case "txt-msg-zone":
+          dispMsg = "block";
+          break;
+      }
+      qrzone.style.display = dispQr;
+      helpContents.style.display = dispHelpContents;
+      msg.style.display = dispMsg;
+      document.body.style.backgroundColor = bgcolor;
+    }
+
+    //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
+    document.getElementById("help").onclick = function(event) { 
+        if ( document.getElementById("help-contents").style.display === "none" )
+          show("help-contents"); 
+        else
+          show("qr-zone"); 
+        /*event.stopPropagation();*/
+    }
+
+    document.getElementById("txt-msg-zone").onclick = function(event) { 
+      show("qr-zone");
+    }
+    document.getElementById("inbox").onclick = function(event) { 
+        event.stopPropagation();
+    }
+
+    document.getElementById("inbox").value = "";
   </script>
 </body>
 </html>
