@@ -24,6 +24,7 @@ func ackReception(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Only POST method is accepted")
 		return
 	}
+	// TODO restrict access to coolmaze domains origin
 
 	channelID := r.FormValue("chanID")
 	if channelID == "" {

@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
             case "text":
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
                 new IntentIntegrator(MainActivity.this)
+                        //.setOrientationLocked(false)
                         .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
                         .initiateScan();
                 return;
@@ -268,6 +269,7 @@ public class MainActivity extends AppCompatActivity {
                         // When the target desktop receives the URL, it immediately follows it
                         messageToSignal = resourceGetUrl;
                         new IntentIntegrator(MainActivity.this)
+                                //.setOrientationLocked(false)
                                 .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
                                 .initiateScan();
                     }
