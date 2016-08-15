@@ -49,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
 
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
 
+    static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
+
     private String messageToSignal = "<?>";
     private String chanIDToSignal = "<?>";
 
@@ -64,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
 
         if ( !Intent.ACTION_SEND.equals(intent.getAction()) )
             return;  // MAIN, etc.
+
+        wakeupBackend();
 
         scanAndSend(intent);
         // "consume the intent" so it won't be processed again
@@ -251,10 +255,6 @@ public class MainActivity extends AppCompatActivity {
         params.put("type", mimeType);
         client.post(signedUrlsCreationUrl, params, new AsyncHttpResponseHandler() {
             @Override
-            public void onStart() {
-            }
-
-            @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] response) {
                 Log.i("CoolMazeSignal", "Signed URLs request success :) \n ");
                 String jsonStr = new String(response);
@@ -271,11 +271,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                 Log.e("CoolMazeSignal", "Signed URLs request failed :( " + e);
-            }
-
-            @Override
-            public void onRetry(int retryNo) {
-                // called when request is retried
             }
         });
 
@@ -301,10 +296,6 @@ public class MainActivity extends AppCompatActivity {
         headers[0] = new BasicHeader("Content-Type", mimeType);
         client.put(context, resourcePutUrl, headers, entity, mimeType, new AsyncHttpResponseHandler() {
             @Override
-            public void onStart() {
-            }
-
-            @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] response) {
                 Log.i("CoolMazeSignal", "Upload resource success :)");
 
@@ -319,11 +310,12 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                 Log.e("CoolMazeSignal", "Upload resource failed :( " + e + " " + new String(errorResponse));
             }
-
-            @Override
-            public void onRetry(int retryNo) {
-                // called when request is retried
-            }
         });
+    }
+
+    private void wakeupBackend() {
+        // Send a kind of custom warmup request to the backend.
+        // Make it async and ignore the response.
+        new AsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
     }
 }
