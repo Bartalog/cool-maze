@@ -1,7 +1,9 @@
 package net.coolmaze.coolmaze;
 
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -171,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                         Log.e("CoolMazeSignal", "sendMessage POST request response code " + statusCode);
+                        showError("Unfortunately, we could not send this message to the dispatch server.");
                     }
                 });
 
@@ -249,6 +252,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
                         Log.e("CoolMazeSignal", "Signed URLs request failed :( " + errorResponse);
+                        showError("Unfortunately, we could not obtain secure upload URLs.");
                     }
                 });
 
@@ -291,6 +295,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                         Log.e("CoolMazeSignal", "Upload resource failed :( " + e + " " + new String(errorResponse));
+                        showError("Unfortunately, the upload failed.");
                     }
                 });
     }
@@ -299,5 +304,19 @@ public class MainActivity extends AppCompatActivity {
         // Send a kind of custom warmup request to the backend.
         // Make it async and ignore the response.
         new AsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
+    }
+
+    void showError(String message){
+        new AlertDialog.Builder(this)
+                .setTitle("Error :(")
+                .setMessage(message)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        finish();
+                    }
+                })
+                .show();
     }
 }
