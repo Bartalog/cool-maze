@@ -46,6 +46,12 @@
     text-align: center;
     border-radius: 15px;
   }
+  #txt-msg-close {
+    float: right;
+    margin-top: -0.5em;
+    font-weight: bolder;
+    font-size: 2em;
+  }
   #inbox {
     margin-top: 12px;
     border: none;
@@ -73,6 +79,12 @@
     /*text-align: center;*/
     margin: 12px;
   }
+  #help-close {
+    float: right;
+    margin-top: -2em;
+    font-weight: bolder;
+    font-size: 2em;
+  }
   .rounded {
     border: 1px solid #AAA;
     border-radius: 5px;
@@ -82,10 +94,19 @@
   }
   </style>
 </head>
+
+
+
+
+
+
+
+
 <body>
   <div id="help">
     <div id="question-mark">?</div>
     <div id="help-contents" style="display: none;">
+      <div id="help-close">X</div>
       <img src="static/img/schema.png" width="296" height="400" class="right" />
       <p>You can share a document really easily from your mobile device to a desktop computer or video projector</p>
       <p>
@@ -101,18 +122,27 @@
     </div>
   </div>
   <input type="text" readonly="readonly" id="chanid-hint" size="5">
+
   <div id="qr-zone">
     <div id="qrcode"> 
       <img src="static/img/red_arrow.png" id="overprint-logo" />
     </div>
   </div>
+  
   <div id="txt-msg-zone" style="display: none;">
+    <div id="txt-msg-close">X</div>
     <h3>Received text message</h3>
     <textarea id="inbox" readonly="readonly" rows="12" cols="32"></textarea>
   </div>
 
-  <script type="text/javascript">
 
+
+
+
+
+
+
+  <script type="text/javascript">
     // Get a good random value
     var r1 = new Uint32Array(1);
     window.crypto.getRandomValues(r1);
@@ -221,15 +251,15 @@
     }
 
     //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
-    document.getElementById("help").onclick = function(event) { 
+    document.getElementById("question-mark").onclick = function(event) { 
         if ( document.getElementById("help-contents").style.display === "none" )
           show("help-contents"); 
-        else
-          show("qr-zone"); 
-        /*event.stopPropagation();*/
+    }
+    document.getElementById("help-close").onclick = function(event) { 
+        show("qr-zone"); 
     }
 
-    document.getElementById("txt-msg-zone").onclick = function(event) { 
+    document.getElementById("txt-msg-close").onclick = function(event) { 
       show("qr-zone");
     }
     document.getElementById("inbox").onclick = function(event) { 
