@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -122,9 +123,16 @@ public class MainActivity extends AppCompatActivity {
             String resolved = getContentResolver().getType(localFileUri);
             if ( resolved!=null )
                 mimeType = resolved;
-            else
-                ; // TODO guess from file extension
+            else {
+                String fileExtension = MimeTypeMap.getFileExtensionFromUrl(localFileUri.toString());
+                resolved = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase());
+                if ( resolved!=null )
+                    mimeType = resolved;
+            }
         }
+        // TODO: what about application/txt ?
+        // Are all video formats properly handled?
+        // Should we default image/*, video/* to some more specific value?
         return mimeType;
     }
 
