@@ -125,10 +125,9 @@
 
   <div id="qr-zone">
     <div id="qrcode"> 
-      <img src="static/img/red_arrow.png" id="overprint-logo" />
     </div>
   </div>
-  
+
   <div id="txt-msg-zone" style="display: none;">
     <div id="txt-msg-close">X</div>
     <h3>Received text message</h3>
@@ -168,15 +167,24 @@
       }
     });
 
+    var qrHundredth = 68;
+
     function render(){
-      var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * 8 / 10;
-      var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * 8 / 10;
+      // qrHundredth == 95 is a "big QR-code" (almost fullscreen)
+      // qrHundredth == 50 is a "medium-size QR-code"
+
+      var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * qrHundredth / 100;
+      var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * qrHundredth / 100;
       var c = 400;
       if ( w>0 )
         c = w;
       if ( h>0 && h<c )
         c = h;
 
+
+      var logo = document.getElementById("overprint-logo");
+      if ( logo )
+        logo.style.display = "none";
       clearQR();
       new QRCode("qrcode", {
         text: chanID,
@@ -187,10 +195,13 @@
       document.getElementById("chanid-hint").value = chanID;
 
       var cc = c/4;
-      document.getElementById("overprint-logo").style.width = cc + "px";
-      document.getElementById("overprint-logo").style.height = cc + "px";
-      document.getElementById("overprint-logo").style.top = ((1.5)*cc) + "px";
-      document.getElementById("overprint-logo").style.marginLeft = (-cc/2) + "px";
+      logo = document.getElementById("overprint-logo"); // has changed
+      logo.style.width = cc + "px";
+      logo.style.height = cc + "px";
+      logo.style.top = ((1.5)*cc) + "px";
+      logo.style.marginLeft = (-cc/2) + "px";
+      //logo.style.display = "inline";
+      window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
     }
 
     render();
@@ -210,7 +221,7 @@
       while (node.firstChild) {
           node.removeChild(node.firstChild);
       }
-      node.innerHTML='<img src="static/img/red_arrow.png" id="overprint-logo" />';
+      node.innerHTML='<img src="static/img/red_arrow.png" id="overprint-logo" style="display: none;" />';
     }
 
     function startsWith(str, word) {
@@ -264,6 +275,15 @@
     }
     document.getElementById("inbox").onclick = function(event) { 
         event.stopPropagation();
+    }
+
+    document.getElementById("qrcode").onclick = function(event) { 
+        // Change size on each click
+        // 40, 68, 96, 40, 60, 96 ...
+        qrHundredth += 28;
+        if ( qrHundredth>100 )
+          qrHundredth = 40;
+        render();
     }
 
     document.getElementById("inbox").value = "";
