@@ -58,10 +58,12 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		HttpClient: urlfetchClient,
 	}
 
-	sub, errSub := pubsubSubscribe(c, channelID)
-	if errSub != nil {
-		log.Warningf(c, "Problem with pubsub sub: %v", errSub)
-	}
+	/*
+		sub, errSub := pubsubSubscribe(c, channelID)
+		if errSub != nil {
+			log.Warningf(c, "Problem with pubsub sub: %v", errSub)
+		}
+	*/
 
 	data := map[string]string{"message": message}
 	be, err := pusherClient.Trigger(channelID, event, data)
@@ -73,15 +75,17 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof(c, "Events = %v", be)
 
-	if errSub == nil {
-		err = waitForAck(c, sub, channelID)
-		if err != nil {
-			log.Errorf(c, "%v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Encountered error:", err)
-			return
+	/*
+		if errSub == nil {
+			err = waitForAck(c, sub, channelID)
+			if err != nil {
+				log.Errorf(c, "%v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintln(w, "Encountered error:", err)
+				return
+			}
 		}
-	}
+	*/
 
 	fmt.Fprintln(w, "Done :)")
 }
