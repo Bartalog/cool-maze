@@ -58,7 +58,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	pusherClient := pusher.Client{
 		AppId:      "197093",
 		Key:        "e36002cfca53e4619c15",
-		Secret:     secret,
+		Secret:     pusherSecret,
 		HttpClient: urlfetchClient,
 	}
 
@@ -94,4 +94,4 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Done :)")
 }
 
-var secret string
+var pusherSecret string

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 	"google.golang.org/cloud/storage"
@@ -30,8 +29,8 @@ func init() {
 	var err error
 	pkey, err = ioutil.ReadFile(pemFile)
 	if err != nil {
-		c := context.Background()
-		log.Errorf(c, "%v", err)
+		// ..but i don't have a Context to yell at...
+		// log.Errorf(c, "%v", err)
 	}
 }
 
