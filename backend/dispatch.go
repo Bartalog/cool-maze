@@ -20,8 +20,10 @@ func init() {
 // The "dispatch" http response will be 1-shot.
 func dispatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	c := appengine.NewContext(r)
 
 	if r.Method != "POST" {
+		log.Warningf(c, "Only POST method is accepted")
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Only POST method is accepted")
 		return
@@ -32,22 +34,24 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	message := r.FormValue("message")
 
 	if channelID == "" {
+		log.Warningf(c, "Missing mandatory parameter: chanID")
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Mandatory parameter: chanID")
 		return
 	}
 	if message == "" {
+		log.Warningf(c, "Missing mandatory parameter: message")
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Mandatory parameter: message")
 		return
 	}
 	if _, err := strconv.Atoi(channelID); err != nil {
+		log.Warningf(c, "channelID [%s] is not an integer", channelID)
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "channelID must be an integer")
 		return
 	}
 
-	c := appengine.NewContext(r)
 	urlfetchClient := urlfetch.Client(c)
 	log.Infof(c, "Sending to chan [%v] message [%v]", channelID, message)
 
@@ -73,7 +77,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Encountered error:", err)
 		return
 	}
-	log.Infof(c, "Events = %v", be)
+	log.Infof(c, "Pusher events = %v", be)
 
 	/*
 		if errSub == nil {
