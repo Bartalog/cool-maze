@@ -160,6 +160,10 @@ public class MainActivity extends AppCompatActivity {
         v.vibrate(100);
 
         Log.i("CoolMazeSignal", "Sending to " + chanIDToSignal + " message [" + messageToSignal + "]");
+        if ( "<?>".equals(messageToSignal) ){
+            showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
+            return;
+        }
         RequestParams params = new RequestParams("chanID", chanIDToSignal, "message", messageToSignal);
         // conn.setReadTimeout(15000);
         // conn.setConnectTimeout(15000);
