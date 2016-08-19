@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         RequestParams params = new RequestParams("chanID", chanIDToSignal, "message", messageToSignal);
         // conn.setReadTimeout(15000);
         // conn.setConnectTimeout(15000);
-        new AsyncHttpClient().post(
+        newAsyncHttpClient().post(
                 BACKEND_URL + "/dispatch",
                 params,
                 new AsyncHttpResponseHandler() {
@@ -278,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
-        new AsyncHttpClient().post(
+        newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
                 new RequestParams("type", mimeType),
                 new JsonHttpResponseHandler() {
@@ -317,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
         Context context = null; // ?
 
         Log.i("CoolMazeSignal", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
-        new AsyncHttpClient().put(
+        newAsyncHttpClient().put(
                 context,
                 resourcePutUrl,
                 new Header[]{ new BasicHeader("Content-Type", mimeType) },
@@ -347,7 +347,14 @@ public class MainActivity extends AppCompatActivity {
     private void wakeupBackend() {
         // Send a kind of custom warmup request to the backend.
         // Make it async and ignore the response.
-        new AsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
+        newAsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
+    }
+
+    private AsyncHttpClient newAsyncHttpClient(){
+        // TODO: reuse them instead of instanciating each time...?
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.addHeader("User-Agent", "Cool Maze android app");
+        return client;
     }
 
     void showError(String message){
