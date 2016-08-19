@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case "image":
             case "video":
+            case "audio":
             case "application":
                 // 1) We request a pair of upload/download URLs from the backend
                 // 2) We upload the file
