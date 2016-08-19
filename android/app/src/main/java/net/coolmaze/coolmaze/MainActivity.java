@@ -5,6 +5,8 @@ import android.content.ClipData;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -61,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
 
         if ( !Intent.ACTION_SEND.equals(intent.getAction()) )
             return;  // MAIN, etc.
+
+        if ( !isOnline() ){
+            showError("No internet access found.");
+            return;
+        }
 
         wakeupBackend();
 
@@ -146,6 +153,11 @@ public class MainActivity extends AppCompatActivity {
             // User was on the Scan screen, but hit her Back button or similar
             Log.i("CoolMazeSignal", "Scan was canceled by user");
             finish();
+            return;
+        }
+
+        if ( !isOnline() ){
+            showError("No internet access found.");
             return;
         }
 
@@ -334,5 +346,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .show();
+    }
+
+    // From http://stackoverflow.com/a/4009133/871134
+    public boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 }
