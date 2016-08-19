@@ -191,6 +191,7 @@
         width: c,
         height: c
       });
+      var qrcode = document.getElementById("qrcode");
 
       document.getElementById("chanid-hint").value = chanID;
 
@@ -202,6 +203,11 @@
       logo.style.marginLeft = (-cc/2) + "px";
       //logo.style.display = "inline";
       window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
+
+      // The QR-code contents is clickable to embiggen, not the whole qr-zone
+      for(i=0; i < qrcode.childNodes.length; i++) {
+        qrcode.childNodes[i].onclick = embiggen;
+      }
     }
 
     render();
@@ -277,7 +283,7 @@
         event.stopPropagation();
     }
 
-    document.getElementById("qrcode").onclick = function(event) { 
+    function embiggen(event) { 
         // Change size on each click
         // 40, 68, 96, 40, 60, 96 ...
         qrHundredth += 28;
