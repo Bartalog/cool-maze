@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
-        Log.i("CoolMazeSignal", "onResume(): Intent="+intent);
+        Log.i("CoolMazeEvent", "onResume(): Intent="+intent);
         if ( intent == null )
             return;
 
@@ -137,7 +137,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i("CoolMazeSignal", "onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
+        Log.i("CoolMazeEvent", "onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
+        //
+        // User returns from the "Scan QR-code with camera" intent.
+        //
 
         if (resultCode == RESULT_CANCELED) {
             // User was on the Scan screen, but hit her Back button or similar
@@ -161,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i("CoolMazeSignal", "Sending to " + chanIDToSignal + " message [" + messageToSignal + "]");
         if ( "<?>".equals(messageToSignal) ){
+            Log.e("CoolMazeEvent", "messageToSignal is <?>");
             showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
             return;
         }
@@ -173,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                 new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                        Log.i("CoolMazeSignal", "sendMessage successful POST");
+                        Log.i("CoolMazeEvent", "sendMessage successful POST");
                         // This long vibration should mean "The target has received your message!",
                         // ...but it doesn't, yet.
                         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -184,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                        Log.e("CoolMazeSignal", "sendMessage POST request response code " + statusCode);
+                        Log.e("CoolMazeEvent", "sendMessage POST request response code " + statusCode);
                         showError("Unfortunately, we could not send this message to the dispatch server.");
                     }
                 });
@@ -251,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                        Log.i("CoolMazeSignal", "Signed URLs request success :) \n ");
+                        Log.i("CoolMazeEvent", "Signed URLs request success :) \n ");
                         try {
                             String urlPut = response.getString("urlPut");
                             String urlGet = response.getString("urlGet");
@@ -263,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                        Log.e("CoolMazeSignal", "Signed URLs request failed :( " + errorResponse);
+                        Log.e("CoolMazeEvent", "Signed URLs request failed :( " + errorResponse);
                         showError("Unfortunately, we could not obtain secure upload URLs.");
                     }
                 });
