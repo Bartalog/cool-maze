@@ -173,7 +173,8 @@
       // qrHundredth == 95 is a "big QR-code" (almost fullscreen)
       // qrHundredth == 50 is a "medium-size QR-code"
 
-      var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) * qrHundredth / 100;
+      // -50 is for the small [?] box on the left
+      var w = Math.max(document.documentElement.clientWidth -50, (window.innerWidth || 0) -50) * qrHundredth / 100;
       var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * qrHundredth / 100;
       var c = 400;
       if ( w>0 )
