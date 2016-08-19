@@ -21,16 +21,9 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import javax.net.ssl.HttpsURLConnection;
 import com.loopj.android.http.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -82,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
         String typeCat = typeParts[0];
         switch (typeCat) {
             case "text":
+                // Short text, URL, etc. are sent directly to the broker
+                // (no need to upload a file)
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
                 new IntentIntegrator(MainActivity.this)
                         //.setOrientationLocked(false)
@@ -91,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
             case "image":
             case "video":
             case "application":
+                // 1) We request a pair of upload/download URLs from the backend
+                // 2) We upload the file
+                // 3) We send the download URL to the broker
                 Uri localFileUri = intent.getData();
                 if ( localFileUri == null ) {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
@@ -163,12 +161,25 @@ public class MainActivity extends AppCompatActivity {
 
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (scanResult == null) {
-            Log.e("CoolMazeSignal", "IntentResult parsing by ZXing failed :(");
+            Log.e("CoolMazeError", "IntentResult parsing by ZXing failed :(");
             return;
         }
 
         Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
         chanIDToSignal = scanResult.getContents();
+
+        if ( !isValidChanID(chanIDToSignal) ){
+            setContentView(R.layout.activity_main);
+            showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");
+            finish();
+            // Try again
+            /*
+            new IntentIntegrator(MainActivity.this)
+                    .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
+                    .initiateScan();
+            */
+            return;
+        }
 
         // This short vibration means "Hey cool, you've just scanned something!"
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -176,7 +187,6 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i("CoolMazeSignal", "Sending to " + chanIDToSignal + " message [" + messageToSignal + "]");
         if ( "<?>".equals(messageToSignal) ){
-            Log.e("CoolMazeEvent", "messageToSignal is <?>");
             showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
             return;
         }
@@ -209,6 +219,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         showSpinning();
         showCaption("Sending to target...");
+    }
+
+    boolean isValidChanID(String s) {
+        // A valid ChanID is a string encoded in a QR-code on page coolmaze.net .
+        // Currently it is an int in range [0..99999].
+        return s.matches("[0-9]{1,5}");
     }
 
     void showSpinning(){
@@ -279,7 +295,6 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                        Log.e("CoolMazeEvent", "Signed URLs request failed :( " + errorResponse);
                         showError("Unfortunately, we could not obtain secure upload URLs.");
                     }
                 });
@@ -335,6 +350,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void showError(String message){
+        Log.e("CoolMazeError", "Alert dialog [" + message + "]");
         new AlertDialog.Builder(this)
                 .setTitle("Error :(")
                 .setMessage(message)
