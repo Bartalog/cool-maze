@@ -45,7 +45,6 @@
                 android:layout_alignParentEnd="false"
                 android:background="?attr/colorPrimary"
                 android:textColor="#FFF"
-                style="?android:att"
                 />
 
         </LinearLayout>
