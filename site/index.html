@@ -134,6 +134,8 @@
     <textarea id="inbox" readonly="readonly" rows="12" cols="32"></textarea>
   </div>
 
+  <link rel="prefetch" href="static/img/red_spinner.gif">
+
 
 
 
@@ -153,8 +155,15 @@
       encrypted: true
     });
     var channel = pusher.subscribe(chanID);
-    var event = 'maze-cast';
-    channel.bind(event, function(data) {
+
+    var eventNotifScan = 'maze-scan';
+    channel.bind(eventNotifScan, function(data) {
+      console.log("Received scan notification. Payload coming soon.");
+      spin();
+    });
+
+    var eventCast = 'maze-cast';
+    channel.bind(eventCast, function(data) {
       var msg = data.message;
       if(startsWith(msg,'http') || startsWith(msg,'www.')) {
          var url = msg;
@@ -169,7 +178,7 @@
 
     var qrHundredth = 68;
 
-    function render(){
+    function render(colorDark, clickCallback){
       // qrHundredth == 95 is a "big QR-code" (almost fullscreen)
       // qrHundredth == 50 is a "medium-size QR-code"
 
@@ -190,7 +199,9 @@
       new QRCode("qrcode", {
         text: chanID,
         width: c,
-        height: c
+        height: c,
+        colorDark : colorDark,
+        colorLight : "white"
       });
       var qrcode = document.getElementById("qrcode");
 
@@ -205,13 +216,15 @@
       //logo.style.display = "inline";
       window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
 
-      // The QR-code contents is clickable to embiggen, not the whole qr-zone
-      for(i=0; i < qrcode.childNodes.length; i++) {
-        qrcode.childNodes[i].onclick = embiggen;
+      if (clickCallback) {
+        // The QR-code contents is clickable to embiggen, not the whole qr-zone
+        for(i=0; i < qrcode.childNodes.length; i++) {
+          qrcode.childNodes[i].onclick = clickCallback;
+        }
       }
     }
 
-    render();
+    render("black", embiggen);
 
     // Go fullscreen -> bigger QR
     var resizeTimeOut = null;
@@ -219,7 +232,7 @@
         if (resizeTimeOut != null)
             clearTimeout(resizeTimeOut);
         resizeTimeOut = setTimeout(function(){
-            render();
+            render("black", embiggen);
         }, 300);
     };
 
@@ -290,7 +303,18 @@
         qrHundredth += 28;
         if ( qrHundredth>100 )
           qrHundredth = 40;
-        render();
+        render("black", embiggen);
+    }
+
+    function spin() {
+      // When we receive a Scan Notification event from Pusher,
+      // we are excited about a resource payload coming soon.
+      // So we wag tail with a spinning wheel.
+      render("#CCC", null);
+      var logo = document.getElementById("overprint-logo");
+      if ( logo )
+        logo.src = "static/img/red_spinner.gif";
+
     }
 
     document.getElementById("inbox").value = "";

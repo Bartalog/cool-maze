@@ -203,6 +203,24 @@ public class MainActivity extends AppCompatActivity {
         }
         if (dispatchNow)
             dispatch();
+        else
+            notifyScan();
+    }
+
+    private void notifyScan() {
+        // This is a small request sent in the background. It shows nothing on the Android device screen.
+        // It should however show some acknowledgement on the freshly scanned coolmaze.net browser tab.
+        //
+        // It is optional (workflow not broken if notif is lost, or not sent at all).
+        // If the payload is a small piece of text, notifyScan() is not called.
+        // If the upload is already complete before the scan is complete, notifyScan() is not called.
+
+        RequestParams params = new RequestParams("chanID", chanIDToSignal);
+        newAsyncHttpClient().post(
+                BACKEND_URL + "/scanned",
+                params,
+                blackhole);
+
     }
 
     // Here "dispatch" means "send message to broker, for immediate delivery to target".

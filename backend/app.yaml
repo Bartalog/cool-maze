@@ -4,6 +4,9 @@ runtime: go
 api_version: go1
 
 handlers:
+- url: /scanned
+  script: _go_app
+  secure: always
 - url: /dispatch
   script: _go_app
   secure: always
