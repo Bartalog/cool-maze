@@ -44,6 +44,11 @@ public class MainActivity extends AppCompatActivity {
     private String messageToSignal = "<?>";
     private String chanIDToSignal = "<?>";
 
+    // Scanning and Uploading occur concurrently, they need synchronization.
+    private Object workflowLock = new Object();
+    private boolean finishedScanning = false;
+    private boolean finishedUploading = false;
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -78,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
                 // Short text, URL, etc. are sent directly to the broker
                 // (no need to upload a file)
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
+                finishedScanning = false;
+                finishedUploading = true;
                 new IntentIntegrator(MainActivity.this)
                         //.setOrientationLocked(false)
                         .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
@@ -110,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
                 showSpinning();
                 showCaption("Uploading...");
 
+                finishedScanning = false;
+                finishedUploading = false;
                 String mimeType = extractMimeType(intent, localFileUri);
                 gentleUploadStep1(localFileUri, mimeType);
                 return;
@@ -155,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if ( !isOnline() ){
+        if (!isOnline()) {
             showError("No internet access found.");
             return;
         }
@@ -169,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
         chanIDToSignal = scanResult.getContents();
 
-        if ( !isValidChanID(chanIDToSignal) ){
+        if (!isValidChanID(chanIDToSignal)) {
             setContentView(R.layout.activity_main);
             showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");
             finish();
@@ -186,6 +195,22 @@ public class MainActivity extends AppCompatActivity {
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         v.vibrate(100);
 
+        boolean dispatchNow = false;
+        synchronized (workflowLock) {
+            finishedScanning = true;
+            if (finishedUploading)
+                dispatchNow = true;
+        }
+        if (dispatchNow)
+            dispatch();
+    }
+
+    // Here "dispatch" means "send message to broker, for immediate delivery to target".
+    // It is triggered either after Scan or after Upload, depending which one arrives last.
+    //
+    // In case the resource is a file, when dispatch is called the file is already completely
+    // uploaded, and the message consists in the file download URL.
+    void dispatch(){
         Log.i("CoolMazeSignal", "Sending to " + chanIDToSignal + " message [" + messageToSignal + "]");
         if ( "<?>".equals(messageToSignal) ){
             showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
@@ -300,6 +325,11 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+        // This begins *while uploading is still working*
+        new IntentIntegrator(MainActivity.this)
+                //.setOrientationLocked(false)
+                .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
+                .initiateScan();
     }
 
     private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String mimeType) {
@@ -330,10 +360,15 @@ public class MainActivity extends AppCompatActivity {
 
                         // When the target desktop receives the URL, it immediately follows it
                         messageToSignal = resourceGetUrl;
-                        new IntentIntegrator(MainActivity.this)
-                                //.setOrientationLocked(false)
-                                .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
-                                .initiateScan();
+
+                        boolean dispatchNow = false;
+                        synchronized (workflowLock) {
+                            finishedUploading = true;
+                            if ( finishedScanning )
+                                dispatchNow = true;
+                        }
+                        if(dispatchNow)
+                            dispatch();
                     }
 
                     @Override
