@@ -80,7 +80,7 @@ func createUrls(c context.Context, contentType string) (urlPut, urlGet string, e
 		GoogleAccessID: serviceAccount,
 		PrivateKey:     pkey,
 		Method:         "PUT",
-		Expires:        time.Now().Add(10 * time.Minute),
+		Expires:        time.Now().Add(9 * time.Minute),
 		ContentType:    contentType,
 	})
 	if err != nil {
@@ -91,7 +91,7 @@ func createUrls(c context.Context, contentType string) (urlPut, urlGet string, e
 		GoogleAccessID: serviceAccount,
 		PrivateKey:     pkey,
 		Method:         "GET",
-		Expires:        time.Now().Add(11 * time.Minute),
+		Expires:        time.Now().Add(10 * time.Minute),
 	})
 
 	return
