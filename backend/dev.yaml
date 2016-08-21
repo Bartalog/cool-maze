@@ -1,5 +1,6 @@
 application: cool-maze
-version: 0-0-1
+module: default
+version: dev
 runtime: go
 api_version: go1
 

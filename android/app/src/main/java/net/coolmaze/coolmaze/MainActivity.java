@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     //static final String FRONTPAGE_DOMAIN = "coolmaze.io";   maybe later
     static final String FRONTPAGE_URL = "https://" + FRONTPAGE_DOMAIN;
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
+    // static final String BACKEND_URL = "https://dev-dot-cool-maze.appspot.com";
 
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();

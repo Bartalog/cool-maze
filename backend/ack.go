@@ -12,6 +12,12 @@ import (
 	"google.golang.org/cloud/pubsub"
 )
 
+//
+//
+// 2016-08-21: this is all dead code for now...
+//
+//
+
 func init() {
 	http.HandleFunc("/ack", ackReception)
 }

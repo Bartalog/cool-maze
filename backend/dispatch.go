@@ -43,20 +43,41 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelID := r.FormValue("chanID")
+	qrKey := r.FormValue("qrKey")
 	event := "maze-scan"
 
-	if channelID == "" {
-		log.Warningf(c, "Missing mandatory parameter: chanID")
+	if qrKey == "" {
+		log.Warningf(c, "Missing mandatory parameter: qrKey")
+		paramChanID := r.FormValue("chanID")
+		if paramChanID != "" {
+			// Legacy app from 2016-08-20 would read a qrKey,
+			// and think it is a chanID.
+			// No big deal, just the name changed.
+			qrKey = paramChanID
+			log.Warningf(c, "Used legacy param chanID :(")
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, "Mandatory parameter: qrKey")
+			return
+		}
+	}
+
+	if !isValidQrKey(qrKey) {
+		log.Warningf(c, "[%s] is not a valid qrKey", qrKey)
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "Mandatory parameter: chanID")
+		fmt.Fprintln(w, "qrKey must be valid")
 		return
 	}
 
-	if !isValidChanID(channelID) {
-		log.Warningf(c, "channelID [%s] is not a valid chan ID", channelID)
+	ok, channelID, err := getChanID(c, qrKey)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		log.Warningf(c, "[%s] is not a registered qrKey", qrKey)
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "channelID must be a valid chan ID")
+		fmt.Fprintf(w, "Sorry, no target found for key [%s]\n", qrKey)
 		return
 	}
 
@@ -71,7 +92,7 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data map[string]string = nil
-	_, err := pusherClient.Trigger(channelID, event, data)
+	_, err = pusherClient.Trigger(channelID, event, data)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -94,26 +115,49 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelID := r.FormValue("chanID")
+	qrKey := r.FormValue("qrKey")
 	event := "maze-cast"
 	message := r.FormValue("message")
 
-	if channelID == "" {
-		log.Warningf(c, "Missing mandatory parameter: chanID")
+	if qrKey == "" {
+		log.Warningf(c, "Missing mandatory parameter: qrKey")
+		paramChanID := r.FormValue("chanID")
+		if paramChanID != "" {
+			// Legacy app from 2016-08-20 would read a qrKey,
+			// and think it is a chanID.
+			// No big deal, just the name changed.
+			qrKey = paramChanID
+			log.Warningf(c, "Used legacy param chanID :(")
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, "Mandatory parameter: qrKey")
+			return
+		}
+	}
+
+	if !isValidQrKey(qrKey) {
+		log.Warningf(c, "[%s] is not a valid qrKey", qrKey)
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "Mandatory parameter: chanID")
+		fmt.Fprintln(w, "qrKey must be valid")
 		return
 	}
+
 	if message == "" {
 		log.Warningf(c, "Missing mandatory parameter: message")
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Mandatory parameter: message")
 		return
 	}
-	if !isValidChanID(channelID) {
-		log.Warningf(c, "channelID [%s] is not a valid chan ID", channelID)
+
+	ok, channelID, err := getChanID(c, qrKey)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		log.Warningf(c, "[%s] is not a registered qrKey", qrKey)
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "channelID must be a valid chan ID")
+		fmt.Fprintf(w, "Sorry, no target found for [%s]\n", qrKey)
 		return
 	}
 
@@ -127,13 +171,6 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		HttpClient: urlfetchClient,
 	}
 
-	/*
-		sub, errSub := pubsubSubscribe(c, channelID)
-		if errSub != nil {
-			log.Warningf(c, "Problem with pubsub sub: %v", errSub)
-		}
-	*/
-
 	data := map[string]string{"message": message}
 	be, err := pusherClient.Trigger(channelID, event, data)
 	if err != nil {
@@ -144,23 +181,18 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof(c, "Pusher events = %v", be)
 
-	/*
-		if errSub == nil {
-			err = waitForAck(c, sub, channelID)
-			if err != nil {
-				log.Errorf(c, "%v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintln(w, "Encountered error:", err)
-				return
-			}
-		}
-	*/
-
 	fmt.Fprintln(w, "Done :)")
 }
 
-// isValidChanID validates a string encoded in a QR-code on page coolmaze.net .
-// Currently a valid chan ID is an int in range [0..99999].
+// isValidQrKey validates a string encoded in a QR-code on page coolmaze.net .
+// Currently a valid chan ID is an int in range [0..10^5].
+func isValidQrKey(s string) bool {
+	i, err := strconv.Atoi(s)
+	return err == nil && i < 100000
+}
+
+// isValidChanID validates the format of a channel ID .
+// Currently a valid chan ID is an int in range [0..10^10].
 func isValidChanID(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil

@@ -1,10 +1,8 @@
 package coolmaze
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -24,7 +22,7 @@ func init() {
 	http.HandleFunc("/new-gcs-urls", gcsUrlsHandler)
 
 	// This is important for randomString below
-	rand.Seed(time.Now().UnixNano())
+	rndOnce.Do(randomize)
 
 	var err error
 	pkey, err = ioutil.ReadFile(pemFile)
@@ -73,7 +71,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createUrls(c context.Context, contentType string) (urlPut, urlGet string, err error) {
-	objectName := randomString()
+	objectName := randomGcsObjectName()
 	log.Infof(c, "Creating urls for tmp object name %s with content-type [%s]", objectName, contentType)
 
 	urlPut, err = storage.SignedURL(bucket, objectName, &storage.SignedURLOptions{
@@ -95,23 +93,4 @@ func createUrls(c context.Context, contentType string) (urlPut, urlGet string, e
 	})
 
 	return
-}
-
-// Response is a generic container suitable to be directly converted into a JSON HTTP response.
-// See http://nesv.blogspot.fr/2012/09/super-easy-json-http-responses-in-go.html
-type Response map[string]interface{}
-
-func (r Response) String() (s string) {
-	b, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		s = ""
-		return
-	}
-	s = string(b)
-	return
-}
-
-func randomString() string {
-	x, y := rand.Intn(123456789), rand.Intn(123456789)
-	return fmt.Sprintf("%x%x", x, y)
 }

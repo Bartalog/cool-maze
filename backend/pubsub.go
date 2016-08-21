@@ -6,6 +6,12 @@ import (
 	"google.golang.org/cloud/pubsub"
 )
 
+//
+//
+// 2016-08-21: this is all dead code for now...
+//
+//
+
 func pubAck(c context.Context, chanID string) error {
 	pubsubClient, err := pubsub.NewClient(c, "cool-maze")
 	if err != nil {
