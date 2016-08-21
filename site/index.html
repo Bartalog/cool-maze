@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <title>Cool Maze - Send your document from mobile to computer</title>
-  <script src="//js.pusher.com/3.2/pusher.min.js"></script>
+  <script src="https://js.pusher.com/3.2/pusher.min.js"></script>
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
   <link rel="SHORTCUT ICON" href="static/img/coolmaze_128.png" />
   <style>
@@ -29,12 +29,6 @@
   }
   #overprint-logo {
     position: absolute;
-  }
-  #chanid-hint {
-    border: none;
-    float: right;
-    color: #ccc;
-    display: none;
   }
   #txt-msg-zone {
     margin-left: 10%;
@@ -124,7 +118,6 @@
       <p><strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the <a href="terms.html">Privacy terms</a>.
     </div>
   </div>
-  <input type="text" readonly="readonly" id="chanid-hint" size="5">
 
   <div id="qr-zone">
     <div id="qrcode"> 
@@ -148,14 +141,20 @@
 
 
   <script type="text/javascript">
+    var coolMazePusherAppKey = 'e36002cfca53e4619c15';
+
     // Get a good random value
     var r1 = new Uint32Array(1);
     window.crypto.getRandomValues(r1);
-    var r = r1[0] % 100000;
-    var chanID = '' + r;
     // TODO if getRandomValues capability not present, then get a number from a server somewhere.
+    var r = r1[0] % 100000;
+    var qrKey = '' + r;
 
-    var pusher = new Pusher('e36002cfca53e4619c15', {
+    // TODO get secure chanID from backend instead
+    var chanID = qrKey;
+
+
+    var pusher = new Pusher(coolMazePusherAppKey, {
       encrypted: true
     });
     var channel = pusher.subscribe(chanID);
@@ -201,15 +200,13 @@
         logo.style.display = "none";
       clearQR();
       new QRCode("qrcode", {
-        text: chanID,
+        text: qrKey,
         width: c,
         height: c,
         colorDark : colorDark,
         colorLight : "white"
       });
       var qrcode = document.getElementById("qrcode");
-
-      document.getElementById("chanid-hint").value = chanID;
 
       var cc = c/4;
       logo = document.getElementById("overprint-logo"); // has changed
@@ -222,7 +219,7 @@
 
       if (clickCallback) {
         // The QR-code contents is clickable to embiggen, not the whole qr-zone
-        for(i=0; i < qrcode.childNodes.length; i++) {
+        for(var i=0; i < qrcode.childNodes.length; i++) {
           qrcode.childNodes[i].onclick = clickCallback;
         }
       }
