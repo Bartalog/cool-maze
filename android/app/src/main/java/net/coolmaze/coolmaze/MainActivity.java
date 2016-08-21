@@ -11,8 +11,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PersistableBundle;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -44,8 +46,8 @@ public class MainActivity extends AppCompatActivity {
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
 
-    private String messageToSignal = "<?>";
     private String qrKeyToSignal = "<?>";
+    private String messageToSignal = "<?>";
 
     // Scanning and Uploading occur concurrently, they need synchronization.
     private Object workflowLock = new Object();
@@ -65,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
                 return false;
+        } else {
+            // Version < 23 : we just assume permission were accepted at installation
         }
         return true;
     }
@@ -87,14 +91,24 @@ public class MainActivity extends AppCompatActivity {
             scanAndSend(holdOnIntent);
     }
 
+    //
+    // Warning:
+    // onResume() is called first when User hits "Share via ... Cool Maze",
+    // and it is called again after onActivityResult().
+    // Also, the activity may have been recreated inbetween.
+    // Yay, spaghetti workflow.
+    //
+
     @Override
     protected void onResume() {
+        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onResume()");
         super.onResume();
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
-        Log.i("CoolMazeEvent", "onResume(): Intent="+intent);
-        if ( intent == null )
+        Log.i("CoolMazeEvent", "Intent="+intent);
+        Log.i("CoolMazeEvent", "finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
+        if ( intent == null || finishedScanning )
             return;
 
         if ( !Intent.ACTION_SEND.equals(intent.getAction()) )
@@ -115,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
 
         scanAndSend(intent);
         // "consume the intent" so it won't be processed again
+        // (note that this is not sufficient in case of recreation)
         setIntent(null);
     }
 
@@ -129,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
                 finishedScanning = false;
                 finishedUploading = true;
+                Log.i("CoolMazeEvent", MainActivity.this.hashCode() + " finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
                 new IntentIntegrator(MainActivity.this)
                         //.setOrientationLocked(false)
                         .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
@@ -195,8 +211,44 @@ public class MainActivity extends AppCompatActivity {
         return mimeType;
     }
 
+    //
+    // Activity will be destroyed and recreated each time the user rotates the screen.
+    // Also, when the needs to free some memory.
+    // Restoring state is not 100% automatic, we need to override onSaveInstanceState()
+    // and onRestoreInstanceState() for member values.
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onRestoreInstanceState(Bundle)");
+        super.onRestoreInstanceState(savedInstanceState);
+        finishedScanning = savedInstanceState.getBoolean("finishedScanning");
+        finishedUploading = savedInstanceState.getBoolean("finishedUploading");
+        qrKeyToSignal = savedInstanceState.getString("qrKeyToSignal");
+        messageToSignal = savedInstanceState.getString("messageToSignal");
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState, PersistableBundle persistentState) {
+        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onRestoreInstanceState(Bundle, PersistableBundle)");
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onSaveInstanceState(Bundle)");
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("finishedScanning", finishedScanning);
+        outState.putBoolean("finishedUploading", finishedUploading);
+        outState.putString("qrKeyToSignal", qrKeyToSignal);
+        outState.putString("messageToSignal", messageToSignal);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i("CoolMazeEvent", "onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
+        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
+        Log.i("CoolMazeEvent", "finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
+        super.onActivityResult(requestCode, resultCode, data);
+
         //
         // User returns from the "Scan QR-code with camera" intent.
         //
@@ -287,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
                 new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                        Log.i("CoolMazeEvent", "sendMessage successful POST");
+                        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".sendMessage successful POST");
                         // This long vibration should mean "The target has received your message!",
                         // ...but it doesn't, yet.
                         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -298,7 +350,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                        Log.e("CoolMazeEvent", "sendMessage POST request response code " + statusCode);
+                        Log.e("CoolMazeEvent", MainActivity.this.hashCode() + ".sendMessage POST request response code " + statusCode);
                         showError("Unfortunately, we could not send this message to the dispatch server.");
                     }
                 });
@@ -448,7 +500,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private AsyncHttpClient newAsyncHttpClient(){
-        // TODO: reuse them instead of instanciating each time...?
+        // TODO: reuse them instead of instantiating each time...?
         AsyncHttpClient client = new AsyncHttpClient();
         client.addHeader("User-Agent", "Cool Maze android app");
         return client;
