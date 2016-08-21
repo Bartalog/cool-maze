@@ -141,43 +141,15 @@
 
 
   <script type="text/javascript">
+    var backend = "https://cool-maze.appspot.com";
+    // var backend = "https://dev-dot-cool-maze.appspot.com";
+    // var backend = "http://localhost:8080";
     var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
-    // Get a good random value
-    var r1 = new Uint32Array(1);
-    window.crypto.getRandomValues(r1);
-    // TODO if getRandomValues capability not present, then get a number from a server somewhere.
-    var r = r1[0] % 100000;
-    var qrKey = '' + r;
-
-    // TODO get secure chanID from backend instead
-    var chanID = qrKey;
-
-
-    var pusher = new Pusher(coolMazePusherAppKey, {
-      encrypted: true
-    });
-    var channel = pusher.subscribe(chanID);
-
-    var eventNotifScan = 'maze-scan';
-    channel.bind(eventNotifScan, function(data) {
-      console.log("Received scan notification. Payload coming soon.");
-      spin();
-    });
-
-    var eventCast = 'maze-cast';
-    channel.bind(eventCast, function(data) {
-      var msg = data.message;
-      if(startsWith(msg,'http') || startsWith(msg,'www.')) {
-         var url = msg;
-         window.location = url;
-      }else{
-         //alert(data.message);
-         console.log("Received message: " + data.message);
-         document.getElementById("inbox").value = data.message;
-         show("txt-msg-zone");
-      }
-    });
+    // qrKey, chanID will be provided by the backend
+    var qrKey = "";
+    var chanID = "";
+    var channel;
 
     var qrHundredth = 68;
 
@@ -193,7 +165,6 @@
         c = w;
       if ( h>0 && h<c )
         c = h;
-
 
       var logo = document.getElementById("overprint-logo");
       if ( logo )
@@ -225,8 +196,6 @@
       }
     }
 
-    render("black", embiggen);
-
     // Go fullscreen -> bigger QR
     var resizeTimeOut = null;
     window.onresize = function(){
@@ -248,10 +217,6 @@
     function startsWith(str, word) {
      return str.lastIndexOf(word, 0) === 0;
     }
-
-    var wakeup = new XMLHttpRequest();
-    wakeup.open("GET", "https://cool-maze.appspot.com/wakeup", true);
-    wakeup.send(null);
 
     function show(id) {
       // Show either "qr-zone", or "help-contents", or "txt-msg-zone".
@@ -318,6 +283,57 @@
     }
 
     document.getElementById("inbox").value = "";
+
+    // Spin while registering
+    spin();
+
+    //
+    // Register -> Listen to Pusher channel -> Render QR-code
+    //
+    var xhrRegister = new XMLHttpRequest();
+    xhrRegister.onreadystatechange = function () {
+      var DONE = 4;
+      var OK = 200;
+      if (xhrRegister.readyState !== DONE)
+          return;
+      if (xhrRegister.status !== OK) {
+        console.log('Error: ' + xhrRegister.status);
+        return;
+      }
+      //console.log(xhrRegister.responseText);
+      var jsonResponse = JSON.parse(xhrRegister.responseText);
+      qrKey = jsonResponse.qrKey;
+      chanID = jsonResponse.chanID;
+
+      var pusher = new Pusher(coolMazePusherAppKey, {
+        encrypted: true
+      });
+      channel = pusher.subscribe(chanID);
+
+      var eventNotifScan = 'maze-scan';
+      channel.bind(eventNotifScan, function(data) {
+        console.log("Received scan notification. Payload coming soon.");
+        spin();
+      });
+
+      var eventCast = 'maze-cast';
+      channel.bind(eventCast, function(data) {
+        var msg = data.message;
+        if(startsWith(msg,'http') || startsWith(msg,'www.')) {
+           var url = msg;
+           window.location = url;
+           return;
+        }
+         //alert(data.message);
+         console.log("Received message: " + data.message);
+         document.getElementById("inbox").value = data.message;
+         show("txt-msg-zone");
+      });
+
+      render("black", embiggen);
+    };
+    xhrRegister.open('POST', backend + '/register');
+    xhrRegister.send(null);
   </script>
   
   <script>
