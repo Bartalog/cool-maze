@@ -1,13 +1,16 @@
 package net.coolmaze.coolmaze;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
@@ -49,6 +52,41 @@ public class MainActivity extends AppCompatActivity {
     private boolean finishedScanning = false;
     private boolean finishedUploading = false;
 
+    // "Hold on while I'm requesting permissions". Then, use the intent in the onRequestPermissionsResult callback.
+    private Intent holdOnIntent;
+
+    boolean checkPermissions() {
+        // Cool-Maze can't work at all without acces to Camera.
+        // Also, it (currently) needs READ_EXTERNAL_STORAGE when sending a file.
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Version >= 23
+            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+                return false;
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                return false;
+        }
+        return true;
+    }
+
+    void requestPermissions(){
+        // Cool-Maze can't work at all without acces to Camera.
+        // Also, it (currently) needs READ_EXTERNAL_STORAGE when sending a file.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int requestCode = 0; //??
+            requestPermissions( new String[]{
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+            }, requestCode);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if ( checkPermissions() )
+            scanAndSend(holdOnIntent);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -68,6 +106,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         wakeupBackend();
+
+        if (!checkPermissions()){
+            holdOnIntent = intent;
+            requestPermissions();
+            return;
+        }
 
         scanAndSend(intent);
         // "consume the intent" so it won't be processed again
