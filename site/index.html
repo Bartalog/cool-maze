@@ -45,6 +45,7 @@
     margin-top: -0.5em;
     font-weight: bolder;
     font-size: 2em;
+    cursor: pointer;
   }
   #inbox {
     margin-top: 12px;
@@ -66,6 +67,9 @@
   #question-mark {
     font-weight: bolder;
     font-size: 2em;
+    cursor: pointer;
+    padding: 10px 8px 8px 10px;
+    margin: -2px 0 0 -2px;
   }
   #help-contents {
     width: 100%;
@@ -80,6 +84,12 @@
     margin-top: -2em;
     font-weight: bolder;
     font-size: 2em;
+    cursor: pointer;
+  }
+  .mini-picto {
+    width: 1em; 
+    vertical-align:middle; 
+    padding-bottom:2px;
   }
   .rounded {
     border: 1px solid #AAA;
@@ -87,6 +97,9 @@
     padding-left: 2px;
     padding-right: 2px;
     white-space: nowrap;
+  }
+  .ib {
+    display: inline-block;
   }
   </style>
 </head>
@@ -100,7 +113,7 @@
 
 <body>
   <div id="help">
-    <div id="question-mark">?</div>
+    <div><span id="question-mark">?</span></div>
     <div id="help-contents" style="display: none;">
       <div id="help-close">X</div>
       <img src="static/img/schema.png" width="296" height="400" class="right" />
@@ -109,7 +122,7 @@
         <ol>
           <li>Download the <strong><a href="https://play.google.com/apps/testing/net.coolmaze.coolmaze">Cool Maze app</a></strong> on your Android mobile</li>
           <li>Open <strong>coolmaze.net</strong> in your desktop browser</li>
-          <li>On mobile resource (photo, video, URL, PDF), select <span class="rounded"><strong><i>Share via</i></strong></span> > <span class="rounded"><img src="static/img/coolmaze_128.png" style="width: 1em; padding-top: 2px;" /> <strong>Cool Maze</strong></span></li>
+          <li>On mobile resource (photo, video, URL, PDF), select <span class="rounded"><strong><i>Share via</i></strong></span> > <span class="rounded"><img src="static/img/coolmaze_128.png" class="mini-picto" /> <strong>Cool Maze</strong></span></li>
           <li>Scan the QR-code</li>
         </ol>
       </p>
