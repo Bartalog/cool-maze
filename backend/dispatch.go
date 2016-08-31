@@ -162,7 +162,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlfetchClient := urlfetch.Client(c)
-	log.Infof(c, "Sending to chan [%v] message [%v]", channelID, message)
+	log.Infof(c, "Sending from qrKey [%v] to chan [%v] message [%v]", qrKey, channelID, message)
 
 	pusherClient := pusher.Client{
 		AppId:      pusherAppID,

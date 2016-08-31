@@ -10,6 +10,8 @@ func TestPusherSecret(t *testing.T) {
 	// You have to give a valid value to pusherSecret before deploying.
 	if pusherSecret == "" {
 		t.Errorf("pusherSecret must be set. Consider creating source file secret.go.")
+	} else {
+		t.Log("pusherSecret set OK")
 	}
 }
 
@@ -19,5 +21,7 @@ func TestPemFile(t *testing.T) {
 	_, err := os.Stat(pemFile)
 	if os.IsNotExist(err) {
 		t.Errorf("Secret file %s must exist", pemFile)
+	} else {
+		t.Log("Secret file", pemFile, "exists OK")
 	}
 }

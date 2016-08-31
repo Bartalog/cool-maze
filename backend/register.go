@@ -70,8 +70,19 @@ func accessControlAllowCoolMaze(w http.ResponseWriter, r *http.Request) {
 	for _, whiteItem := range whiteList {
 		if origin == whiteItem {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
+			return
 		}
 	}
+
+	if strings.HasPrefix(origin, "moz-extension://") {
+		// TODO set a more specific WebExtension ID
+		// TODO make sure this also works in Chrome and IE
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		return
+	}
+
+	c := appengine.NewContext(r)
+	log.Warningf(c, "Origin [%s] not in whitelist", origin)
 
 	//w.Header().Add("Access-Control-Allow-Origin", "*")
 }
