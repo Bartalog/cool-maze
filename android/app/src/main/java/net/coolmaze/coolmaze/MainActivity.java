@@ -27,6 +27,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import com.loopj.android.http.*;
 import org.json.JSONException;
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     static final String FRONTPAGE_URL = "https://" + FRONTPAGE_DOMAIN;
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
     // static final String BACKEND_URL = "https://dev-dot-cool-maze.appspot.com";
+
+    static final int MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
 
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
@@ -417,6 +420,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
+
+        // 22 lines to: check the upload file size before opening camera!
+        InputStream inputStream = null;
+        try {
+            inputStream = getContentResolver().openInputStream(localFileUri);
+            int resourceSize = inputStream.available();
+            if (resourceSize > MAX_UPLOAD_SIZE) {
+                Log.e("CoolMaze", "File too big to upload : " + resourceSize + " > " + MAX_UPLOAD_SIZE);
+                showError("This file is too big (" + (resourceSize/(1024*1024)) + "MB), I can't upload it.\n\n"
+                        + "Max upload size is " + (MAX_UPLOAD_SIZE/(1024*1024)) + "MB.");
+                return;
+            }
+        } catch (FileNotFoundException e) {
+            Log.e("CoolMazeSignal", "Not found :( " + e);
+            return;
+        } catch (IOException e) {
+            Log.e("CoolMazeSignal", "Can't determine resource size " + e);
+            return;
+        } finally {
+            if( inputStream != null)
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                }
+        }
+
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
                 new RequestParams("type", mimeType),
@@ -457,6 +486,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e("CoolMazeSignal", "Not found :( " + e);
             return;
         }
+
         InputStreamEntity entity = new InputStreamEntity(inputStream);
         Context context = null; // ?
 
