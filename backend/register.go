@@ -55,6 +55,10 @@ func register(w http.ResponseWriter, r *http.Request) {
 // CORS non-sense.
 // See http://stackoverflow.com/a/1850482/871134 .
 func accessControlAllowCoolMaze(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	origin = strings.TrimSpace(origin)
+
+	// Specific hosts.
 	whiteList := []string{
 		"https://coolmaze.net",
 		"https://www.coolmaze.net",
@@ -63,10 +67,6 @@ func accessControlAllowCoolMaze(w http.ResponseWriter, r *http.Request) {
 		// For debug.
 		"http://localhost:8080",
 	}
-
-	origin := r.Header.Get("Origin")
-	origin = strings.TrimSpace(origin)
-
 	for _, whiteItem := range whiteList {
 		if origin == whiteItem {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -74,11 +74,18 @@ func accessControlAllowCoolMaze(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if strings.HasPrefix(origin, "moz-extension://") {
-		// TODO set a more specific WebExtension ID
-		// TODO make sure this also works in Chrome and IE
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		return
+	// WebExtension prefixes.
+	whitePrefixes := []string{
+		"moz-extension://",
+		"chrome-extension://",
+	}
+	for _, whitePrefix := range whitePrefixes {
+		if strings.HasPrefix(origin, whitePrefix) {
+			// TODO set a more specific WebExtension test
+			// TODO make sure this also works in IE
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			return
+		}
 	}
 
 	c := appengine.NewContext(r)

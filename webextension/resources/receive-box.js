@@ -149,6 +149,7 @@ xhrRegister.onreadystatechange = function () {
   var jsonResponse = JSON.parse(xhrRegister.responseText);
   qrKey = jsonResponse.qrKey;
   chanID = jsonResponse.chanID;
+  console.log("Received from backend (qrKey, chanID) pair (" + qrKey + ", " + chanID + ")");
 
   var pusher = new Pusher(coolMazePusherAppKey, {
     encrypted: true
@@ -163,20 +164,26 @@ xhrRegister.onreadystatechange = function () {
 
   var eventCast = 'maze-cast';
   channel.bind(eventCast, function(data) {
-    var msg = data.message;
-    if(startsWith(msg,'http') || startsWith(msg,'www.')) {
-       var url = msg;
-       window.location = url;
-       return;
-    }
-     //alert(data.message);
-     console.log("Received message: " + data.message);
-     document.getElementById("inbox").value = data.message;
-     show("txt-msg-zone");
+      var msg = data.message;
+      console.log("Received message: " + msg);
+      if(startsWith(msg,'http') || startsWith(msg,'www.')) {
+         var newTabUrl = msg;
+         console.log("Opening tab");
+         if(chrome) {
+           chrome.tabs.create({
+              "url":newTabUrl
+           });
+           console.log("Opened tab");
+         }else{
+          console.log("chrome doesn't exist :(")
+         }
+         return;
+      }
+      document.getElementById("inbox").value = msg;
+      show("txt-msg-zone");
   });
 
   render("black", embiggen);
 };
 xhrRegister.open('POST', backend + '/register');
 xhrRegister.send(null);
-

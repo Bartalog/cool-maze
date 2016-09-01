@@ -11,17 +11,14 @@
     "48": "resources/icons/coolmaze_128.png"
   },
 
-  "content_scripts": [
-    {
-      "matches": ["*://*/*"],
-      "js": ["resources/cool-maze.js"]
-    }
-  ],
-
   "browser_action": {
     "browser_style": true,
     "default_icon": "resources/icons/coolmaze_128.png",
     "default_title": "Receive with Cool-Maze",
     "default_popup": "resources/receive-box.html"
-  }
+  },
+
+  "permissions": [
+    "tabs"
+  ]
 }
