@@ -168,15 +168,9 @@ xhrRegister.onreadystatechange = function () {
       console.log("Received message: " + msg);
       if(startsWith(msg,'http') || startsWith(msg,'www.')) {
          var newTabUrl = msg;
-         console.log("Opening tab");
-         if(chrome) {
-           chrome.tabs.create({
-              "url":newTabUrl
-           });
-           console.log("Opened tab");
-         }else{
-          console.log("chrome doesn't exist :(")
-         }
+         chrome.tabs.create({
+            "url":newTabUrl
+         });
          return;
       }
       document.getElementById("inbox").value = msg;
