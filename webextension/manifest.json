@@ -11,6 +11,12 @@
     "48": "resources/icons/coolmaze_128.png"
   },
 
+  "applications": {
+    "gecko": {
+      "id": "cool-maze@mozilla.org"
+    }
+  },
+
   "browser_action": {
     "browser_style": true,
     "default_icon": "resources/icons/coolmaze_128.png",
