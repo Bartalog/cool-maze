@@ -4,8 +4,8 @@ body {
 }
 
 #container {
-   width:500px;
-   height:500px;
+   width:440px;
+   height:440px;
 }
 
 #qrcode {
@@ -50,7 +50,6 @@ body {
   white-space: nowrap;
 }
 .button-link {
-  margin-top: 10px;
   padding: 8px 10px;
   background: #4479BA;
   color: #FFF;
