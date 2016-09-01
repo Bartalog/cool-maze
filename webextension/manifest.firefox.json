@@ -22,5 +22,7 @@
     "default_icon": "resources/icons/coolmaze_48.png",
     "default_title": "Receive with Cool-Maze",
     "default_popup": "resources/receive-box.html"
-  }
+  },
+  
+  "content_security_policy": "script-src 'self' https://*.pusher.com; object-src 'self'"
 }
