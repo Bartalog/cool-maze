@@ -81,8 +81,6 @@ function startsWith(str, word) {
 function show(id) {
   // Show either "qr-zone", or "help-contents", or "txt-msg-zone".
   var qrzone = document.getElementById("qr-zone");
-  var help = document.getElementById("help");
-  var helpContents = document.getElementById("help-contents");
   var msg = document.getElementById("txt-msg-zone");
 
   var dispQr = "none";
@@ -94,15 +92,11 @@ function show(id) {
       dispQr = "block";
       bgcolor = "white"; // or keep it always blue...?
       break;
-    case "help-contents":
-      dispHelpContents = "block";
-      break;
     case "txt-msg-zone":
       dispMsg = "block";
       break;
   }
   qrzone.style.display = dispQr;
-  helpContents.style.display = dispHelpContents;
   msg.style.display = dispMsg;
   document.body.style.backgroundColor = bgcolor;
 }

@@ -73,6 +73,7 @@ func generatePair(c context.Context) (qrKey, chanID string, err error) {
 	}
 	// TODO create a delayed task to delete this entry in dsPairTTL
 
+	// There is a small TOCTOU between (a) and (c), but oh well.
 	return
 }
 
