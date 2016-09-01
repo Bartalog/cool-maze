@@ -1,48 +1,59 @@
 
-  body {
-    padding-top: 20px;
-  }
-  #qrcode {
-    text-align: center;
-  }
-  #qrcode img {
-    /*float: left;*/
-    margin: auto;
-    /*margin-top: 20px;*/
-    border-radius: 4px;
-    cursor: zoom-in;
-  }
-  #overprint-logo {
-    position: absolute;
-  }
-  #txt-msg-zone {
-    margin-left: 10%;
-    width: 80%;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding: 20px;
-    background-color: white;
-    text-align: center;
-    border-radius: 15px;
-  }
-  #txt-msg-close {
-    float: right;
-    margin-top: -0.5em;
-    font-weight: bolder;
-    font-size: 2em;
-    cursor: pointer;
-  }
-  #inbox {
-    margin-top: 12px;
-    border: none;
-    font-size: 3em;
-    background-color: white;
-    max-width: 100%;
-  }
-  .rounded {
-    border: 1px solid #AAA;
-    border-radius: 5px;
-    padding-left: 2px;
-    padding-right: 2px;
-    white-space: nowrap;
-  }
+body {
+  padding-top: 20px;
+}
+
+#container {
+   width:500px;
+   height:500px;
+}
+
+#qrcode {
+  text-align: center;
+}
+#qrcode img {
+  margin: auto;
+  border-radius: 4px;
+}
+#overprint-logo {
+  position: absolute;
+}
+#txt-msg-zone {
+  margin-left: 10%;
+  width: 80%;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: white;
+  text-align: center;
+  border-radius: 15px;
+}
+#txt-msg-close {
+  float: right;
+  margin-top: -0.5em;
+  font-weight: bolder;
+  font-size: 2em;
+  cursor: pointer;
+}
+#inbox {
+  margin-top: 12px;
+  border: none;
+  font-size: 3em;
+  background-color: white;
+  max-width: 100%;
+}
+.rounded {
+  border: 1px solid #AAA;
+  border-radius: 5px;
+  padding-left: 2px;
+  padding-right: 2px;
+  white-space: nowrap;
+}
+.button-link {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #4479BA;
+  color: #FFF;
+  text-decoration: none;
+  font-size: bolder;
+}

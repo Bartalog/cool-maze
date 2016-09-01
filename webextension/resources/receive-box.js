@@ -1,7 +1,5 @@
 
 var backend = "https://cool-maze.appspot.com";
-// var backend = "https://dev-dot-cool-maze.appspot.com";
-// var backend = "http://localhost:8080";
 var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
 // qrKey, chanID will be provided by the backend
@@ -9,20 +7,11 @@ var qrKey = "";
 var chanID = "";
 var channel;
 
-var qrHundredth = 68;
-
-function render(colorDark, clickCallback){
-  // qrHundredth == 95 is a "big QR-code" (almost fullscreen)
-  // qrHundredth == 50 is a "medium-size QR-code"
-
-  // -50 is for the small [?] box on the left
-  var w = Math.max(document.documentElement.clientWidth -50, (window.innerWidth || 0) -50) * qrHundredth / 100;
-  var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * qrHundredth / 100;
+function render(colorDark){
+  // QR-code has fixed size 400px
+  var w = 400;
+  var h = 400;
   var c = 400;
-  if ( w>0 )
-    c = w;
-  if ( h>0 && h<c )
-    c = h;
 
   var logo = document.getElementById("overprint-logo");
   if ( logo )
@@ -39,32 +28,15 @@ function render(colorDark, clickCallback){
 
   var cc = c/4;
   logo = document.getElementById("overprint-logo"); // has changed
+  var bodyPad = 20; // weird.
   logo.style.width = cc + "px";
   logo.style.height = cc + "px";
-  logo.style.top = ((1.5)*cc) + "px";
+  logo.style.top = (bodyPad + ((1.5)*cc)) + "px";
   logo.style.marginLeft = (-cc/2) + "px";
   //logo.style.display = "inline";
   window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
 
-  if (clickCallback) {
-    // The QR-code contents is clickable to embiggen, not the whole qr-zone
-    for(var i=0; i < qrcode.childNodes.length; i++) {
-      qrcode.childNodes[i].onclick = clickCallback;
-    }
-  }
 }
-
-// Go fullscreen -> bigger QR
-/*
-var resizeTimeOut = null;
-window.onresize = function(){
-    if (resizeTimeOut != null)
-        clearTimeout(resizeTimeOut);
-    resizeTimeOut = setTimeout(function(){
-        render("black", embiggen);
-    }, 300);
-};
-*/
 
 function clearQR() {
   var node = document.getElementById("qrcode");
@@ -108,20 +80,11 @@ document.getElementById("inbox").onclick = function(event) {
     event.stopPropagation();
 }
 
-function embiggen(event) { 
-    // Change size on each click
-    // 40, 68, 96, 40, 60, 96 ...
-    qrHundredth += 28;
-    if ( qrHundredth>100 )
-      qrHundredth = 40;
-    render("black", embiggen);
-}
-
 function spin() {
   // When we receive a Scan Notification event from Pusher,
   // we are excited about a resource payload coming soon.
   // So we wag tail with a spinning wheel.
-  render("#CCC", null);
+  render("#CCC");
   var logo = document.getElementById("overprint-logo");
   if ( logo )
     logo.src = "icons/red_spinner.gif";
@@ -177,7 +140,7 @@ xhrRegister.onreadystatechange = function () {
       show("txt-msg-zone");
   });
 
-  render("black", embiggen);
+  render("black");
 };
 xhrRegister.open('POST', backend + '/register');
 xhrRegister.send(null);

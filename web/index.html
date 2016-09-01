@@ -166,6 +166,10 @@
     var channel;
 
     var qrHundredth = 68;
+    // Bookmarks or WebExtension can point directly to the big
+    // QR-code size, with ?big=1
+    if( window.location.search.indexOf("big=1")  !== -1 )
+      qrHundredth = 96;
 
     function render(colorDark, clickCallback){
       // qrHundredth == 95 is a "big QR-code" (almost fullscreen)
