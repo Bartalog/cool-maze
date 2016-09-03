@@ -66,6 +66,7 @@ func accessControlAllowCoolMaze(w http.ResponseWriter, r *http.Request) {
 		"https://www.coolmaze.io",
 		// For debug.
 		"http://localhost:8080",
+		"http://localhost:8000",
 	}
 	for _, whiteItem := range whiteList {
 		if origin == whiteItem {
