@@ -267,12 +267,13 @@
     }
 
     function genRandomQrKey() {
+      var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      var M = chars.length; // 62
+      var L = 11;
+      var s = "";
+
       var crypto = window.crypto || window.msCrypto;
       if( crypto ) {
-        var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        var M = chars.length; // 62
-        var L = 11;
-        var s = "";
         var buf = new Uint8Array(L);
         window.crypto.getRandomValues(buf);
         for(var i=0; i<11; i++) {
@@ -280,13 +281,17 @@
           var j = buf[i] % M;
           s += chars.charAt(j);
         }
-        console.log("Generated qrKey [" + s + "]")
-        return s;
-      }else {
-        console.error( "Capability window.crypto not found :(" );
-        return "";
-        // TODO implement poor, non-crypto-safe random gen
+      } else {
+        console.log( "Capability window.crypto not found :(" );
+        for(var i=0; i<11; i++) {
+          // This is less crypto-secure, but the best we can do locally.
+          var j = Math.floor(Math.random() * M);
+          s += chars.charAt(j);
+        }
       }
+
+      console.log("Generated qrKey [" + s + "]");
+      return s;
     }
 
     //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
