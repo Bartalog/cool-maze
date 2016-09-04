@@ -2,7 +2,7 @@
 var backend = "https://cool-maze.appspot.com";
 var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
-// qrKey, chanID will be provided by the backend
+// Since #108, qrKey==chanID and it is random generated in JS.
 var qrKey = "";
 var chanID = "";
 var channel;
@@ -73,6 +73,34 @@ function show(id) {
   document.body.style.backgroundColor = bgcolor;
 }
 
+function genRandomQrKey() {
+  var chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  var M = chars.length; // 62
+  var L = 11;
+  var s = "";
+
+  var crypto = window.crypto || window.msCrypto;
+  if( crypto ) {
+    var buf = new Uint8Array(L);
+    window.crypto.getRandomValues(buf);
+    for(var i=0; i<11; i++) {
+      // 01234567 would be slightly more frequent, which is OK for our use case
+      var j = buf[i] % M;
+      s += chars.charAt(j);
+    }
+  } else {
+    console.log( "Capability window.crypto not found :(" );
+    for(var i=0; i<11; i++) {
+      // This is less crypto-secure, but the best we can do locally.
+      var j = Math.floor(Math.random() * M);
+      s += chars.charAt(j);
+    }
+  }
+
+  console.log("Generated qrKey [" + s + "]");
+  return s;
+}
+
 document.getElementById("txt-msg-close").onclick = function(event) { 
   show("qr-zone");
 }
@@ -96,51 +124,35 @@ document.getElementById("inbox").value = "";
 spin();
 
 //
-// Register -> Listen to Pusher channel -> Render QR-code
+// Generate qrKey/chanID -> Listen to Pusher channel -> Render QR-code
 //
-var xhrRegister = new XMLHttpRequest();
-xhrRegister.onreadystatechange = function () {
-  var DONE = 4;
-  var OK = 200;
-  if (xhrRegister.readyState !== DONE)
-      return;
-  if (xhrRegister.status !== OK) {
-    console.log('Error: ' + xhrRegister.status);
-    return;
-  }
-  //console.log(xhrRegister.responseText);
-  var jsonResponse = JSON.parse(xhrRegister.responseText);
-  qrKey = jsonResponse.qrKey;
-  chanID = jsonResponse.chanID;
-  console.log("Received from backend (qrKey, chanID) pair (" + qrKey + ", " + chanID + ")");
+qrKey = genRandomQrKey();
+chanID = qrKey;
 
-  var pusher = new Pusher(coolMazePusherAppKey, {
-    encrypted: true
-  });
-  channel = pusher.subscribe(chanID);
+var pusher = new Pusher(coolMazePusherAppKey, {
+  encrypted: true
+});
+channel = pusher.subscribe(chanID);
 
-  var eventNotifScan = 'maze-scan';
-  channel.bind(eventNotifScan, function(data) {
-    console.log("Received scan notification. Payload coming soon.");
-    spin();
-  });
+var eventNotifScan = 'maze-scan';
+channel.bind(eventNotifScan, function(data) {
+  console.log("Received scan notification. Payload coming soon.");
+  spin();
+});
 
-  var eventCast = 'maze-cast';
-  channel.bind(eventCast, function(data) {
-      var msg = data.message;
-      console.log("Received message: " + msg);
-      if(startsWith(msg,'http') || startsWith(msg,'www.')) {
-         var newTabUrl = msg;
-         chrome.tabs.create({
-            "url":newTabUrl
-         });
-         return;
-      }
-      document.getElementById("inbox").value = msg;
-      show("txt-msg-zone");
-  });
+var eventCast = 'maze-cast';
+channel.bind(eventCast, function(data) {
+    var msg = data.message;
+    console.log("Received message: " + msg);
+    if(startsWith(msg,'http') || startsWith(msg,'www.')) {
+       var newTabUrl = msg;
+       chrome.tabs.create({
+          "url":newTabUrl
+       });
+       return;
+    }
+    document.getElementById("inbox").value = msg;
+    show("txt-msg-zone");
+});
 
-  render("black");
-};
-xhrRegister.open('POST', backend + '/register');
-xhrRegister.send(null);
+render("black");
