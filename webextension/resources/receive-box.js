@@ -22,7 +22,8 @@ function render(colorDark){
     width: c,
     height: c,
     colorDark : colorDark,
-    colorLight : "white"
+    colorLight : "white",
+    correctLevel : QRCode.CorrectLevel.M
   });
   var qrcode = document.getElementById("qrcode");
 
