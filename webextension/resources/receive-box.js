@@ -84,14 +84,14 @@ function genRandomQrKey() {
   if( crypto ) {
     var buf = new Uint8Array(L);
     window.crypto.getRandomValues(buf);
-    for(var i=0; i<11; i++) {
+    for(var i=0; i<L; i++) {
       // 01234567 would be slightly more frequent, which is OK for our use case
       var j = buf[i] % M;
       s += chars.charAt(j);
     }
   } else {
     console.log( "Capability window.crypto not found :(" );
-    for(var i=0; i<11; i++) {
+    for(var i=0; i<L; i++) {
       // This is less crypto-secure, but the best we can do locally.
       var j = Math.floor(Math.random() * M);
       s += chars.charAt(j);
