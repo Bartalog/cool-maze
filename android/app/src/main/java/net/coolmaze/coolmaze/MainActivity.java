@@ -366,8 +366,9 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isValidQrKey(String s) {
         // A valid qrKey is a string encoded in a QR-code on page coolmaze.net .
-        // Currently it is an int in range [0..99999].
-        return s.matches("[0-9]{1,5}");
+        // Since #108 a valid qrKey is string of exactly 11 characters
+        // from 62-char-set [0-9a-zA-Z].
+        return s.matches("^[0-9a-zA-Z]{11}$");
     }
 
     void showSpinning(){

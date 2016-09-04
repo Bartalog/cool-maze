@@ -167,7 +167,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 }
 
 // isValidQrKey validates a string encoded in a QR-code on page coolmaze.net .
-// Since #108 a valid chan ID is string of exactly 11 characters
+// Since #108 a valid qrKey is string of exactly 11 characters
 // from 62-char-set [0-9a-zA-Z].
 func isValidQrKey(s string) bool {
 	// return len(s) == 11 &&
