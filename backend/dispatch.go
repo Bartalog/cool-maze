@@ -3,7 +3,7 @@ package coolmaze
 import (
 	"fmt"
 	"net/http"
-	"strconv"
+	"regexp"
 
 	"github.com/pusher/pusher-http-go"
 
@@ -69,17 +69,8 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, channelID, err := getChanID(c, qrKey)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if !ok {
-		log.Warningf(c, "[%s] is not a registered qrKey", qrKey)
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Sorry, no target found for key [%s]\n", qrKey)
-		return
-	}
+	// Since #108 qrKey==chanID
+	channelID := qrKey
 
 	urlfetchClient := urlfetch.Client(c)
 	log.Infof(c, "Sending scan notification to chan [%v]", channelID)
@@ -92,7 +83,7 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data map[string]string = nil
-	_, err = pusherClient.Trigger(channelID, event, data)
+	_, err := pusherClient.Trigger(channelID, event, data)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -149,17 +140,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, channelID, err := getChanID(c, qrKey)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if !ok {
-		log.Warningf(c, "[%s] is not a registered qrKey", qrKey)
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Sorry, no target found for [%s]\n", qrKey)
-		return
-	}
+	// Since #108 qrKey==chanID
+	channelID := qrKey
 
 	urlfetchClient := urlfetch.Client(c)
 	log.Infof(c, "Sending from qrKey [%v] to chan [%v] message [%v]", qrKey, channelID, message)
@@ -185,15 +167,16 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 }
 
 // isValidQrKey validates a string encoded in a QR-code on page coolmaze.net .
-// Currently a valid chan ID is an int in range [0..10^5].
+// Since #108 a valid chan ID is string of exactly 11 characters
+// from 62-char-set [0-9a-zA-Z].
 func isValidQrKey(s string) bool {
-	i, err := strconv.Atoi(s)
-	return err == nil && i < 100000
+	// return len(s) == 11 &&
+	return validQrKeyPattern.MatchString(s)
 }
 
-// isValidChanID validates the format of a channel ID .
-// Currently a valid chan ID is an int in range [0..10^10].
+var validQrKeyPattern = regexp.MustCompile("^[0-9a-zA-Z]{11}$")
+
+// Since #108 qrKey==chanID
 func isValidChanID(s string) bool {
-	_, err := strconv.Atoi(s)
-	return err == nil
+	return isValidQrKey(s)
 }
