@@ -277,18 +277,21 @@ public class MainActivity extends AppCompatActivity {
         Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
         qrKeyToSignal = scanResult.getContents();
 
+        /*
+        This check was too strict, it made the qrKey format change less flexible.
+        Also, the showError call doesn't work well for some reason.
+        Also, it would be better to catch backend error "invalid qrKey" and then display the error message.
         if (!isValidQrKey(qrKeyToSignal)) {
             setContentView(R.layout.activity_main);
             showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");
             finish();
             // Try again
-            /*
-            new IntentIntegrator(MainActivity.this)
-                    .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
-                    .initiateScan();
-            */
+            //new IntentIntegrator(MainActivity.this)
+            //        .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
+            //        .initiateScan();
             return;
         }
+        */
 
         // This short vibration means "Hey cool, you've just scanned something!"
         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -369,6 +372,9 @@ public class MainActivity extends AppCompatActivity {
         // Since #108 a valid qrKey is string of exactly 11 characters
         // from 62-char-set [0-9a-zA-Z].
         return s.matches("^[0-9a-zA-Z]{11}$");
+
+        // TODO maybe relax this check?
+        // This would make format change easier, no need to update app.
     }
 
     void showSpinning(){
