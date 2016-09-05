@@ -3,6 +3,9 @@ package coolmaze
 import (
 	"fmt"
 	"net/http"
+
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
 )
 
 func init() {
@@ -17,5 +20,9 @@ func init() {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			fmt.Fprintln(w, "ok")
 			// Instance should be warm by now
+
+			c := appengine.NewContext(r)
+			qrKey := r.FormValue("qrKey")
+			log.Infof(c, "Wakeup from qrKey [%s]", qrKey)
 		})
 }

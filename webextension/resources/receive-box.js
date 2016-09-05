@@ -157,3 +157,9 @@ channel.bind(eventCast, function(data) {
 });
 
 render("black");
+
+var wakeup = new XMLHttpRequest();
+var wuEndpoint = "https://cool-maze.appspot.com/wakeup";
+var wuParam = "qrKey=" + qrKey;
+wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
+wakeup.send( null );
