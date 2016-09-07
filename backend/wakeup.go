@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 )
 
 func init() {
@@ -23,6 +24,36 @@ func init() {
 
 			c := appengine.NewContext(r)
 			qrKey := r.FormValue("qrKey")
-			log.Infof(c, "Wakeup from qrKey [%s]", qrKey)
+			if qrKey != "" {
+				// Comes from target desktop computer browser
+				log.Infof(c, "Wakeup from qrKey [%s]", qrKey)
+				// Remember the country, so we can compare with
+				// subsequent /scanned or /dispatch
+				country := r.Header.Get("X-AppEngine-Country")
+				latlong := r.Header.Get("X-AppEngine-CityLatLong")
+
+				cacheKey := "country_from_qrKey_" + qrKey
+				cacheItem := &memcache.Item{
+					Key:   cacheKey,
+					Value: []byte(country),
+				}
+				err := memcache.Set(c, cacheItem)
+				if err != nil {
+					log.Warningf(c, "Failed setting cache[%v] : %v", cacheKey, err)
+				}
+
+				cacheKey = "latlong_from_qrKey_" + qrKey
+				cacheItem = &memcache.Item{
+					Key:   cacheKey,
+					Value: []byte(latlong),
+				}
+				err = memcache.Set(c, cacheItem)
+				if err != nil {
+					log.Warningf(c, "Failed setting cache[%v] : %v", cacheKey, err)
+				}
+			} else {
+				log.Infof(c, "Wakeup from mobile")
+			}
+
 		})
 }

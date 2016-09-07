@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 	"google.golang.org/appengine/urlfetch"
 )
 
@@ -40,6 +41,11 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 		log.Warningf(c, "Only POST method is accepted")
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Only POST method is accepted")
+		return
+	}
+
+	if countryMismatch(r) {
+		// Abort. Silently.
 		return
 	}
 
@@ -103,6 +109,11 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		log.Warningf(c, "Only POST method is accepted")
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Only POST method is accepted")
+		return
+	}
+
+	if countryMismatch(r) {
+		// Abort. Silently.
 		return
 	}
 
@@ -179,4 +190,54 @@ var validQrKeyPattern = regexp.MustCompile("^[0-9a-zA-Z]{11}$")
 // Since #108 qrKey==chanID
 func isValidChanID(s string) bool {
 	return isValidQrKey(s)
+}
+
+func countryMismatch(r *http.Request) bool {
+	c := appengine.NewContext(r)
+	qrKey := r.FormValue("qrKey")
+	country := r.Header.Get("X-AppEngine-Country")
+	latlong := r.Header.Get("X-AppEngine-CityLatLong")
+
+	cacheKey := "country_from_qrKey_" + qrKey
+	var cacheItem *memcache.Item
+	var errMC error
+	cacheItem, errMC = memcache.Get(c, cacheKey)
+	if errMC == memcache.ErrCacheMiss {
+		// Not in Memcache. Can't establish fraud.
+		log.Warningf(c, "country for qrKey [%s] wasn't in memcache", qrKey)
+		return false
+	}
+	if errMC != nil {
+		// Memcache broken. Can't establish fraud.
+		log.Warningf(c, "Problem with memcache: %v", errMC)
+		return false
+	}
+	cacheCountry := string(cacheItem.Value)
+
+	if country == cacheCountry {
+		return false
+	}
+
+	// Different countries!
+	// But maybe 2 neighbour countries, around a border?
+	cacheKey = "latlong_from_qrKey_" + qrKey
+	cacheItem, errMC = memcache.Get(c, cacheKey)
+	if errMC == memcache.ErrCacheMiss {
+		// Not in Memcache. Can't establish fraud.
+		log.Warningf(c, "latlong for qrKey [%s] wasn't in memcache", qrKey)
+		return false
+	}
+	if errMC != nil {
+		// Memcache broken. Can't establish fraud.
+		log.Warningf(c, "Problem with memcache: %v", errMC)
+		return false
+	}
+	cacheLatlong := string(cacheItem.Value)
+	if !farAway(latlong, cacheLatlong) {
+		// Okay, let's be tolerant
+		return false
+	}
+
+	log.Errorf(c, "New request for qrKey [%s] from source location [%s][%s] doesn't match cached target location [%s][%s]", qrKey, country, latlong, cacheCountry, cacheLatlong)
+	return true
 }
