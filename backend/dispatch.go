@@ -193,6 +193,7 @@ func isValidChanID(s string) bool {
 }
 
 func countryMismatch(r *http.Request) bool {
+	const dontKnow = false
 	c := appengine.NewContext(r)
 	qrKey := r.FormValue("qrKey")
 	country := r.Header.Get("X-AppEngine-Country")
@@ -205,16 +206,17 @@ func countryMismatch(r *http.Request) bool {
 	if errMC == memcache.ErrCacheMiss {
 		// Not in Memcache. Can't establish fraud.
 		log.Warningf(c, "country for qrKey [%s] wasn't in memcache", qrKey)
-		return false
+		return dontKnow
 	}
 	if errMC != nil {
 		// Memcache broken. Can't establish fraud.
 		log.Warningf(c, "Problem with memcache: %v", errMC)
-		return false
+		return dontKnow
 	}
 	cacheCountry := string(cacheItem.Value)
 
 	if country == cacheCountry {
+		log.Infof(c, "Country [%s] correctly match cache :)", country)
 		return false
 	}
 
@@ -225,16 +227,17 @@ func countryMismatch(r *http.Request) bool {
 	if errMC == memcache.ErrCacheMiss {
 		// Not in Memcache. Can't establish fraud.
 		log.Warningf(c, "latlong for qrKey [%s] wasn't in memcache", qrKey)
-		return false
+		return dontKnow
 	}
 	if errMC != nil {
 		// Memcache broken. Can't establish fraud.
 		log.Warningf(c, "Problem with memcache: %v", errMC)
-		return false
+		return dontKnow
 	}
 	cacheLatlong := string(cacheItem.Value)
 	if !farAway(latlong, cacheLatlong) {
 		// Okay, let's be tolerant
+		log.Warningf(c, "Country mismatch [%s] [%s], but locations are close: [%s] [%s]", country, cacheCountry, latlong, cacheLatlong)
 		return false
 	}
 
