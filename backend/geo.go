@@ -6,40 +6,40 @@ import (
 	"strings"
 )
 
-func farAway(latlong1, latlong2 string) bool {
+func strDistKm(latlong1, latlong2 string) (bool, float64) {
 	const dontKnow = false
 	if latlong1 == "" || latlong2 == "" {
 		// Can't say. Must be tolerant.
-		return dontKnow
+		return dontKnow, 0
 	}
 
 	coords1 := strings.Split(latlong1, ",")
 	if len(coords1) != 2 {
-		return dontKnow
+		return dontKnow, 0
 	}
 	lat1, err := strconv.ParseFloat(coords1[0], 64)
 	if err != nil {
-		return dontKnow
+		return dontKnow, 0
 	}
 	long1, err := strconv.ParseFloat(coords1[1], 64)
 	if err != nil {
-		return dontKnow
+		return dontKnow, 0
 	}
 
 	coords2 := strings.Split(latlong2, ",")
 	if len(coords2) != 2 {
-		return dontKnow
+		return dontKnow, 0
 	}
 	lat2, err := strconv.ParseFloat(coords2[0], 64)
 	if err != nil {
-		return dontKnow
+		return dontKnow, 0
 	}
 	long2, err := strconv.ParseFloat(coords2[1], 64)
 	if err != nil {
-		return dontKnow
+		return dontKnow, 0
 	}
 
-	return distKm(lat1, long1, lat2, long2) > 500.0
+	return true, distKm(lat1, long1, lat2, long2)
 }
 
 // distKm code taken from https://gist.github.com/cdipaolo/d3f8db3848278b49db68

@@ -235,12 +235,18 @@ func countryMismatch(r *http.Request) bool {
 		return dontKnow
 	}
 	cacheLatlong := string(cacheItem.Value)
-	if !farAway(latlong, cacheLatlong) {
+	ok, dist := strDistKm(latlong, cacheLatlong)
+	if !ok {
+		// Latlongs could not be parsed. Can't establish fraud.
+		log.Warningf(c, "Couldn't compute distance between [%s] and [%s].", latlong, cacheLatlong)
+		return dontKnow
+	}
+	if dist < 500.0 {
 		// Okay, let's be tolerant
-		log.Warningf(c, "Country mismatch [%s] [%s], but locations are close: [%s] [%s]", country, cacheCountry, latlong, cacheLatlong)
+		log.Warningf(c, "Country mismatch [%s] [%s], but locations are close: [%s] [%s] (%.0fkm)", country, cacheCountry, latlong, cacheLatlong, dist)
 		return false
 	}
 
-	log.Errorf(c, "New request for qrKey [%s] from source location [%s][%s] doesn't match cached target location [%s][%s]", qrKey, country, latlong, cacheCountry, cacheLatlong)
+	log.Errorf(c, "New request for qrKey [%s] from source location [%s][%s] (%.0fkm away) doesn't match cached target location [%s][%s]", qrKey, country, latlong, dist, cacheCountry, cacheLatlong)
 	return true
 }
