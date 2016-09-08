@@ -205,6 +205,7 @@ func countryMismatch(r *http.Request) bool {
 	cacheItem, errMC = memcache.Get(c, cacheKey)
 	if errMC == memcache.ErrCacheMiss {
 		// Not in Memcache. Can't establish fraud.
+		// Memcache entries vanish anytime so it's normal we sometimes forget.
 		log.Warningf(c, "country for qrKey [%s] wasn't in memcache", qrKey)
 		return dontKnow
 	}
@@ -216,7 +217,9 @@ func countryMismatch(r *http.Request) bool {
 	cacheCountry := string(cacheItem.Value)
 
 	if country == cacheCountry {
-		log.Infof(c, "Country [%s] correctly match cache :)", country)
+		// This is what should always happen.
+		// All other code paths are exceptional.
+		log.Infof(c, "Country [%s] correctly matches cache :)", country)
 		return false
 	}
 
