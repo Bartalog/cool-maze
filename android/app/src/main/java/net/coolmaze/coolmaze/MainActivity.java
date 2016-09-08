@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
     // static final String BACKEND_URL = "https://dev-dot-cool-maze.appspot.com";
 
-    static final int MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
+    //static final int MAX_UPLOAD_SIZE = XX * 1024 * 1024; Issue #101: max size is now checked server-side
 
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
@@ -429,16 +429,20 @@ public class MainActivity extends AppCompatActivity {
     private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
 
         // 22 lines to: check the upload file size before opening camera!
+        int resourceSize;
         InputStream inputStream = null;
         try {
             inputStream = getContentResolver().openInputStream(localFileUri);
-            int resourceSize = inputStream.available();
+            resourceSize = inputStream.available();
+            /*
+            See issue #101 : enforced upload size limit server-side instead.
             if (resourceSize > MAX_UPLOAD_SIZE) {
                 Log.e("CoolMaze", "File too big to upload : " + resourceSize + " > " + MAX_UPLOAD_SIZE);
                 showError("This file is too big (" + (resourceSize/(1024*1024)) + "MB), I can't upload it.\n\n"
                         + "Max upload size is " + (MAX_UPLOAD_SIZE/(1024*1024)) + "MB.");
                 return;
             }
+            */
         } catch (FileNotFoundException e) {
             Log.e("CoolMazeSignal", "Not found :( " + e);
             return;
@@ -455,7 +459,7 @@ public class MainActivity extends AppCompatActivity {
 
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
-                new RequestParams("type", mimeType),
+                new RequestParams("type", mimeType, "filesize", resourceSize),
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -471,6 +475,19 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                        // Issue #112: Unfortunately, user won't see the error message box until she has finished scanning :(
+
+                        if(statusCode==412){
+                            // PRECONDITION_FAILED
+                            try {
+                                String message = errorResponse.getString("message");
+                                showError(message);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            return;
+                        }
+
                         showError("Unfortunately, we could not obtain secure upload URLs.");
                     }
                 });
