@@ -25,10 +25,14 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 
 import com.loopj.android.http.*;
 import org.json.JSONException;
@@ -458,14 +462,35 @@ public class MainActivity extends AppCompatActivity {
                 }
         }
 
+        // See issue #32: server file hash-based cache.
+        String hash = hash(localFileUri);
+
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
-                new RequestParams("type", mimeType, "filesize", resourceSize),
+                new RequestParams("type", mimeType, "filesize", resourceSize, "hash", hash),
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                         Log.i("CoolMazeEvent", "Signed URLs request success :) \n ");
                         try {
+                            boolean alreadyExists = response.getBoolean("existing");
+                            if(alreadyExists) {
+                                // Yeepee, we don't have to upload anything.
+                                Log.i("CoolMazeEvent", "Resource already known in server cache :)");
+                                String urlGet = response.getString("urlGet");
+                                messageToSignal = urlGet;
+
+                                boolean dispatchNow = false;
+                                synchronized (workflowLock) {
+                                    finishedUploading = true;
+                                    if ( finishedScanning )
+                                        dispatchNow = true;
+                                }
+                                if(dispatchNow)
+                                    dispatch();
+                                return;
+                            }
+
                             String urlPut = response.getString("urlPut");
                             String urlGet = response.getString("urlGet");
                             gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
@@ -581,5 +606,40 @@ public class MainActivity extends AppCompatActivity {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
+
+
+    // From http://stackoverflow.com/a/23421126/871134
+    String hash(android.net.Uri uri) {
+        // This is currently a MD5 hash.
+        // But any other (good and fast) hash algo would do.
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("MD5");
+            BufferedInputStream is = new BufferedInputStream(getContentResolver().openInputStream(uri));
+            DigestInputStream dis = new DigestInputStream(is, md);
+            byte[] buffer = new byte[1024];
+            while(dis.read(buffer, 0, buffer.length) != -1) ;
+
+            return toHexString(md.digest());
+        } catch(Exception e) {
+            Log.e("CoolMazeSignal", "Computing file hash: " + e);
+        }
+        return "";
+    }
+
+    // From http://stackoverflow.com/a/332101/871134
+    public static String toHexString(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+
+        for (int i = 0; i < bytes.length; i++) {
+            String hex = Integer.toHexString(0xFF & bytes[i]);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+
+        return hexString.toString();
     }
 }
