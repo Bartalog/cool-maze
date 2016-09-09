@@ -56,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
 
     private String qrKeyToSignal = "<?>";
     private String messageToSignal = "<?>";
+    private String gcsObjectName = null;
+    private String resourceHash = null;
 
     // Scanning and Uploading occur concurrently, they need synchronization.
     private Object workflowLock = new Object();
@@ -153,6 +155,8 @@ public class MainActivity extends AppCompatActivity {
                 finishedScanning = false;
                 finishedUploading = true;
                 Log.i("CoolMazeEvent", MainActivity.this.hashCode() + " finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
+                resourceHash = null;
+                gcsObjectName = null;
                 new IntentIntegrator(MainActivity.this)
                         //.setOrientationLocked(false)
                         .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
@@ -187,6 +191,8 @@ public class MainActivity extends AppCompatActivity {
 
                 finishedScanning = false;
                 finishedUploading = false;
+                resourceHash = null;
+                gcsObjectName = null;
                 String mimeType = extractMimeType(intent, localFileUri);
                 gentleUploadStep1(localFileUri, mimeType);
                 return;
@@ -233,6 +239,8 @@ public class MainActivity extends AppCompatActivity {
         finishedUploading = savedInstanceState.getBoolean("finishedUploading");
         qrKeyToSignal = savedInstanceState.getString("qrKeyToSignal");
         messageToSignal = savedInstanceState.getString("messageToSignal");
+        gcsObjectName = savedInstanceState.getString("gcsObjectName");
+        resourceHash = savedInstanceState.getString("resourceHash");
     }
 
     @Override
@@ -249,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("finishedUploading", finishedUploading);
         outState.putString("qrKeyToSignal", qrKeyToSignal);
         outState.putString("messageToSignal", messageToSignal);
+        outState.putString("gcsObjectName", gcsObjectName);
+        outState.putString("resourceHash", resourceHash);
     }
 
     @Override
@@ -341,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
             showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
             return;
         }
-        RequestParams params = new RequestParams("qrKey", qrKeyToSignal, "message", messageToSignal);
+        RequestParams params = new RequestParams("qrKey", qrKeyToSignal, "message", messageToSignal, "gcsObjectName", gcsObjectName, "hash", resourceHash);
         // conn.setReadTimeout(15000);
         // conn.setConnectTimeout(15000);
         newAsyncHttpClient().post(
@@ -463,11 +473,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // See issue #32: server file hash-based cache.
-        String hash = hash(localFileUri);
+        resourceHash = hash(localFileUri);
 
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
-                new RequestParams("type", mimeType, "filesize", resourceSize, "hash", hash),
+                new RequestParams("type", mimeType, "filesize", resourceSize, "hash", resourceHash),
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -479,6 +489,7 @@ public class MainActivity extends AppCompatActivity {
                                 Log.i("CoolMazeEvent", "Resource already known in server cache :)");
                                 String urlGet = response.getString("urlGet");
                                 messageToSignal = urlGet;
+                                gcsObjectName = response.optString("gcsObjectName");
 
                                 boolean dispatchNow = false;
                                 synchronized (workflowLock) {
@@ -493,6 +504,7 @@ public class MainActivity extends AppCompatActivity {
 
                             String urlPut = response.getString("urlPut");
                             String urlGet = response.getString("urlGet");
+                            gcsObjectName = response.optString("gcsObjectName");
                             gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
                         } catch (JSONException e) {
                             Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + response);

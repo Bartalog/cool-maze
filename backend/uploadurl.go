@@ -45,6 +45,9 @@ const (
 	// Cooperative limit (not attack-proof)
 	MB            = 1024 * 1024
 	uploadMaxSize = 21*MB - 1
+	// Files exist only for a limited time on GCS
+	fileGCSTTL      = 3 * time.Hour
+	fileMemcacheTTL = 150 * time.Minute
 )
 
 var pkey []byte
@@ -96,18 +99,19 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	// Optional.
 	// See #32
 	hash := r.FormValue("hash")
-	if found, urlGetExisting := findByHash(c, hash); found {
+	if found, urlGetExisting, gcsObjectNameExisting := findByHash(c, hash); found {
 		response := Response{
 			"success":  true,
 			"existing": true,
 			"urlGet":   urlGetExisting,
 			// No "urlPut" because source won't need to upload anything.
+			"gcsObjectName": gcsObjectNameExisting,
 		}
 		fmt.Fprintln(w, response)
 		return
 	}
 
-	urlPut, urlGet, err := createUrls(c, contentType, fileSize, hash)
+	urlPut, urlGet, gcsObjectName, err := createUrls(c, contentType, fileSize, hash)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -116,17 +120,22 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := Response{
-		"success":  true,
-		"existing": false,
-		"urlPut":   urlPut,
-		"urlGet":   urlGet,
+		"success":       true,
+		"existing":      false,
+		"urlPut":        urlPut,
+		"urlGet":        urlGet,
+		"gcsObjectName": gcsObjectName,
 	}
 	fmt.Fprintln(w, response)
 }
 
-func createUrls(c context.Context, contentType string, fileSize int, hash string) (urlPut, urlGet string, err error) {
-	objectName := randomGcsObjectName()
-	log.Infof(c, "Creating urls for tmp object name %s with content-type [%s] having size %d", objectName, contentType, fileSize)
+func createUrls(c context.Context, contentType string, fileSize int, hash string) (urlPut, urlGet, objectName string, err error) {
+	log.Infof(c, "Advertised upload content-type is %q", contentType)
+	log.Infof(c, "Advertised upload size is %d", fileSize)
+	log.Infof(c, "Advertised upload hash is %q", hash)
+
+	objectName = randomGcsObjectName()
+	log.Infof(c, "Creating urls for tmp object name %s", objectName)
 
 	urlPut, err = storage.SignedURL(bucket, objectName, &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccount,
@@ -146,23 +155,12 @@ func createUrls(c context.Context, contentType string, fileSize int, hash string
 		Expires:        time.Now().Add(10 * time.Minute),
 	})
 
-	if hash != "" {
-		// #32 memorize Hash->ObjectName in Memcache, in case the same file is sent again.
-		cacheKey := "objectName_for_" + hash
-		cacheItem := &memcache.Item{
-			Key:   cacheKey,
-			Value: []byte(objectName),
-		}
-		err := memcache.Set(c, cacheItem)
-		if err != nil {
-			log.Warningf(c, "Failed setting cache[%v] : %v", cacheKey, err)
-		}
-	}
+	// (Hash->ObjectName) entry not put in Memcache yet, because file is not uploaded yet.
 
 	return
 }
 
-func findByHash(c context.Context, hash string) (bool, string) {
+func findByHash(c context.Context, hash string) (found bool, urlGet string, gcsObjectName string) {
 	// Look in Memcache.
 	// Memcache entries are volatile, someday we may want to use Datastore too.
 	cacheKey := "objectName_for_" + hash
@@ -170,27 +168,30 @@ func findByHash(c context.Context, hash string) (bool, string) {
 	var errMC error
 	cacheItem, errMC = memcache.Get(c, cacheKey)
 	if errMC == memcache.ErrCacheMiss {
-		return false, ""
+		return
 	}
 	if errMC != nil {
 		log.Warningf(c, "Problem with memcache: %v", errMC)
-		return false, ""
+		return
 	}
 	// The value is a GCS object name
-	cachedObjectName := string(cacheItem.Value)
+	gcsObjectName = string(cacheItem.Value)
 
-	urlGet, err := storage.SignedURL(bucket, cachedObjectName, &storage.SignedURLOptions{
+	var errSURL error
+	urlGet, errSURL = storage.SignedURL(bucket, gcsObjectName, &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccount,
 		PrivateKey:     pkey,
 		Method:         "GET",
 		Expires:        time.Now().Add(10 * time.Minute),
 	})
-	if err != nil {
-		log.Errorf(c, "Creating GET url to object [%s] for known hash [%s]", cachedObjectName, hash)
-		return false, ""
+	if errSURL != nil {
+		log.Errorf(c, "Creating GET url to object [%s] for known hash [%s]: %v", gcsObjectName, hash, errSURL)
+		return false, "", ""
 	}
 	// TODO if cachedObjectName is already scheduled for deletion, then postpone the deletion.
 	// Make sure #31 doesn't delete freshly re-sent files.
 
-	return true, urlGet
+	found = true
+	log.Infof(c, "Found existing GCE object [%s] for hash [%s]", gcsObjectName, hash)
+	return
 }

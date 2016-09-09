@@ -120,6 +120,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	qrKey := r.FormValue("qrKey")
 	event := "maze-cast"
 	message := r.FormValue("message")
+	gcsObjectName := r.FormValue("gcsObjectName")
+	hash := r.FormValue("hash")
 
 	if qrKey == "" {
 		log.Warningf(c, "Missing mandatory parameter: qrKey")
@@ -173,6 +175,21 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Infof(c, "Pusher events = %v", be)
+
+	if hash != "" && gcsObjectName != "" {
+		// #32 memorize Hash->ObjectName in Memcache, in case the same file is sent again.
+		cacheKey := "objectName_for_" + hash
+		cacheItem := &memcache.Item{
+			Key:        cacheKey,
+			Value:      []byte(gcsObjectName),
+			Expiration: fileMemcacheTTL,
+		}
+		err := memcache.Set(c, cacheItem)
+		if err != nil {
+			log.Warningf(c, "Failed setting cache[%v] : %v", cacheKey, err)
+		}
+		log.Infof(c, "Set cache[%q] = %q", cacheKey, gcsObjectName)
+	}
 
 	fmt.Fprintln(w, "Done :)")
 }
