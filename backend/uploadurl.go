@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 	"google.golang.org/cloud/storage"
 )
 
@@ -48,6 +49,12 @@ const (
 
 var pkey []byte
 
+// The /new-gcs-urls user usually advertises the following info about
+// intended file to be uploaded:
+// - Content type  (it becomes a part of the signed URL)
+// - Size  (since #101)
+// - Hash, optional (since #32)
+// - TODO : Filename (#63)
 func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	if r.Method != "POST" {
@@ -85,22 +92,39 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlPut, urlGet, err := createUrls(c, contentType, fileSize)
+	// Mobile source computed hash of resource before uploading it.
+	// Optional.
+	// See #32
+	hash := r.FormValue("hash")
+	if found, urlGetExisting := findByHash(c, hash); found {
+		response := Response{
+			"success":  true,
+			"existing": true,
+			"urlGet":   urlGetExisting,
+			// No "urlPut" because source won't need to upload anything.
+		}
+		fmt.Fprintln(w, response)
+		return
+	}
+
+	urlPut, urlGet, err := createUrls(c, contentType, fileSize, hash)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, `{"success": false}`)
 		return
 	}
+
 	response := Response{
-		"success": true,
-		"urlPut":  urlPut,
-		"urlGet":  urlGet,
+		"success":  true,
+		"existing": false,
+		"urlPut":   urlPut,
+		"urlGet":   urlGet,
 	}
 	fmt.Fprintln(w, response)
 }
 
-func createUrls(c context.Context, contentType string, fileSize int) (urlPut, urlGet string, err error) {
+func createUrls(c context.Context, contentType string, fileSize int, hash string) (urlPut, urlGet string, err error) {
 	objectName := randomGcsObjectName()
 	log.Infof(c, "Creating urls for tmp object name %s with content-type [%s] having size %d", objectName, contentType, fileSize)
 
@@ -122,5 +146,51 @@ func createUrls(c context.Context, contentType string, fileSize int) (urlPut, ur
 		Expires:        time.Now().Add(10 * time.Minute),
 	})
 
+	if hash != "" {
+		// #32 memorize Hash->ObjectName in Memcache, in case the same file is sent again.
+		cacheKey := "objectName_for_" + hash
+		cacheItem := &memcache.Item{
+			Key:   cacheKey,
+			Value: []byte(objectName),
+		}
+		err := memcache.Set(c, cacheItem)
+		if err != nil {
+			log.Warningf(c, "Failed setting cache[%v] : %v", cacheKey, err)
+		}
+	}
+
 	return
+}
+
+func findByHash(c context.Context, hash string) (bool, string) {
+	// Look in Memcache.
+	// Memcache entries are volatile, someday we may want to use Datastore too.
+	cacheKey := "objectName_for_" + hash
+	var cacheItem *memcache.Item
+	var errMC error
+	cacheItem, errMC = memcache.Get(c, cacheKey)
+	if errMC == memcache.ErrCacheMiss {
+		return false, ""
+	}
+	if errMC != nil {
+		log.Warningf(c, "Problem with memcache: %v", errMC)
+		return false, ""
+	}
+	// The value is a GCS object name
+	cachedObjectName := string(cacheItem.Value)
+
+	urlGet, err := storage.SignedURL(bucket, cachedObjectName, &storage.SignedURLOptions{
+		GoogleAccessID: serviceAccount,
+		PrivateKey:     pkey,
+		Method:         "GET",
+		Expires:        time.Now().Add(10 * time.Minute),
+	})
+	if err != nil {
+		log.Errorf(c, "Creating GET url to object [%s] for known hash [%s]", cachedObjectName, hash)
+		return false, ""
+	}
+	// TODO if cachedObjectName is already scheduled for deletion, then postpone the deletion.
+	// Make sure #31 doesn't delete freshly re-sent files.
+
+	return true, urlGet
 }
