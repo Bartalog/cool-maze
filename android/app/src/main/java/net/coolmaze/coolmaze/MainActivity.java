@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+
 import com.loopj.android.http.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -136,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         setIntent(null);
     }
 
-    protected void scanAndSend(Intent intent) {
+    void scanAndSend(Intent intent) {
         String type = intent.getType();
         String[] typeParts = type.split("/");
         String typeCat = typeParts[0];
@@ -309,7 +310,7 @@ public class MainActivity extends AppCompatActivity {
             notifyScan();
     }
 
-    private void notifyScan() {
+    void notifyScan() {
         // This is a small request sent in the background. It shows nothing on the Android device screen.
         // It should however show some acknowledgement on the freshly scanned coolmaze.net browser tab.
         //
@@ -426,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
         }, 1000 * seconds);
     }
 
-    private void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
+    void gentleUploadStep1(final Uri localFileUri, final String mimeType) {
 
         // 22 lines to: check the upload file size before opening camera!
         int resourceSize;
@@ -499,7 +500,7 @@ public class MainActivity extends AppCompatActivity {
                 .initiateScan();
     }
 
-    private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String mimeType) {
+    void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String mimeType) {
         File localFile = new File(localFileUri.getPath());
         // FileEntity entity = new FileEntity(localFile);
         // Resource URIs like "content://..." don't work well as Files, better as InputStreams
@@ -547,13 +548,13 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void wakeupBackend() {
+    void wakeupBackend() {
         // Send a kind of custom warmup request to the backend.
         // Make it async and ignore the response.
         newAsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
     }
 
-    private AsyncHttpClient newAsyncHttpClient(){
+    AsyncHttpClient newAsyncHttpClient(){
         // TODO: reuse them instead of instantiating each time...?
         AsyncHttpClient client = new AsyncHttpClient();
         client.addHeader("User-Agent", "Cool Maze android app");
