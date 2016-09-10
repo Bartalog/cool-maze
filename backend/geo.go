@@ -51,10 +51,11 @@ func distKm(lat1, lon1, lat2, lon2 float64) float64 {
 	// convert to radians
 	// must cast radius as float
 	var la1, lo1, la2, lo2, r float64
-	la1 = lat1 * math.Pi / 180
-	lo1 = lon1 * math.Pi / 180
-	la2 = lat2 * math.Pi / 180
-	lo2 = lon2 * math.Pi / 180
+	const pi180th = math.Pi / 180
+	la1 = lat1 * pi180th
+	lo1 = lon1 * pi180th
+	la2 = lat2 * pi180th
+	lo2 = lon2 * pi180th
 
 	r = 6378.1 // Earth radius in KILOMETERS
 	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
