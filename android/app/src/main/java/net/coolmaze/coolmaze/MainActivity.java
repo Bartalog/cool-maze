@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
                 }
-                Log.w("CoolMazeSignal", "Initiating upload of " + localFileUri + " ...");
+                Log.i("CoolMazeLogStart", "Initiating upload of " + localFileUri + " ...");
                 setContentView(R.layout.activity_main);
                 showSpinning();
                 showCaption("Uploading...");
@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             default:
                 // TODO other types of files?
-                Log.w("CoolMazeSignal", "Intent type is " + intent.getType());
+                Log.w("CoolMazeLogStart", "Intent type is " + intent.getType());
                 return;
         }
     }
@@ -473,7 +473,7 @@ public class MainActivity extends AppCompatActivity {
             */
 
             // TODO do this in background, don't block UI (camera opening) while computing!
-            //generateThumbnail(inputStream, localFileUri, mimeType);
+            generateThumbnail(inputStream, localFileUri, mimeType);
         } catch (FileNotFoundException e) {
             Log.e("CoolMazeLogUpload", "Not found :( " + e);
             return;
@@ -550,15 +550,18 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        int quality = 30; // <- this is low...
-        thumbBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
-        byte[] thumbBytes = outputStream.toByteArray();
-        int flags = 0;
-        String data = "data:image/png;base64," + Base64.encodeToString(thumbBytes, flags);
-
+        int quality = 90;
+        String data;
+        do {
+            quality -= 20;
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            thumbBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+            byte[] thumbBytes = outputStream.toByteArray();
+            int flags = 0;
+            data = "data:image/png;base64," + Base64.encodeToString(thumbBytes, flags);
+        } while( data.length()>7000 && quality>25 );
         long top = System.currentTimeMillis();
-        Log.i("CoolMazeLogThumb", "Generated thumbnail string of size " + data.length() + " in " + (top-tip) + "ms");
+        Log.i("CoolMazeLogThumb", "Generated thumbnail string of quality " + quality + ", size " + data.length() + ", in " + (top-tip) + "ms");
         synchronized (workflowLock) {
             thumbnailDataURI = data;
         }
