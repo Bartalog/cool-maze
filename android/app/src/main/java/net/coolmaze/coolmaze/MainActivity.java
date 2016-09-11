@@ -544,6 +544,10 @@ public class MainActivity extends AppCompatActivity {
         else if(mimeType.startsWith("video/")) {
             // MINI_KIND is 512x384
             Bitmap videoThumbBitmap = ThumbnailUtils.createVideoThumbnail(localFileUri.getPath(), MediaStore.Images.Thumbnails.MINI_KIND);
+            if(videoThumbBitmap==null) {
+                Log.i("CoolMazeLogThumb", "Cannot generate thumbnail for this video.");
+                return;
+            }
             thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 256, 192, true);
         } else {
             Log.e("CoolMazeLogThumb", "Unsupported resource type " + mimeType);
