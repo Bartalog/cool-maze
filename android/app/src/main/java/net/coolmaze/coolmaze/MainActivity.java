@@ -128,7 +128,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        wakeupBackend();
+        // This is useless because either /dispatch or /new-gcs-urls is
+        // called at the same time so backend will be awaken anyway.
+        //wakeupBackend();
 
         if (!checkPermissions()){
             holdOnIntent = intent;
@@ -627,8 +629,6 @@ public class MainActivity extends AppCompatActivity {
         // Send a kind of custom warmup request to the backend.
         // Make it async and ignore the response.
         newAsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
-        // TODO: maybe this is useless because either /dispatch or /new-gcs-urls is
-        // called at the same time?
     }
 
     private AsyncHttpClient newAsyncHttpClient(){
