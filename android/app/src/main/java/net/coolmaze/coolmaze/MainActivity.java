@@ -548,7 +548,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("CoolMazeLogThumb", "Cannot generate thumbnail for this video.");
                 return;
             }
-            thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 256, 192, true);
+            if(videoThumbBitmap.getHeight() > videoThumbBitmap.getWidth())
+                // Portrait
+                thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 192, 256, true);
+            else
+                // Landscape
+                thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 256, 192, true);
         } else {
             Log.e("CoolMazeLogThumb", "Unsupported resource type " + mimeType);
             return;
