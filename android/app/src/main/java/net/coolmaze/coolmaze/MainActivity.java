@@ -7,6 +7,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.ThumbnailUtils;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -16,6 +19,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PersistableBundle;
 import android.os.Vibrator;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -25,6 +29,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -51,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String qrKeyToSignal = "<?>";
     private String messageToSignal = "<?>";
+    private String thumbnailDataURI = "<?>";
 
     // Scanning and Uploading occur concurrently, they need synchronization.
     private Object workflowLock = new Object();
@@ -228,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
         finishedUploading = savedInstanceState.getBoolean("finishedUploading");
         qrKeyToSignal = savedInstanceState.getString("qrKeyToSignal");
         messageToSignal = savedInstanceState.getString("messageToSignal");
+        thumbnailDataURI = savedInstanceState.getString("thumbnailDataURI");
     }
 
     @Override
@@ -244,6 +252,7 @@ public class MainActivity extends AppCompatActivity {
         outState.putBoolean("finishedUploading", finishedUploading);
         outState.putString("qrKeyToSignal", qrKeyToSignal);
         outState.putString("messageToSignal", messageToSignal);
+        outState.putString("thumbnailDataURI", thumbnailDataURI);
     }
 
     @Override
@@ -312,16 +321,34 @@ public class MainActivity extends AppCompatActivity {
     private void notifyScan() {
         // This is a small request sent in the background. It shows nothing on the Android device screen.
         // It should however show some acknowledgement on the freshly scanned coolmaze.net browser tab.
+        // It may contain a thumbnail to display on target.
         //
         // It is optional (workflow not broken if notif is lost, or not sent at all).
         // If the payload is a small piece of text, notifyScan() is not called.
         // If the upload is already complete before the scan is complete, notifyScan() is not called.
 
         RequestParams params = new RequestParams("qrKey", qrKeyToSignal);
+        synchronized (workflowLock) {
+            if (thumbnailDataURI != null && !"<?>".equals(thumbnailDataURI)) {
+                params.add("thumb", thumbnailDataURI);
+                Log.i("CoolMazeEvent", "Sending scan notif to " + qrKeyToSignal + " with thumbnail of size " + thumbnailDataURI.length());
+            } else
+                Log.i("CoolMazeEvent", "Sending scan notif to " + qrKeyToSignal);
+        }
         newAsyncHttpClient().post(
                 BACKEND_URL + "/scanned",
                 params,
-                blackhole);
+                //blackhole);
+                new AsyncHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                        Log.i("CoolMazeEvent", "Scan notif SUCCESS ");
+                    }
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                        Log.e("CoolMazeEvent", "Scan notif FAILED ", e);
+                    }
+                });
 
     }
 
@@ -443,6 +470,9 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             */
+
+            // TODO do this in background, don't block UI (camera opening) while computing!
+            generateThumbnail(inputStream, localFileUri, mimeType);
         } catch (FileNotFoundException e) {
             Log.e("CoolMazeSignal", "Not found :( " + e);
             return;
@@ -499,6 +529,52 @@ public class MainActivity extends AppCompatActivity {
                 .initiateScan();
     }
 
+    private void generateThumbnail(InputStream inputStream, Uri localFileUri, String mimeType) {
+        if ( !thumbnailable(mimeType) ) {
+            Log.i("CoolMazeThumb", "No thumbnail generation for resource type " + mimeType);
+            return;
+        }
+
+        long tip = System.currentTimeMillis();
+        Bitmap thumbBitmap;
+
+        if(mimeType.startsWith("image/"))
+            thumbBitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeStream(inputStream), 256, 192);
+        else if(mimeType.startsWith("video/")) {
+            // MINI_KIND is 512x384
+            Bitmap videoThumbBitmap = ThumbnailUtils.createVideoThumbnail(localFileUri.getPath(), MediaStore.Images.Thumbnails.MINI_KIND);
+            thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 256, 192, true);
+        } else {
+            Log.e("CoolMazeThumb", "Unsupported resource type " + mimeType);
+            return;
+        }
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int quality = 30; // <- this is low...
+        thumbBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+        byte[] thumbBytes = outputStream.toByteArray();
+        int flags = 0;
+        String data = "data:image/png;base64," + Base64.encodeToString(thumbBytes, flags);
+
+        long top = System.currentTimeMillis();
+        Log.i("CoolMazeThumb", "Generated thumbnail string of size " + data.length() + " in " + (top-tip) + "ms");
+        synchronized (workflowLock) {
+            thumbnailDataURI = data;
+        }
+    }
+
+    private boolean thumbnailable(String mimeType) {
+        if(mimeType==null)
+                return false;
+        if(mimeType.startsWith("image/"))
+                return true;
+        if(mimeType.startsWith("video/"))
+            return true;   // see https://developer.android.com/reference/android/media/ThumbnailUtils.html#createVideoThumbnail(java.lang.String,%20int)
+        // TODO: handle more types? pdf icons, etc.
+        return false;
+    }
+
+
     private void gentleUploadStep2(String resourcePutUrl, final String resourceGetUrl, Uri localFileUri, final String mimeType) {
         File localFile = new File(localFileUri.getPath());
         // FileEntity entity = new FileEntity(localFile);
@@ -551,6 +627,8 @@ public class MainActivity extends AppCompatActivity {
         // Send a kind of custom warmup request to the backend.
         // Make it async and ignore the response.
         newAsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
+        // TODO: maybe this is useless because either /dispatch or /new-gcs-urls is
+        // called at the same time?
     }
 
     private AsyncHttpClient newAsyncHttpClient(){
