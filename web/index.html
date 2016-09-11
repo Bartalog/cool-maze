@@ -375,7 +375,7 @@
     render("black", embiggen);
 
     var wakeup = new XMLHttpRequest();
-    var wuEndpoint = "https://cool-maze.appspot.com/wakeup";
+    var wuEndpoint = backend + "/wakeup";
     var wuParam = "qrKey=" + qrKey;
     wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
     wakeup.send( null );
