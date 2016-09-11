@@ -51,6 +51,7 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 
 	qrKey := r.FormValue("qrKey")
 	event := "maze-scan"
+	thumbnailDataURI := r.FormValue("thumb")
 
 	if qrKey == "" {
 		log.Warningf(c, "Missing mandatory parameter: qrKey")
@@ -88,7 +89,15 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 		HttpClient: urlfetchClient,
 	}
 
-	var data map[string]string = nil
+	data := map[string]string{}
+	if thumbnailDataURI != "" {
+		log.Infof(c, "A thumbnail is provided, size %d", len(thumbnailDataURI))
+		if len(thumbnailDataURI) < 7000 {
+			data["message"] = thumbnailDataURI
+		} else {
+			log.Errorf(c, "Not sending thumbnail (too big, would risk hitting the 10KB Pusher limit)")
+		}
+	}
 	_, err := pusherClient.Trigger(channelID, event, data)
 	if err != nil {
 		log.Errorf(c, "%v", err)
