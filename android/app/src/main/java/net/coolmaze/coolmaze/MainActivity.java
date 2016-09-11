@@ -43,7 +43,6 @@ import cz.msebera.android.httpclient.entity.InputStreamEntity;
 import cz.msebera.android.httpclient.message.BasicHeader;
 
 public class MainActivity extends AppCompatActivity {
-
     static final String FRONTPAGE_DOMAIN = "coolmaze.net";
     //static final String FRONTPAGE_DOMAIN = "coolmaze.io";   maybe later
     static final String FRONTPAGE_URL = "https://" + FRONTPAGE_DOMAIN;
@@ -111,13 +110,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onResume()");
+        Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + ".onResume()");
         super.onResume();
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
-        Log.i("CoolMazeEvent", "Intent="+intent);
-        Log.i("CoolMazeEvent", "finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
+        Log.i("CoolMazeLogEvent", "Intent="+intent);
+        Log.i("CoolMazeLogEvent", "finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
         if ( intent == null || finishedScanning )
             return;
 
@@ -154,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 messageToSignal = intent.getStringExtra(Intent.EXTRA_TEXT);
                 finishedScanning = false;
                 finishedUploading = true;
-                Log.i("CoolMazeEvent", MainActivity.this.hashCode() + " finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
+                Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + " finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
                 new IntentIntegrator(MainActivity.this)
                         //.setOrientationLocked(false)
                         .addExtra("PROMPT_MESSAGE", SCAN_INVITE)
@@ -172,13 +171,13 @@ public class MainActivity extends AppCompatActivity {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                         ClipData clip = intent.getClipData();
                         if ( clip.getItemCount() == 0 ) {
-                            Log.e("CoolMazeSignal", "ClipData having 0 item :(");
+                            Log.e("CoolMazeLogSignal", "ClipData having 0 item :(");
                             return;
                     }
                         ClipData.Item item = clip.getItemAt(0);
                         localFileUri = item.getUri();
                     }else{
-                        Log.e("CoolMazeSignal", "Intent.getClipData() needs at least JELLY_BEAN :(");
+                        Log.e("CoolMazeLogSignal", "Intent.getClipData() needs at least JELLY_BEAN :(");
                         return;
                     }
                 }
@@ -229,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onRestoreInstanceState(Bundle)");
+        Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + ".onRestoreInstanceState(Bundle)");
         super.onRestoreInstanceState(savedInstanceState);
         finishedScanning = savedInstanceState.getBoolean("finishedScanning");
         finishedUploading = savedInstanceState.getBoolean("finishedUploading");
@@ -240,13 +239,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onRestoreInstanceState(Bundle savedInstanceState, PersistableBundle persistentState) {
-        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onRestoreInstanceState(Bundle, PersistableBundle)");
+        Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + ".onRestoreInstanceState(Bundle, PersistableBundle)");
         super.onRestoreInstanceState(savedInstanceState);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onSaveInstanceState(Bundle)");
+        Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + ".onSaveInstanceState(Bundle)");
         super.onSaveInstanceState(outState);
         outState.putBoolean("finishedScanning", finishedScanning);
         outState.putBoolean("finishedUploading", finishedUploading);
@@ -257,8 +256,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
-        Log.i("CoolMazeEvent", "finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
+        Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + ".onActivityResult(" + requestCode + ", " + resultCode + ", " + data + ")");
+        Log.i("CoolMazeLogEvent", "finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
         super.onActivityResult(requestCode, resultCode, data);
 
         //
@@ -267,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (resultCode == RESULT_CANCELED) {
             // User was on the Scan screen, but hit her Back button or similar
-            Log.i("CoolMazeSignal", "Scan was canceled by user");
+            Log.i("CoolMazeLogEvent", "Scan was canceled by user");
             finish();
             return;
         }
@@ -279,11 +278,11 @@ public class MainActivity extends AppCompatActivity {
 
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (scanResult == null) {
-            Log.e("CoolMazeError", "IntentResult parsing by ZXing failed :(");
+            Log.e("CoolMazeLogError", "IntentResult parsing by ZXing failed :(");
             return;
         }
 
-        Log.i("CoolMazeSignal", "IntentResult successfully parsed by ZXing");
+        Log.i("CoolMazeLogEvent", "IntentResult successfully parsed by ZXing");
         qrKeyToSignal = scanResult.getContents();
 
         /*
@@ -331,9 +330,9 @@ public class MainActivity extends AppCompatActivity {
         synchronized (workflowLock) {
             if (thumbnailDataURI != null && !"<?>".equals(thumbnailDataURI)) {
                 params.add("thumb", thumbnailDataURI);
-                Log.i("CoolMazeEvent", "Sending scan notif to " + qrKeyToSignal + " with thumbnail of size " + thumbnailDataURI.length());
+                Log.i("CoolMazeLogEvent", "Sending scan notif to " + qrKeyToSignal + " with thumbnail of size " + thumbnailDataURI.length());
             } else
-                Log.i("CoolMazeEvent", "Sending scan notif to " + qrKeyToSignal);
+                Log.i("CoolMazeLogEvent", "Sending scan notif to " + qrKeyToSignal);
         }
         newAsyncHttpClient().post(
                 BACKEND_URL + "/scanned",
@@ -342,11 +341,11 @@ public class MainActivity extends AppCompatActivity {
                 new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                        Log.i("CoolMazeEvent", "Scan notif SUCCESS ");
+                        Log.i("CoolMazeLogEvent", "Scan notif SUCCESS ");
                     }
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                        Log.e("CoolMazeEvent", "Scan notif FAILED ", e);
+                        Log.e("CoolMazeLogEvent", "Scan notif FAILED ", e);
                     }
                 });
 
@@ -358,7 +357,7 @@ public class MainActivity extends AppCompatActivity {
     // In case the resource is a file, when dispatch is called the file is already completely
     // uploaded, and the message consists in the file download URL.
     void dispatch(){
-        Log.i("CoolMazeSignal", "Sending to " + qrKeyToSignal + " message [" + messageToSignal + "]");
+        Log.i("CoolMazeLogEvent", "Sending to " + qrKeyToSignal + " message [" + messageToSignal + "]");
         if ( "<?>".equals(messageToSignal) ){
             showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
             return;
@@ -372,7 +371,7 @@ public class MainActivity extends AppCompatActivity {
                 new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                        Log.i("CoolMazeEvent", MainActivity.this.hashCode() + ".sendMessage successful POST");
+                        Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + ".sendMessage successful POST");
                         // This long vibration should mean "The target has received your message!",
                         // ...but it doesn't, yet.
                         Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -383,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                        Log.e("CoolMazeEvent", MainActivity.this.hashCode() + ".sendMessage POST request response code " + statusCode);
+                        Log.e("CoolMazeLogEvent", MainActivity.this.hashCode() + ".sendMessage POST request response code " + statusCode);
                         showError("Unfortunately, we could not send this message to the dispatch server.");
                     }
                 });
@@ -464,7 +463,7 @@ public class MainActivity extends AppCompatActivity {
             /*
             See issue #101 : enforced upload size limit server-side instead.
             if (resourceSize > MAX_UPLOAD_SIZE) {
-                Log.e("CoolMaze", "File too big to upload : " + resourceSize + " > " + MAX_UPLOAD_SIZE);
+                Log.e("CoolMazeLog", "File too big to upload : " + resourceSize + " > " + MAX_UPLOAD_SIZE);
                 showError("This file is too big (" + (resourceSize/(1024*1024)) + "MB), I can't upload it.\n\n"
                         + "Max upload size is " + (MAX_UPLOAD_SIZE/(1024*1024)) + "MB.");
                 return;
@@ -472,12 +471,12 @@ public class MainActivity extends AppCompatActivity {
             */
 
             // TODO do this in background, don't block UI (camera opening) while computing!
-            generateThumbnail(inputStream, localFileUri, mimeType);
+            //generateThumbnail(inputStream, localFileUri, mimeType);
         } catch (FileNotFoundException e) {
-            Log.e("CoolMazeSignal", "Not found :( " + e);
+            Log.e("CoolMazeLogUpload", "Not found :( " + e);
             return;
         } catch (IOException e) {
-            Log.e("CoolMazeSignal", "Can't determine resource size " + e);
+            Log.e("CoolMazeLogUpload", "Can't determine resource size " + e);
             return;
         } finally {
             if( inputStream != null)
@@ -493,13 +492,13 @@ public class MainActivity extends AppCompatActivity {
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                        Log.i("CoolMazeEvent", "Signed URLs request success :) \n ");
+                        Log.i("CoolMazeLogEvent", "Signed URLs request success :) \n ");
                         try {
                             String urlPut = response.getString("urlPut");
                             String urlGet = response.getString("urlGet");
                             gentleUploadStep2(urlPut, urlGet, localFileUri, mimeType);
                         } catch (JSONException e) {
-                            Log.e("CoolMazeSignal", "JSON signed URLs extract failed :( from " + response);
+                            Log.e("CoolMazeLogSignal", "JSON signed URLs extract failed :( from " + response);
                         }
                     }
 
@@ -531,7 +530,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void generateThumbnail(InputStream inputStream, Uri localFileUri, String mimeType) {
         if ( !thumbnailable(mimeType) ) {
-            Log.i("CoolMazeThumb", "No thumbnail generation for resource type " + mimeType);
+            Log.i("CoolMazeLogThumb", "No thumbnail generation for resource type " + mimeType);
             return;
         }
 
@@ -545,7 +544,7 @@ public class MainActivity extends AppCompatActivity {
             Bitmap videoThumbBitmap = ThumbnailUtils.createVideoThumbnail(localFileUri.getPath(), MediaStore.Images.Thumbnails.MINI_KIND);
             thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 256, 192, true);
         } else {
-            Log.e("CoolMazeThumb", "Unsupported resource type " + mimeType);
+            Log.e("CoolMazeLogThumb", "Unsupported resource type " + mimeType);
             return;
         }
 
@@ -557,7 +556,7 @@ public class MainActivity extends AppCompatActivity {
         String data = "data:image/png;base64," + Base64.encodeToString(thumbBytes, flags);
 
         long top = System.currentTimeMillis();
-        Log.i("CoolMazeThumb", "Generated thumbnail string of size " + data.length() + " in " + (top-tip) + "ms");
+        Log.i("CoolMazeLogThumb", "Generated thumbnail string of size " + data.length() + " in " + (top-tip) + "ms");
         synchronized (workflowLock) {
             thumbnailDataURI = data;
         }
@@ -583,14 +582,14 @@ public class MainActivity extends AppCompatActivity {
         try {
             inputStream = getContentResolver().openInputStream(localFileUri);
         } catch (FileNotFoundException e) {
-            Log.e("CoolMazeSignal", "Not found :( " + e);
+            Log.e("CoolMazeLogUpload", "Not found :( " + e);
             return;
         }
 
         InputStreamEntity entity = new InputStreamEntity(inputStream);
         Context context = null; // ?
 
-        Log.i("CoolMazeSignal", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
+        Log.i("CoolMazeLogEvent", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
         newAsyncHttpClient().put(
                 context,
                 resourcePutUrl,
@@ -600,7 +599,7 @@ public class MainActivity extends AppCompatActivity {
                 new AsyncHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-                        Log.i("CoolMazeSignal", "Upload resource success :)");
+                        Log.i("CoolMazeLogSignal", "Upload resource success :)");
 
                         // When the target desktop receives the URL, it immediately follows it
                         messageToSignal = resourceGetUrl;
@@ -617,7 +616,8 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-                        Log.e("CoolMazeSignal", "Upload resource failed :( " + e + " " + new String(errorResponse));
+                        String errorResponseStr = errorResponse==null ? "[]" : "["+new String(errorResponse)+"]";
+                        Log.e("CoolMazeLogSignal", "Upload resource failed :( with status " + statusCode + " " + errorResponseStr, e);
                         showError("Unfortunately, the upload failed.");
                     }
                 });
@@ -639,7 +639,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void showError(String message){
-        Log.e("CoolMazeError", "Alert dialog [" + message + "]");
+        Log.e("CoolMazeLogError", "Alert dialog [" + message + "]");
         new AlertDialog.Builder(this)
                 .setTitle("Error :(")
                 .setMessage(message)
