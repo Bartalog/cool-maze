@@ -121,7 +121,7 @@ function spin() {
 
 document.getElementById("inbox").value = "";
 
-// Spin while registering
+// Spin while initializing, until everything ready.
 spin();
 
 //
@@ -156,10 +156,18 @@ channel.bind(eventCast, function(data) {
     show("txt-msg-zone");
 });
 
-render("black");
-
 var wakeup = new XMLHttpRequest();
-var wuEndpoint = "https://cool-maze.appspot.com/wakeup";
+var wuEndpoint = backend + "/wakeup";
 var wuParam = "qrKey=" + qrKey;
+wakeup.onreadystatechange = function()
+{
+    if (wakeup.readyState == 4 && wakeup.status == 200) {
+      // #111: wakeup response ensures we have internet connectivity,
+      // it unlocks the QR-code display.
+      render("black");
+    } else {
+      console.log("No internet...?")
+    }
+}
 wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
 wakeup.send( null );
