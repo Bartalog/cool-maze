@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/memcache"
-	"google.golang.org/cloud/storage"
 )
 
 // This is for sending a file resource.
