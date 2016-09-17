@@ -363,6 +363,8 @@
       if(startsWith(msg,'http') || startsWith(msg,'www.')) {
          var url = msg;
          console.log("Received URL: " + url);
+         document.getElementById("inbox").value = "Redirecting to " + url + " ...";
+         show("txt-msg-zone");
          window.location = url;
          return;
       }
