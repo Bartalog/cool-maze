@@ -341,6 +341,9 @@
     qrKey = genRandomQrKey();
     chanID = qrKey;
 
+    if (typeof Pusher === 'undefined')
+      console.log("No internet connectivity");
+
     var pusher = new Pusher(coolMazePusherAppKey, {
       encrypted: true
     });
@@ -379,12 +382,14 @@
     var wuParam = "qrKey=" + qrKey;
     wakeup.onreadystatechange = function()
     {
-        if (wakeup.readyState == 4 && wakeup.status == 200) {
-          // #111: wakeup response ensures we have internet connectivity,
-          // it unlocks the QR-code display.
-          render("black", embiggen);
-        } else {
-          console.log("No internet...?")
+        if (wakeup.readyState == 4 ) {
+          if (wakeup.status == 200) {
+            // #111: wakeup response ensures we have internet connectivity,
+            // it unlocks the QR-code display.
+            render("black", embiggen);
+          } else {
+            console.log("No internet...? ");
+          }
         }
     }
     wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
