@@ -388,23 +388,19 @@
 
 
     // This request is supposed to be fast.
-    // Its response is our proof of internet connectivity.
-    // It unlocks the QR-code display.
     var testInternet = new XMLHttpRequest();
-    testInternet.onreadystatechange = function()
-    {
+    testInternet.onreadystatechange = function() {
         if (testInternet.readyState == 4 ) {
           if (testInternet.status == 200) {
             // #110: response ensures we have internet connectivity,
             // it unlocks the QR-code display.
             render("black", embiggen);
           } else {
-            showError("No internet...? ");
+            showError("No internet...?");
           }
         }
-    }
-
-    testInternet.open("GET", "https://cool-maze.appspot.com/online", true);
+    };
+    testInternet.open("GET", backend+"/online", true);
     testInternet.send( null );
 
     // This request can be slow.

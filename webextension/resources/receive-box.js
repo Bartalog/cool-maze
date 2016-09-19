@@ -2,6 +2,13 @@
 var backend = "https://cool-maze.appspot.com";
 var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
+function showError(errmsg) {
+  console.log("Error: " + errmsg)
+  clearQR();
+  var errorZone = document.getElementById("errors");
+  errorZone.innerHTML = errmsg;
+}
+
 // Since #108, qrKey==chanID and it is random generated in JS.
 var qrKey = "";
 var chanID = "";
@@ -156,28 +163,30 @@ channel.bind(eventCast, function(data) {
     show("txt-msg-zone");
 });
 
+// This request is supposed to be fast.
+var testInternet = new XMLHttpRequest();
+testInternet.onreadystatechange = function() {
+    if (testInternet.readyState == 4 ) {
+      if (testInternet.status == 200) {
+        // #110: response ensures we have internet connectivity,
+        // it unlocks the QR-code display.
+        render("black");
+      } else {
+        showError("No internet...?");
+      }
+    }
+};
+
+testInternet.open("GET", backend+"/online", true);
+testInternet.send( null );
+
+// This request can be slow.
+// We don't need to wait for the response.
 var wakeup = new XMLHttpRequest();
 var wuEndpoint = backend + "/wakeup";
 var wuParam = "qrKey=" + qrKey;
-wakeup.onreadystatechange = function()
-{
-    if (wakeup.readyState == 4 && wakeup.status == 200) {
-      // #111: wakeup response ensures we have internet connectivity,
-      // it unlocks the QR-code display.
-      render("black");
-    } else {
-      console.log("No internet...?")
-    }
-}
 wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
 wakeup.send( null );
-
-function showError(errmsg) {
-  console.log("Error: " + errmsg)
-  clearQR();
-  var errorZone = document.getElementById("errors");
-  errorZone.innerHTML = errmsg;
-}
 
 window.addEventListener('offline', function(){
   showError("Lost internet connectivity :(")
