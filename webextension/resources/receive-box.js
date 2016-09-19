@@ -191,3 +191,11 @@ wakeup.send( null );
 window.addEventListener('offline', function(){
   showError("Lost internet connectivity :(")
 });
+
+window.setTimeout(function(){ 
+  var qrzone = document.getElementById("qr-zone");
+  if ( qrzone.style.display == "block" || qrzone.style.display == "" ) {
+    showError("Please reload.");
+    pusher.disconnect();
+  }
+}, 10 * 60 * 1000);
