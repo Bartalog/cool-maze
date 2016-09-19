@@ -171,3 +171,14 @@ wakeup.onreadystatechange = function()
 }
 wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
 wakeup.send( null );
+
+function showError(errmsg) {
+  console.log("Error: " + errmsg)
+  clearQR();
+  var errorZone = document.getElementById("errors");
+  errorZone.innerHTML = errmsg;
+}
+
+window.addEventListener('offline', function(){
+  showError("Lost internet connectivity :(")
+});
