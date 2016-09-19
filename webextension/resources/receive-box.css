@@ -56,3 +56,6 @@ body {
   text-decoration: none;
   font-size: bolder;
 }
+#errors {
+  padding: 8px;
+}
