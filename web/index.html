@@ -356,6 +356,12 @@
     var pusher = new Pusher(coolMazePusherAppKey, {
       encrypted: true
     });
+
+    pusher.connection.bind( 'error', function( err ) {
+      if( err.data.code === 4004 ) {
+        showError("We're very sorry, but the Cool Maze service currently runs at maximal capacity. We cannot provide a fresh QR-code right now.");
+      }
+    });
     channel = pusher.subscribe(chanID);
 
     var eventNotifScan = 'maze-scan';
