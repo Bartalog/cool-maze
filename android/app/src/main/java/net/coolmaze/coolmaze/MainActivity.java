@@ -20,6 +20,7 @@ import android.os.Looper;
 import android.os.PersistableBundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -684,7 +685,8 @@ public class MainActivity extends AppCompatActivity {
     AsyncHttpClient newAsyncHttpClient(){
         // TODO: reuse them instead of instantiating each time...?
         AsyncHttpClient client = new AsyncHttpClient();
-        client.addHeader("User-Agent", "Cool Maze android app");
+        String cmDeviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        client.addHeader("User-Agent", "Cool Maze android app " + cmDeviceId);
         return client;
     }
 
