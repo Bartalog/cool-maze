@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/pusher/pusher-http-go"
 
@@ -154,6 +155,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "qrKey must be valid")
 		return
 	}
+
+	// Not interested in leading and trailing spaces.
+	message = strings.TrimSpace(message)
 
 	if message == "" {
 		log.Warningf(c, "Missing mandatory parameter: message")
