@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void requestPermissions(){
-        // Cool-Maze can't work at all without acces to Camera.
+        // Cool-Maze can't work at all without access to Camera.
         // Also, it (currently) needs READ_EXTERNAL_STORAGE when sending a file.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int requestCode = 0; //??
