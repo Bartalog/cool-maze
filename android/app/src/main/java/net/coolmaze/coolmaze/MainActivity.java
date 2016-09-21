@@ -135,10 +135,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // This is useless because either /dispatch or /new-gcs-urls is
-        // called at the same time so backend will be awaken anyway.
-        //wakeupBackend();
-
         if (!checkPermissions()){
             holdOnIntent = intent;
             requestPermissions();
@@ -165,6 +161,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + " finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
                 resourceHash = null;
                 gcsObjectName = null;
+
+                wakeupBackend();
 
                 new IntentIntegrator(MainActivity.this)
                         //.setOrientationLocked(false)
@@ -679,6 +677,10 @@ public class MainActivity extends AppCompatActivity {
     void wakeupBackend() {
         // Send a kind of custom warmup request to the backend.
         // Make it async and ignore the response.
+
+        // This is called only when sharing short text or URL.
+        // It is not used for file upload because the request to /new-gcs-urls already warms up a backend instance.
+
         newAsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
     }
 
