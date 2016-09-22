@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
@@ -230,6 +231,30 @@ public class MainActivity extends AppCompatActivity {
         // Are all video formats properly handled?
         // Should we default image/*, video/* to some more specific value?
         return mimeType;
+    }
+
+    String extractFileName(Uri uri) {
+        // From http://stackoverflow.com/a/5569478/871134
+        // Note that this doesn't include the file extension.
+
+        String scheme = uri.getScheme();
+        if (scheme.equals("file"))
+            return uri.getLastPathSegment();
+        if (scheme.equals("content")) {
+            String[] proj = { MediaStore.Images.Media.TITLE };
+            Cursor cursor = getContentResolver().query(uri, proj, null, null, null);
+            if (cursor != null) {
+                String filename = null;
+                if (cursor.getCount() != 0) {
+                    int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.TITLE);
+                    cursor.moveToFirst();
+                    filename = cursor.getString(columnIndex);
+                }
+                cursor.close();
+                return filename;
+            }
+        }
+        return null;
     }
 
     //
@@ -505,9 +530,12 @@ public class MainActivity extends AppCompatActivity {
         // See issue #32: server file hash-based cache.
         resourceHash = hash(localFileUri);
 
+        // Issue #105. May be null.
+        String filename = extractFileName(localFileUri);
+
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
-                new RequestParams("type", mimeType, "filesize", resourceSize, "hash", resourceHash),
+                new RequestParams("type", mimeType, "filesize", resourceSize, "hash", resourceHash, "filename", filename),
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {

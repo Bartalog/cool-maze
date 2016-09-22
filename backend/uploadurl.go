@@ -94,6 +94,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, response)
 		return
 	}
+	filename := r.FormValue("filename")
 
 	// Mobile source computed hash of resource before uploading it.
 	// Optional.
@@ -111,7 +112,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlPut, urlGet, gcsObjectName, err := createUrls(c, contentType, fileSize, hash)
+	urlPut, urlGet, gcsObjectName, err := createUrls(c, contentType, fileSize, hash, filename)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -129,10 +130,11 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, response)
 }
 
-func createUrls(c context.Context, contentType string, fileSize int, hash string) (urlPut, urlGet, objectName string, err error) {
+func createUrls(c context.Context, contentType string, fileSize int, hash, filename string) (urlPut, urlGet, objectName string, err error) {
 	log.Infof(c, "Advertised upload content-type is %q", contentType)
 	log.Infof(c, "Advertised upload size is %d", fileSize)
 	log.Infof(c, "Advertised upload hash is %q", hash)
+	log.Infof(c, "Advertised upload filename is %q", filename)
 
 	objectName = randomGcsObjectName()
 	log.Infof(c, "Creating urls for tmp object name %s", objectName)
