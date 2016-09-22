@@ -431,6 +431,22 @@
         pusher.disconnect();
       }
     }, 10 * 60 * 1000);
+
+    // Handle slight differences in Embed mode (iframe)
+    function handleEmbedMode() {
+      var inFrame = false;
+      try {
+          inFrame = (window.self !== window.top);
+      } catch (e) {
+          inFrame = true;
+      }
+      if ( inFrame ) {
+        var help = document.getElementById("help");
+        if ( help )
+          help.style.display = "none";
+      }
+    }
+    handleEmbedMode();
   </script>
   
   <script>
