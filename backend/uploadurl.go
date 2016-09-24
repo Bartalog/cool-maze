@@ -65,6 +65,7 @@ var pkey []byte
 // The request payload is a JSON containing an array.
 func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
+	var input PreUploadRequestParam
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Only POST method is accepted")
@@ -72,7 +73,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Warning: this contentType will be part of the encrypted
 	// signature, and the client will have to match it exactly
-	contentType := r.FormValue("type")
+	input.ContentType = r.FormValue("type")
 
 	// Check intended filesize
 	fileSizeStr := r.FormValue("filesize")
@@ -99,13 +100,14 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, response)
 		return
 	}
-	filename := r.FormValue("filename")
+	input.Size = fileSize
+	input.Filename = r.FormValue("filename")
 
 	// Mobile source computed hash of resource before uploading it.
 	// Optional.
 	// See #32
-	hash := r.FormValue("hash")
-	if found, urlGetExisting, gcsObjectNameExisting := findByHash(c, hash); found {
+	input.Hash = r.FormValue("hash")
+	if found, urlGetExisting, gcsObjectNameExisting := findByHash(c, input.Hash); found {
 		response := Response{
 			"success":  true,
 			"existing": true,
@@ -117,7 +119,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlPut, urlGet, gcsObjectName, err := createUrls(c, contentType, fileSize, hash, filename)
+	data, err := createUrls(c, input)
 	if err != nil {
 		log.Errorf(c, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -128,34 +130,34 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	response := Response{
 		"success":       true,
 		"existing":      false,
-		"urlPut":        urlPut,
-		"urlGet":        urlGet,
-		"gcsObjectName": gcsObjectName,
+		"urlPut":        data.UrlPut,
+		"urlGet":        data.UrlGet,
+		"gcsObjectName": data.GcsObjectName,
 	}
 	fmt.Fprintln(w, response)
 }
 
-func createUrls(c context.Context, contentType string, fileSize int, hash, filename string) (urlPut, urlGet, objectName string, err error) {
-	log.Infof(c, "Advertised upload content-type is %q", contentType)
-	log.Infof(c, "Advertised upload size is %d", fileSize)
-	log.Infof(c, "Advertised upload hash is %q", hash)
-	log.Infof(c, "Advertised upload filename is %q", filename)
+func createUrls(c context.Context, in PreUploadRequestParam) (out PreUploadResponseParam, err error) {
+	log.Infof(c, "Advertised upload content-type is %q", in.ContentType)
+	log.Infof(c, "Advertised upload size is %d", in.Size)
+	log.Infof(c, "Advertised upload hash is %q", in.Hash)
+	log.Infof(c, "Advertised upload filename is %q", in.Filename)
 
-	objectName = randomGcsObjectName()
-	log.Infof(c, "Creating urls for tmp object name %s", objectName)
+	out.GcsObjectName = randomGcsObjectName()
+	log.Infof(c, "Creating urls for tmp object name %s", out.GcsObjectName)
 
-	urlPut, err = storage.SignedURL(bucket, objectName, &storage.SignedURLOptions{
+	out.UrlPut, err = storage.SignedURL(bucket, out.GcsObjectName, &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccount,
 		PrivateKey:     pkey,
 		Method:         "PUT",
 		Expires:        time.Now().Add(9 * time.Minute),
-		ContentType:    contentType,
+		ContentType:    in.ContentType,
 	})
 	if err != nil {
 		return
 	}
 
-	urlGet, err = storage.SignedURL(bucket, objectName, &storage.SignedURLOptions{
+	out.UrlGet, err = storage.SignedURL(bucket, out.GcsObjectName, &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccount,
 		PrivateKey:     pkey,
 		Method:         "GET",
@@ -205,7 +207,7 @@ func findByHash(c context.Context, hash string) (found bool, urlGet string, gcsO
 
 // UploadRequestParam sent by Mobile to Backend
 // It says "I want to upload a file having these features"
-type UploadRequestParam struct {
+type PreUploadRequestParam struct {
 	ContentType string
 	Size        int
 	Hash        string
@@ -214,15 +216,12 @@ type UploadRequestParam struct {
 
 // UploadResponseParam sent by Backend to Mobile
 // It says "Here are your upload/download URLs"
-type UploadResponseParam struct {
+type PreUploadResponseParam struct {
 	Existing      bool
 	UrlPut        string
 	UrlGet        string
 	GcsObjectName string
 }
-
-// TODO refactor gcsUrlsHandler, createUrls to use
-// UploadRequestParam, UploadResponseParam
 
 // Multiple file upload
 //
@@ -242,7 +241,7 @@ func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 
-	var params []UploadRequestParam
+	var params []PreUploadRequestParam
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Errorf(c, "%v", err)
@@ -251,7 +250,7 @@ func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uploads := make([]UploadResponseParam, len(params))
+	uploads := make([]PreUploadResponseParam, len(params))
 	for i, param := range params {
 		upload := &uploads[i]
 
@@ -264,7 +263,7 @@ func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Genereate short-lived URLs
-		upload.UrlPut, upload.UrlGet, upload.GcsObjectName, err = createUrls(c, param.ContentType, param.Size, param.Hash, param.Filename)
+		*upload, err = createUrls(c, param)
 		if err != nil {
 			log.Errorf(c, "%v", err)
 			w.WriteHeader(http.StatusInternalServerError)
