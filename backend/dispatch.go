@@ -91,6 +91,7 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]string{}
+
 	if thumbnailDataURI != "" {
 		log.Infof(c, "A thumbnail is provided, size %d", len(thumbnailDataURI))
 		if len(thumbnailDataURI) < 7000 {
@@ -99,6 +100,15 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 			log.Errorf(c, "Not sending thumbnail (too big, would risk hitting the 10KB Pusher limit)")
 		}
 	}
+
+	if r.FormValue("multiIndex") != "" {
+		// This is part of a multiple upload!
+		// This makes most sense when a thumbnail is provided.
+		data["uploadIndex"] = r.FormValue("multiIndex")
+		data["uploadCount"] = r.FormValue("multiCount")
+		log.Infof(c, "Multi-upload notification %s / %s", data["uploadIndex"], data["uploadCount"])
+	}
+
 	_, err := pusherClient.Trigger(channelID, event, data)
 	if err != nil {
 		log.Errorf(c, "%v", err)
@@ -106,7 +116,7 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Encountered error:", err)
 		return
 	}
-	fmt.Fprintln(w, "Done :)")
+	fmt.Fprintln(w, `{"success": true}`)
 }
 
 // Note that AppEngine doesn't support response streaming.
@@ -180,6 +190,14 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]string{"message": message}
+
+	if r.FormValue("multiIndex") != "" {
+		// This is part of a multiple upload!
+		data["uploadIndex"] = r.FormValue("multiIndex")
+		data["uploadCount"] = r.FormValue("multiCount")
+		log.Infof(c, "Multi-upload dispatch %s / %s", data["uploadIndex"], data["uploadCount"])
+	}
+
 	be, err := pusherClient.Trigger(channelID, event, data)
 	if err != nil {
 		log.Errorf(c, "%v", err)
