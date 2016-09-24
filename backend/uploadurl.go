@@ -65,7 +65,7 @@ var pkey []byte
 // The request payload is a JSON containing an array.
 func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	var input PreUploadRequestParam
+	var input PreUploadRequest
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "Only POST method is accepted")
@@ -137,7 +137,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, response)
 }
 
-func createUrls(c context.Context, in PreUploadRequestParam) (out PreUploadResponseParam, err error) {
+func createUrls(c context.Context, in PreUploadRequest) (out PreUploadResponse, err error) {
 	log.Infof(c, "Advertised upload content-type is %q", in.ContentType)
 	log.Infof(c, "Advertised upload size is %d", in.Size)
 	log.Infof(c, "Advertised upload hash is %q", in.Hash)
@@ -207,7 +207,7 @@ func findByHash(c context.Context, hash string) (found bool, urlGet string, gcsO
 
 // UploadRequestParam sent by Mobile to Backend
 // It says "I want to upload a file having these features"
-type PreUploadRequestParam struct {
+type PreUploadRequest struct {
 	ContentType string
 	Size        int
 	Hash        string
@@ -216,7 +216,7 @@ type PreUploadRequestParam struct {
 
 // UploadResponseParam sent by Backend to Mobile
 // It says "Here are your upload/download URLs"
-type PreUploadResponseParam struct {
+type PreUploadResponse struct {
 	Existing      bool
 	UrlPut        string
 	UrlGet        string
@@ -241,7 +241,7 @@ func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 
-	var params []PreUploadRequestParam
+	var params []PreUploadRequest
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Errorf(c, "%v", err)
@@ -250,7 +250,7 @@ func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uploads := make([]PreUploadResponseParam, len(params))
+	uploads := make([]PreUploadResponse, len(params))
 	for i, param := range params {
 		upload := &uploads[i]
 
