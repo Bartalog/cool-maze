@@ -1,6 +1,7 @@
 package coolmaze
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 
 func init() {
 	http.HandleFunc("/new-gcs-urls", gcsUrlsHandler)
+	http.HandleFunc("/new-multiple-gcs-urls", multipleGcsUrlsHandler)
 
 	// This is important for randomString below
 	rndOnce.Do(randomize)
@@ -52,12 +54,15 @@ const (
 
 var pkey []byte
 
-// The /new-gcs-urls user usually advertises the following info about
+// Single file upload
+//
+// The /new-gcs-urls user advertises the following info about
 // intended file to be uploaded:
 // - Content type  (it becomes a part of the signed URL)
-// - Size  (since #101)
+// - Size (since #101)
 // - Hash, optional (since #32)
-// - TODO : Filename (#63)
+// - Filename, optional (since #63)
+// The request payload is a JSON containing an array.
 func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	if r.Method != "POST" {
@@ -65,7 +70,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Only POST method is accepted")
 		return
 	}
-	// Warning: this contentType will be part of the crypted
+	// Warning: this contentType will be part of the encrypted
 	// signature, and the client will have to match it exactly
 	contentType := r.FormValue("type")
 
@@ -196,4 +201,81 @@ func findByHash(c context.Context, hash string) (found bool, urlGet string, gcsO
 	found = true
 	log.Infof(c, "Found existing GCE object [%s] for hash [%s]", gcsObjectName, hash)
 	return
+}
+
+// UploadRequestParam sent by Mobile to Backend
+// It says "I want to upload a file having these features"
+type UploadRequestParam struct {
+	ContentType string
+	Size        int
+	Hash        string
+	Filename    string
+}
+
+// UploadResponseParam sent by Backend to Mobile
+// It says "Here are your upload/download URLs"
+type UploadResponseParam struct {
+	Existing      bool
+	UrlPut        string
+	UrlGet        string
+	GcsObjectName string
+}
+
+// TODO refactor gcsUrlsHandler, createUrls to use
+// UploadRequestParam, UploadResponseParam
+
+// Multiple file upload
+//
+// The /new-multiple-gcs-urls user advertises the following info about
+// intended files to be uploaded:
+// - Content type  (it becomes a part of the each signed upload URL)
+// - Size
+// - Hash, optional
+// - Filename, optional
+func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "Only POST method is accepted")
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	var params []UploadRequestParam
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Errorf(c, "%v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, `{"success": false}`)
+		return
+	}
+
+	uploads := make([]UploadResponseParam, len(params))
+	for i, param := range params {
+		upload := &uploads[i]
+
+		// Known hash?
+		if found, urlGetExisting, gcsObjectNameExisting := findByHash(c, param.Hash); found {
+			upload.Existing = true
+			upload.UrlGet = urlGetExisting
+			upload.GcsObjectName = gcsObjectNameExisting
+			continue
+		}
+
+		// Genereate short-lived URLs
+		upload.UrlPut, upload.UrlGet, upload.GcsObjectName, err = createUrls(c, param.ContentType, param.Size, param.Hash, param.Filename)
+		if err != nil {
+			log.Errorf(c, "%v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, `{"success": false}`)
+			return
+		}
+	}
+
+	response := Response{
+		"success": true,
+		"uploads": uploads,
+	}
+	fmt.Fprintln(w, response)
 }
