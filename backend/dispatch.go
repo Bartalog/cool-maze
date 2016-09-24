@@ -104,9 +104,9 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 	if r.FormValue("multiIndex") != "" {
 		// This is part of a multiple upload!
 		// This makes most sense when a thumbnail is provided.
-		data["uploadIndex"] = r.FormValue("multiIndex")
-		data["uploadCount"] = r.FormValue("multiCount")
-		log.Infof(c, "Multi-upload notification %s / %s", data["uploadIndex"], data["uploadCount"])
+		data["multiIndex"] = r.FormValue("multiIndex")
+		data["multiCount"] = r.FormValue("multiCount")
+		log.Infof(c, "Multi-upload notification %s / %s", data["multiIndex"], data["multiCount"])
 	}
 
 	_, err := pusherClient.Trigger(channelID, event, data)
@@ -193,9 +193,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 	if r.FormValue("multiIndex") != "" {
 		// This is part of a multiple upload!
-		data["uploadIndex"] = r.FormValue("multiIndex")
-		data["uploadCount"] = r.FormValue("multiCount")
-		log.Infof(c, "Multi-upload dispatch %s / %s", data["uploadIndex"], data["uploadCount"])
+		data["multiIndex"] = r.FormValue("multiIndex")
+		data["multiCount"] = r.FormValue("multiCount")
+		log.Infof(c, "Multi-upload dispatch %s / %s", data["multiIndex"], data["multiCount"])
 	}
 
 	be, err := pusherClient.Trigger(channelID, event, data)
