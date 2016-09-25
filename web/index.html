@@ -158,9 +158,9 @@
 
 
   <script type="text/javascript">
-    var backend = "https://cool-maze.appspot.com";
+    //var backend = "https://cool-maze.appspot.com";
     // var backend = "https://dev-dot-cool-maze.appspot.com";
-    // var backend = "http://localhost:8080";
+     var backend = "http://localhost:8080";
     var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
     function showError(errmsg) {
@@ -375,6 +375,10 @@
       var thumbImg = document.getElementById("thumbnail");
       if (thumbDataUri && thumbImg)
         thumbImg.src = thumbDataUri;
+
+      if(data.multiIndex)
+        console.log("Multiple upload " + data.multiIndex + " / " + data.multiCount);
+
       spin();
     });
 
