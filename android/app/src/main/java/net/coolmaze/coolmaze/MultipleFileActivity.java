@@ -16,6 +16,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,6 +33,8 @@ import cz.msebera.android.httpclient.message.BasicHeader;
 /**
  * Handles ACTION_SEND_MULTIPLE.
  * See issue #83.
+ *
+ * Base behavior is inherited from MainActivity, and some important methods are overridden.
  */
 public class MultipleFileActivity extends MainActivity {
 
@@ -106,7 +109,6 @@ public class MultipleFileActivity extends MainActivity {
                         preUploads.add(preUpload);
                     }
                 }else{
-                    Log.e("CoolMazeLogSignal", "Intent.getClipData() needs at least JELLY_BEAN :(");
                     showError("Multiple share via Cool Maze requires at least Android 4.1 (Jelly Bean)");
                     return;
                 }
@@ -133,25 +135,34 @@ public class MultipleFileActivity extends MainActivity {
         JSONArray jsonList = new JSONArray();
         for(PreUpload preUpload: preUploads) {
             Uri localFileUri = preUpload.localResourceUri;
-            InputStream inputStream = null;
+            BufferedInputStream inputStream = null;
             try {
-                preUpload.req.ContentType = extractMimeType(null, localFileUri);
-                inputStream = getContentResolver().openInputStream(localFileUri);
+                preUpload.req.ContentType = Util.extractMimeType(getContentResolver(), null, localFileUri);
+                inputStream = new BufferedInputStream(getContentResolver().openInputStream(localFileUri));
+                inputStream.mark(Integer.MAX_VALUE);
                 preUpload.req.Size = inputStream.available();
+
+                // See issue #32: server file hash-based cache.
+                // TODO  (null to be fixed)
+                //preUpload.req.Hash = Util.hash(inputStream);
+                //inputStream.reset();
+
+                // Issue #105. May be null.
+                preUpload.req.Filename = Util.extractFileName(getContentResolver(), localFileUri);
 
                 JSONObject item = new JSONObject();
                 item.put("ContentType", preUpload.req.ContentType);
                 item.put("Size", preUpload.req.Size);
-                // TODO item.put("Hash", );
-                // TODO item.put("Filename", );
+                item.put("Hash", preUpload.req.Hash);
+                item.put("Filename", preUpload.req.Filename);
                 jsonList.put(item);
 
                 // thumbnailDataUri may be null. This means "no thumb at this position".
-                preUpload.thumbnailDataUri = generateThumbnail(inputStream, localFileUri, preUpload.req.ContentType);
+                preUpload.thumbnailDataUri = Thumbnails.generate(inputStream, localFileUri, preUpload.req.ContentType);
             } catch (IOException e) {
-                Log.e("CoolMazeLogMultiThumb", "IO :( " + e);
+                Log.e("CoolMazeLogMultiThumb", "IO :( " + e.getMessage());
             } catch (JSONException e) {
-                Log.e("CoolMazeLogMultiThumb", ""+e);
+                Log.e("CoolMazeLogMultiThumb", e.getMessage());
             } finally {
                 if (inputStream != null)
                     try {
@@ -160,8 +171,6 @@ public class MultipleFileActivity extends MainActivity {
                     }
             }
         }
-
-        // TODO check resources hash (see issue #105)
 
         StringEntity payload = null;
         try {
@@ -248,6 +257,26 @@ public class MultipleFileActivity extends MainActivity {
             InputStreamEntity entity = new InputStreamEntity(inputStream);
             Context context = null; // ?
 
+            if(preUpload.resp.Existing) {
+                Log.i("CoolMazeLogSignal", "Dispatching already existing resource " + preUpload.multiIndex);
+
+                boolean allDone = false;
+                boolean dispatchOneNow = false;
+                synchronized (workflowLock) {
+                    unfinishedUploads --;
+                    if(finishedScanning) {
+                        dispatchOneNow = true;
+                        if (unfinishedUploads == 0)
+                            allDone = true;
+                    }
+                }
+                if(dispatchOneNow)
+                    dispatchOne(qrKeyToSignal, preUpload);
+                if (allDone)
+                    displayFinished();
+                continue;
+            }
+
             Log.i("CoolMazeLogEvent", "Uploading resource " + preUpload.resp.UrlPut.split("\\?")[0]);
             newAsyncHttpClient().put(
                     context,
@@ -259,15 +288,19 @@ public class MultipleFileActivity extends MainActivity {
                         public void onSuccess(int statusCode, Header[] headers, byte[] response) {
                             Log.i("CoolMazeLogSignal", "Upload resource " + preUpload.multiIndex + " success :)");
 
-                            dispatchOne(qrKeyToSignal, preUpload);
-
-                            boolean done = false;
+                            boolean allDone = false;
+                            boolean dispatchOneNow = false;
                             synchronized (workflowLock) {
                                 unfinishedUploads --;
-                                if (unfinishedUploads == 0 && finishedScanning)
-                                    done = true;
+                                if(finishedScanning) {
+                                    dispatchOneNow = true;
+                                    if (unfinishedUploads == 0)
+                                        allDone = true;
+                                }
                             }
-                            if (done)
+                            if(dispatchOneNow)
+                                dispatchOne(qrKeyToSignal, preUpload);
+                            if (allDone)
                                 displayFinished();
                         }
 
@@ -282,6 +315,8 @@ public class MultipleFileActivity extends MainActivity {
     }
 
     void dispatchOne(String qrKey, PreUpload preUpload){
+        Log.i("CoolMazeLogSignal", "Dispatching resource " + preUpload.multiIndex);
+
         RequestParams params = new RequestParams(
                 "qrKey", qrKey,
                 "multiIndex", preUpload.multiIndex,
@@ -316,6 +351,7 @@ public class MultipleFileActivity extends MainActivity {
         closeCountdown(4);
     }
 
+    // TODO onResume
     // TODO onRestoreInstanceState
     // TODO onSaveInstanceState
 }

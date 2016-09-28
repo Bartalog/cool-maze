@@ -207,7 +207,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof(c, "Pusher events = %v", be)
 
-	if hash != "" && gcsObjectName != "" {
+	if hash != "" && hash != "null" && gcsObjectName != "" && gcsObjectName != "null" {
 		// #32 memorize Hash->ObjectName in Memcache, in case the same file is sent again.
 		cacheKey := "objectName_for_" + hash
 		cacheItem := &memcache.Item{
