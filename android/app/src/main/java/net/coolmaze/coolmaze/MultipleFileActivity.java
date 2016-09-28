@@ -351,7 +351,8 @@ public class MultipleFileActivity extends MainActivity {
         closeCountdown(4);
     }
 
-    // TODO onResume
-    // TODO onRestoreInstanceState
-    // TODO onSaveInstanceState
+    // TODO onActivityResult and/or dispatch
+    // TODO onResume ?
+    // TODO onRestoreInstanceState ?
+    // TODO onSaveInstanceState ?
 }
