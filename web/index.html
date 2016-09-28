@@ -102,6 +102,13 @@
   .ib {
     display: inline-block;
   }
+  .thumb {
+     border: 4px solid transparent;
+  }
+  .thumb.link {
+    border: 4px solid yellow;
+    cursor: pointer;
+  }
   </style>
 </head>
 
@@ -136,7 +143,6 @@
   <div id="qr-zone">
     <div id="qrcode"> 
     </div>
-    <img id="thumbnail" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
   </div>
 
   <div id="txt-msg-zone" style="display: none;">
@@ -158,9 +164,9 @@
 
 
   <script type="text/javascript">
-    //var backend = "https://cool-maze.appspot.com";
+    var backend = "https://cool-maze.appspot.com";
     // var backend = "https://dev-dot-cool-maze.appspot.com";
-     var backend = "http://localhost:8080";
+    // var backend = "http://localhost:8080";
     var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
     function showError(errmsg) {
@@ -369,28 +375,47 @@
 
     var eventNotifScan = 'maze-scan';
     channel.bind(eventNotifScan, function(data) {
-      console.log("Received scan notification. Payload coming soon.");
-      var thumbDataUri = data.message;
-      //console.log("Thumb = " + thumbDataUri);
-      var thumbImg = document.getElementById("thumbnail");
-      if (thumbDataUri && thumbImg)
-        thumbImg.src = thumbDataUri;
-
       if(data.multiIndex)
-        console.log("Multiple upload " + data.multiIndex + " / " + data.multiCount);
+        console.log("maze-scan Multiple " + data.multiIndex + " / " + data.multiCount);
+      else
+        console.log("Received scan notification. Payload coming soon.");
+      var thumbDataUri = data.message;
+      if (thumbDataUri) {
+        var newThumb = document.createElement("img");
+        newThumb.setAttribute("id", "thumbnail-" + data.multiIndex);
+        newThumb.classList.add("thumb");
+        newThumb.src = thumbDataUri;
+        var qrzone = document.getElementById("qr-zone");
+        qrzone.appendChild(newThumb);
+      }
+
 
       spin();
     });
 
     var eventCast = 'maze-cast';
     channel.bind(eventCast, function(data) {
+      if(data.multiIndex)
+        console.log("maze-cast Multiple " + data.multiIndex + " / " + data.multiCount);
+
       var msg = data.message;
       if(startsWith(msg,'http') || startsWith(msg,'www.')) {
          var url = msg;
          console.log("Received URL: " + url);
-         document.getElementById("inbox").value = "Redirecting to " + url + " ...";
-         show("txt-msg-zone");
-         window.location = url;
+         if(data.multiIndex) {
+           window.open(url, "_blank");
+           var thumbImg = document.getElementById("thumbnail-" + data.multiIndex);
+           if( thumbImg ){
+             thumbImg.classList.add("link");
+             thumbImg.onclick = function() {
+               window.open(url, "_blank");
+             };
+           }
+         } else {
+           document.getElementById("inbox").value = "Redirecting to " + url + " ...";
+           show("txt-msg-zone");
+           window.location = url;
+         }
          return;
       }
        //alert(data.message);
