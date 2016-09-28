@@ -4,7 +4,6 @@ import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Vibrator;
 import android.util.Log;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -28,7 +27,6 @@ import java.util.List;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.InputStreamEntity;
 import cz.msebera.android.httpclient.entity.StringEntity;
-import cz.msebera.android.httpclient.message.BasicHeader;
 
 /**
  * Handles ACTION_SEND_MULTIPLE.
@@ -36,7 +34,7 @@ import cz.msebera.android.httpclient.message.BasicHeader;
  *
  * Base behavior is inherited from MainActivity, and some important methods are overridden.
  */
-public class MultipleFileActivity extends MainActivity {
+public class MultipleFileActivity extends BaseActivity {
 
     // TODO 1 request to /scanned, per thumbnail to send
     protected List<PreUpload> preUploads = new ArrayList<>();
@@ -58,6 +56,17 @@ public class MultipleFileActivity extends MainActivity {
     }
 
     static class PreUpload {
+        static enum Status {
+            NEW,
+            READY_TO_SEND_THUMB,
+            READY_TO_UPLOAD,
+            UPLOADING,
+            READY_TO_DISPATCH,
+            DISPATCHING,
+            DISPATCHED;
+        }
+
+        Status status = Status.NEW;
         int multiIndex;
         Uri localResourceUri;
         String thumbnailDataUri;
@@ -70,6 +79,7 @@ public class MultipleFileActivity extends MainActivity {
         }
     }
 
+    @Override
     void scanAndSend(Intent intent) {
         if ( !Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction()) ) {
             showError("Intent action is " + intent.getAction() + " instead of ACTION_SEND_MULTIPLE");
@@ -118,7 +128,6 @@ public class MultipleFileActivity extends MainActivity {
                 showCaption("Uploading...");
 
                 finishedScanning = false;
-                finishedUploading = false;
                 multipleUploadStep1();
                 return;
             default:
@@ -159,6 +168,8 @@ public class MultipleFileActivity extends MainActivity {
 
                 // thumbnailDataUri may be null. This means "no thumb at this position".
                 preUpload.thumbnailDataUri = Thumbnails.generate(inputStream, localFileUri, preUpload.req.ContentType);
+                if(preUpload.thumbnailDataUri != null)
+                    preUpload.status = PreUpload.Status.READY_TO_SEND_THUMB;
             } catch (IOException e) {
                 Log.e("CoolMazeLogMultiThumb", "IO :( " + e.getMessage());
             } catch (JSONException e) {
@@ -198,8 +209,10 @@ public class MultipleFileActivity extends MainActivity {
                                 if (preUpload.resp.Existing) {
                                     // Yeepee, we don't have to upload this one
                                     Log.i("CoolMazeLogMultiUpload", "This resource is already known in server cache :)");
+                                    preUpload.status = PreUpload.Status.READY_TO_DISPATCH;
                                 }else {
                                     preUpload.resp.UrlPut = jsonItem.getString("UrlPut");
+                                    preUpload.status = PreUpload.Status.READY_TO_UPLOAD;
                                 }
 
                                 preUpload.resp.UrlGet = jsonItem.getString("UrlGet");
@@ -257,7 +270,7 @@ public class MultipleFileActivity extends MainActivity {
             InputStreamEntity entity = new InputStreamEntity(inputStream);
             Context context = null; // ?
 
-            if(preUpload.resp.Existing) {
+            if(preUpload.status == PreUpload.Status.READY_TO_DISPATCH) {
                 Log.i("CoolMazeLogSignal", "Dispatching already existing resource " + preUpload.multiIndex);
 
                 boolean allDone = false;
@@ -271,13 +284,14 @@ public class MultipleFileActivity extends MainActivity {
                     }
                 }
                 if(dispatchOneNow)
-                    dispatchOne(qrKeyToSignal, preUpload);
+                    dispatchOne(preUpload);
                 if (allDone)
                     displayFinished();
                 continue;
             }
 
             Log.i("CoolMazeLogEvent", "Uploading resource " + preUpload.resp.UrlPut.split("\\?")[0]);
+            preUpload.status = PreUpload.Status.UPLOADING;
             newAsyncHttpClient().put(
                     context,
                     preUpload.resp.UrlPut,
@@ -287,6 +301,7 @@ public class MultipleFileActivity extends MainActivity {
                         @Override
                         public void onSuccess(int statusCode, Header[] headers, byte[] response) {
                             Log.i("CoolMazeLogSignal", "Upload resource " + preUpload.multiIndex + " success :)");
+                            preUpload.status = PreUpload.Status.READY_TO_DISPATCH;
 
                             boolean allDone = false;
                             boolean dispatchOneNow = false;
@@ -299,7 +314,7 @@ public class MultipleFileActivity extends MainActivity {
                                 }
                             }
                             if(dispatchOneNow)
-                                dispatchOne(qrKeyToSignal, preUpload);
+                                dispatchOne(preUpload);
                             if (allDone)
                                 displayFinished();
                         }
@@ -308,17 +323,18 @@ public class MultipleFileActivity extends MainActivity {
                         public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                             String errorResponseStr = errorResponse == null ? "[]" : "[" + new String(errorResponse) + "]";
                             Log.e("CoolMazeLogSignal", "Upload resource failed :( with status " + statusCode + " " + errorResponseStr, e);
-                            showError("Unfortunately, the upload failed.");
+                            showError("Unfortunately, upload of resource " + preUpload.multiIndex + " failed.");
                         }
                     });
         }
     }
 
-    void dispatchOne(String qrKey, PreUpload preUpload){
+    void dispatchOne(final PreUpload preUpload){
         Log.i("CoolMazeLogSignal", "Dispatching resource " + preUpload.multiIndex);
+        preUpload.status = PreUpload.Status.DISPATCHING;
 
         RequestParams params = new RequestParams(
-                "qrKey", qrKey,
+                "qrKey", qrKeyToSignal,
                 "multiIndex", preUpload.multiIndex,
                 "multiCount", preUploads.size(),
                 "message", preUpload.resp.UrlGet,
@@ -333,25 +349,74 @@ public class MultipleFileActivity extends MainActivity {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, byte[] response) {
                         Log.i("CoolMazeLogMulti", MultipleFileActivity.this.hashCode() + ".dispatchOne successful POST");
+                        preUpload.status = PreUpload.Status.DISPATCHED;
                     }
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                         Log.e("CoolMazeLogMulti", MultipleFileActivity.this.hashCode() + ".sendMessage POST request response code " + statusCode);
-                        showError("Unfortunately, we could not send this message to the dispatch server.");
+                        showError("Unfortunately, we could not send message " + preUpload.multiIndex + " to the dispatch server.");
                     }
                 });
     }
 
-    void displayFinished() {
-        Log.i("CoolMazeLogMulti", "displayFinished()");
-        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        v.vibrate(500);
-        showSuccess();
-        closeCountdown(4);
+
+    @Override
+    void sendPending() {
+        boolean displayFinishedNow;
+        synchronized (workflowLock) {
+            finishedScanning = true;
+            displayFinishedNow = (unfinishedUploads==0);
+        }
+        for(PreUpload preUpload:preUploads)
+            synchronized (preUpload){
+                switch(preUpload.status){
+                    case READY_TO_SEND_THUMB:
+                    case READY_TO_UPLOAD:
+                    case UPLOADING:
+                        notifyScan(preUpload);
+                        break;
+                    case READY_TO_DISPATCH:
+                    preUpload.status = PreUpload.Status.DISPATCHING;
+                    dispatchOne(preUpload);
+                        break;
+                }
+            }
+
+        if(displayFinishedNow)
+            displayFinished();
     }
 
-    // TODO onActivityResult and/or dispatch
+    void notifyScan(PreUpload preUpload) {
+        RequestParams params = new RequestParams(
+                "qrKey", qrKeyToSignal,
+                "multiIndex", preUpload.multiIndex,
+                "multiCount", preUploads.size()
+        );
+
+        if (preUpload.thumbnailDataUri != null && !"<?>".equals(preUpload.thumbnailDataUri)) {
+            params.add("thumb", preUpload.thumbnailDataUri);
+            Log.i("CoolMazeLogEvent", "Sending scan notif " + preUpload.multiIndex + " to " + qrKeyToSignal + " with thumbnail of size " + preUpload.thumbnailDataUri.length());
+        } else
+            Log.i("CoolMazeLogEvent", "Sending scan notif " + preUpload.multiIndex + " to " + qrKeyToSignal);
+
+        newAsyncHttpClient().post(
+                BACKEND_URL + "/scanned",
+                params,
+                new AsyncHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                        Log.i("CoolMazeLogEvent", "Scan notif SUCCESS ");
+                    }
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                        Log.e("CoolMazeLogEvent", "Scan notif FAILED ", e);
+                    }
+                });
+
+    }
+
+    // TODO onActivityResult?
     // TODO onResume ?
     // TODO onRestoreInstanceState ?
     // TODO onSaveInstanceState ?
