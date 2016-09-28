@@ -62,7 +62,6 @@ var pkey []byte
 // - Size (since #101)
 // - Hash, optional (since #32)
 // - Filename, optional (since #63)
-// The request payload is a JSON containing an array.
 func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	var input PreUploadRequest
@@ -231,6 +230,8 @@ type PreUploadResponse struct {
 // - Size
 // - Hash, optional
 // - Filename, optional
+//
+// The request payload is a JSON containing an array.
 func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	if r.Method != "POST" {

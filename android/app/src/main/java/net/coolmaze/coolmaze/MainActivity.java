@@ -60,19 +60,19 @@ public class MainActivity extends AppCompatActivity {
     static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
 
-    private String qrKeyToSignal = "<?>";
-    private String messageToSignal = "<?>";
-    private String thumbnailDataURI = "<?>";
-    private String gcsObjectName = null;
-    private String resourceHash = null;
+    protected String qrKeyToSignal = "<?>";
+    protected String messageToSignal = "<?>";
+    protected String thumbnailDataURI = "<?>";
+    protected String gcsObjectName = null;
+    protected String resourceHash = null;
 
     // Scanning and Uploading occur concurrently, they need synchronization.
-    private Object workflowLock = new Object();
-    private boolean finishedScanning = false;
-    private boolean finishedUploading = false;
+    protected Object workflowLock = new Object();
+    protected boolean finishedScanning = false;
+    protected boolean finishedUploading = false;
 
     // "Hold on while I'm requesting permissions". Then, use the intent in the onRequestPermissionsResult callback.
-    private Intent holdOnIntent;
+    protected Intent holdOnIntent;
 
     boolean checkPermissions() {
         // Cool-Maze can't work at all without acces to Camera.
@@ -128,8 +128,10 @@ public class MainActivity extends AppCompatActivity {
         if ( intent == null || finishedScanning )
             return;
 
-        if ( !Intent.ACTION_SEND.equals(intent.getAction()) )
+        if ( !Intent.ACTION_SEND.equals(intent.getAction()) && !Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction()) )
             return;  // MAIN, etc.
+
+        // For ACTION_SEND_MULTIPLE, see MultipleFileActivity.scanAndSend(Intent)
 
         if ( !isOnline() ){
             showError("No internet access found.");
@@ -214,7 +216,9 @@ public class MainActivity extends AppCompatActivity {
     String extractMimeType(Intent intent, Uri localFileUri) {
         // Trying strategies that work in most cases: photos, videos, pdf, etc,
         // should work fine for "file://..." and "content://..." as well.
-        String mimeType = intent.getType();
+        String mimeType = null;
+        if( intent!=null )
+            mimeType = intent.getType();
         if ( mimeType==null || "".equals(mimeType) || mimeType.endsWith("/*") ){
             //String resolved = MimeTypeMap.getSingleton().getExtensionFromMimeType(getContentResolver().getType(localFileUri));
             String resolved = getContentResolver().getType(localFileUri);
@@ -512,7 +516,11 @@ public class MainActivity extends AppCompatActivity {
             */
 
             // TODO do this in background, don't block UI (camera opening) while computing!
-            generateThumbnail(inputStream, localFileUri, mimeType);
+            String thumbnailData = generateThumbnail(inputStream, localFileUri, mimeType);
+            if(thumbnailData != null)
+                synchronized (workflowLock) {
+                    thumbnailDataURI = thumbnailData;
+                }
         } catch (FileNotFoundException e) {
             Log.e("CoolMazeLogUpload", "Not found :( " + e);
             return;
@@ -595,10 +603,10 @@ public class MainActivity extends AppCompatActivity {
                 .initiateScan();
     }
 
-    private void generateThumbnail(InputStream inputStream, Uri localFileUri, String mimeType) {
+    protected String generateThumbnail(InputStream inputStream, Uri localFileUri, String mimeType) {
         if ( !thumbnailable(mimeType) ) {
             Log.i("CoolMazeLogThumb", "No thumbnail generation for resource type " + mimeType);
-            return;
+            return null;
         }
 
         long tip = System.currentTimeMillis();
@@ -610,8 +618,8 @@ public class MainActivity extends AppCompatActivity {
             // MINI_KIND is 512x384
             Bitmap videoThumbBitmap = ThumbnailUtils.createVideoThumbnail(localFileUri.getPath(), MediaStore.Images.Thumbnails.MINI_KIND);
             if(videoThumbBitmap==null) {
-                Log.i("CoolMazeLogThumb", "Cannot generate thumbnail for this video.");
-                return;
+                Log.e("CoolMazeLogThumb", "Cannot generate thumbnail for this video.");
+                return null;
             }
             if(videoThumbBitmap.getHeight() > videoThumbBitmap.getWidth())
                 // Portrait
@@ -621,7 +629,7 @@ public class MainActivity extends AppCompatActivity {
                 thumbBitmap = Bitmap.createScaledBitmap(videoThumbBitmap, 256, 192, true);
         } else {
             Log.e("CoolMazeLogThumb", "Unsupported resource type " + mimeType);
-            return;
+            return null;
         }
 
         int quality = 90;
@@ -636,12 +644,10 @@ public class MainActivity extends AppCompatActivity {
         } while( data.length()>7000 && quality>25 );
         long top = System.currentTimeMillis();
         Log.i("CoolMazeLogThumb", "Generated thumbnail string of quality " + quality + ", size " + data.length() + ", in " + (top-tip) + "ms");
-        synchronized (workflowLock) {
-            thumbnailDataURI = data;
-        }
+        return data;
     }
 
-    private boolean thumbnailable(String mimeType) {
+    protected boolean thumbnailable(String mimeType) {
         if(mimeType==null)
                 return false;
         if(mimeType.startsWith("image/"))
