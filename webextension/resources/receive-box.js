@@ -126,6 +126,18 @@ function spin() {
     logo.src = "icons/red_spinner.gif";
 }
 
+function success() {
+  render("#CCC");
+  var logo = document.getElementById("overprint-logo");
+  if ( logo ){
+    logo.src = "icons/check_256.png";
+    logo.style.top = (bodyPad + 72) + "px";
+    logo.style.left = "72px";
+    logo.style.width = "256px";
+    logo.style.height = "256px";
+  }
+}
+
 document.getElementById("inbox").value = "";
 
 // Spin while initializing, until everything ready.
@@ -148,17 +160,38 @@ channel.bind(eventNotifScan, function(data) {
   spin();
 });
 
+var multiOpened = 0;
+
 var eventCast = 'maze-cast';
 channel.bind(eventCast, function(data) {
     var msg = data.message;
     console.log("Received message: " + msg);
+
     if(startsWith(msg,'http') || startsWith(msg,'www.')) {
        var newTabUrl = msg;
        chrome.tabs.create({
           "url":newTabUrl
        });
+
+       if(data.multiIndex){
+         multiOpened++;
+         if( multiOpened == data.multiCount) {
+           // Multi resources, each already opened in respective tab.
+           success();
+           multiOpened = 0;
+         }
+       }else{
+         // Single resource opened.
+         // We may:
+         // - close the popin  (but how?)
+         // - keep QR-code displayed, to immediately cast further resources
+         // - display success icon
+         //
+         // TODO
+       }
        return;
     }
+
     document.getElementById("inbox").value = msg;
     show("txt-msg-zone");
 });
