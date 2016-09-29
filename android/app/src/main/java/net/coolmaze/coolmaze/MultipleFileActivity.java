@@ -368,17 +368,21 @@ public class MultipleFileActivity extends BaseActivity {
             finishedScanning = true;
             displayFinishedNow = (unfinishedUploads==0);
         }
-        for(PreUpload preUpload:preUploads)
-            synchronized (preUpload){
-                switch(preUpload.status){
+        for (PreUpload preUpload : preUploads)
+            synchronized (preUpload) {
+                switch (preUpload.status) {
                     case READY_TO_SEND_THUMB:
                     case READY_TO_UPLOAD:
                     case UPLOADING:
+                        // Teaser: send thumbnail to target
                         notifyScan(preUpload);
                         break;
                     case READY_TO_DISPATCH:
-                    preUpload.status = PreUpload.Status.DISPATCHING;
-                    dispatchOne(preUpload);
+                        // Send thumbnail and resource URL
+                        // Thumbnails are necessary in multi-resource use cases (clickable miniatures)
+                        notifyScan(preUpload);
+                        preUpload.status = PreUpload.Status.DISPATCHING;
+                        dispatchOne(preUpload);
                         break;
                 }
             }

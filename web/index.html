@@ -381,19 +381,32 @@
         console.log("maze-scan Multiple " + data.multiIndex + " / " + data.multiCount);
       else
         console.log("Received scan notification. Payload coming soon.");
+      var thumbImg = getThumbImg(data.multiIndex);
       var thumbDataUri = data.message;
       if (thumbDataUri) {
-        var newThumb = document.createElement("img");
-        newThumb.setAttribute("id", "thumbnail-" + data.multiIndex);
-        newThumb.classList.add("thumb");
-        newThumb.src = thumbDataUri;
-        var qrzone = document.getElementById("qr-zone");
-        qrzone.appendChild(newThumb);
+        thumbImg.src = thumbDataUri;
+        thumbImg.classList.remove("empty");
+      }else{
+        newThumb.classList.add("no-preview");
       }
-
 
       spin();
     });
+
+    function getThumbImg(i) {
+      var thumb = document.getElementById("thumbnail-" + i);
+      if(thumb)
+        return thumb;
+      var newThumb = document.createElement("img");
+      newThumb.setAttribute("id", "thumbnail-" + i);
+      newThumb.classList.add("thumb");
+      newThumb.classList.add("empty");
+      newThumb.src = "static/img/thumbnail-empty.png";
+      // This is not always sorted 0, 1, ... N (for now)
+      var qrzone = document.getElementById("qr-zone");
+      qrzone.appendChild(newThumb);
+      return newThumb;
+    }
 
     var eventCast = 'maze-cast';
     channel.bind(eventCast, function(data) {
@@ -406,13 +419,13 @@
          console.log("Received URL: " + url);
          if(data.multiIndex) {
            window.open(url, "_blank");
-           var thumbImg = document.getElementById("thumbnail-" + data.multiIndex);
-           if( thumbImg ){
-             thumbImg.classList.add("link");
-             thumbImg.onclick = function() {
-               window.open(url, "_blank");
-             };
+           var thumbImg = getThumbImg(data.multiIndex);
+           thumbImg.classList.add("link");
+           thumbImg.onclick = function() {
+             window.open(url, "_blank");
            }
+           if(thumbImg.classList.contains("no-preview"))
+             thumbImg.src = "static/img/thumbnail-file.png";
          } else {
            document.getElementById("inbox").value = "Redirecting to " + url + " ...";
            show("txt-msg-zone");
