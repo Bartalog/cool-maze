@@ -148,13 +148,12 @@ public class MultipleFileActivity extends BaseActivity {
             try {
                 preUpload.req.ContentType = Util.extractMimeType(getContentResolver(), null, localFileUri);
                 inputStream = new BufferedInputStream(getContentResolver().openInputStream(localFileUri));
-                inputStream.mark(Integer.MAX_VALUE);
                 preUpload.req.Size = inputStream.available();
 
                 // See issue #32: server file hash-based cache.
-                // TODO  (null to be fixed)
-                //preUpload.req.Hash = Util.hash(inputStream);
-                //inputStream.reset();
+                preUpload.req.Hash = Util.hash(inputStream);
+                inputStream.close();
+                inputStream = new BufferedInputStream(getContentResolver().openInputStream(localFileUri));
 
                 // Issue #105. May be null.
                 preUpload.req.Filename = Util.extractFileName(getContentResolver(), localFileUri);
