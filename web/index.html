@@ -393,21 +393,6 @@
       spin();
     });
 
-    function getThumbImg(i) {
-      var thumb = document.getElementById("thumbnail-" + i);
-      if(thumb)
-        return thumb;
-      var newThumb = document.createElement("img");
-      newThumb.setAttribute("id", "thumbnail-" + i);
-      newThumb.classList.add("thumb");
-      newThumb.classList.add("empty");
-      newThumb.src = "static/img/thumbnail-empty.png";
-      // This is not always sorted 0, 1, ... N (for now)
-      var qrzone = document.getElementById("qr-zone");
-      qrzone.appendChild(newThumb);
-      return newThumb;
-    }
-
     var eventCast = 'maze-cast';
     channel.bind(eventCast, function(data) {
       if(data.multiIndex)
@@ -424,6 +409,7 @@
            thumbImg.onclick = function() {
              window.open(url, "_blank");
            }
+           thumbLinkTimeout(thumbImg);
            if(thumbImg.classList.contains("no-preview"))
              thumbImg.src = "static/img/thumbnail-file.png";
          } else {
@@ -439,6 +425,33 @@
        show("txt-msg-zone");
     });
 
+
+
+    function getThumbImg(i) {
+      var thumb = document.getElementById("thumbnail-" + i);
+      if(thumb)
+        return thumb;
+      var newThumb = document.createElement("img");
+      newThumb.setAttribute("id", "thumbnail-" + i);
+      newThumb.classList.add("thumb");
+      newThumb.classList.add("empty");
+      newThumb.src = "static/img/thumbnail-empty.png";
+      // This is not always sorted 0, 1, ... N (for now)
+      var qrzone = document.getElementById("qr-zone");
+      qrzone.appendChild(newThumb);
+      return newThumb;
+    }
+
+    function thumbLinkTimeout(thumbImg) {
+      // Issue #128
+      // GCS token expires. So, it's nicer to remove link too.
+      var ms = 9 * 60 * 1000;
+      ms = 6 * 1000;
+      window.setTimeout(function(){
+          thumbImg.onclick = function() { return false; };
+          thumbImg.classList.remove("link");
+      }, ms);
+    }
 
     // This request is supposed to be fast.
     var testInternet = new XMLHttpRequest();
