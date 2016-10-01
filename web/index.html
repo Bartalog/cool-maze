@@ -182,11 +182,13 @@
       freezeResize();
       var errorZone = document.getElementById("errors");
       errorZone.innerHTML = errmsg;
+      return false;
     }
 
     // Since #108, qrKey==chanID and it is random generated in JS.
     var qrKey = "";
     var chanID = "";
+    var pusher;
     var channel;
 
     var qrHundredth = 40;
@@ -358,84 +360,69 @@
 
     document.getElementById("inbox").value = "";
 
-    // Spin until we have checked for internet connectivity
-    spin();
 
-    //
-    // Generate qrKey/chanID -> Listen to Pusher channel -> Render QR-code
-    //
-    qrKey = genRandomQrKey();
-    chanID = qrKey;
+    function attachPusherBindings(){
+      pusher.connection.bind( 'error', function( err ) {
+        if( err.data.code === 4004 ) {
+          showError("We're very sorry, but the Cool Maze service currently runs at maximal capacity. We cannot provide a fresh QR-code right now.");
+        } else {
+          console.log(err);
+        }
+      });
+    }
 
-    if (typeof Pusher === 'undefined')
-      showError("No internet connectivity :(");
+    function attachPusherChannelBindings(){
+      var eventNotifScan = 'maze-scan';
+      channel.bind(eventNotifScan, function(data) {
+        if(data.multiIndex)
+          console.log("maze-scan Multiple " + data.multiIndex + " / " + data.multiCount);
+        else
+          console.log("Received scan notification. Payload coming soon.");
+        var thumbImg = getThumbImg(data.multiIndex);
+        var thumbDataUri = data.message;
+        if (thumbDataUri) {
+          thumbImg.src = thumbDataUri;
+          thumbImg.classList.remove("empty");
+        }else{
+          newThumb.classList.add("no-preview");
+        }
 
-    var pusher = new Pusher(coolMazePusherAppKey, {
-      encrypted: true
-    });
+        spin();
+        freezeResize();
+      });
 
-    pusher.connection.bind( 'error', function( err ) {
-      if( err.data.code === 4004 ) {
-        showError("We're very sorry, but the Cool Maze service currently runs at maximal capacity. We cannot provide a fresh QR-code right now.");
-      } else {
-        console.log(err);
-      }
-    });
-    
-    channel = pusher.subscribe(chanID);
+      var eventCast = 'maze-cast';
+      channel.bind(eventCast, function(data) {
+        if(data.multiIndex)
+          console.log("maze-cast Multiple " + data.multiIndex + " / " + data.multiCount);
 
-    var eventNotifScan = 'maze-scan';
-    channel.bind(eventNotifScan, function(data) {
-      if(data.multiIndex)
-        console.log("maze-scan Multiple " + data.multiIndex + " / " + data.multiCount);
-      else
-        console.log("Received scan notification. Payload coming soon.");
-      var thumbImg = getThumbImg(data.multiIndex);
-      var thumbDataUri = data.message;
-      if (thumbDataUri) {
-        thumbImg.src = thumbDataUri;
-        thumbImg.classList.remove("empty");
-      }else{
-        newThumb.classList.add("no-preview");
-      }
-
-      spin();
-      freezeResize();
-    });
-
-    var eventCast = 'maze-cast';
-    channel.bind(eventCast, function(data) {
-      if(data.multiIndex)
-        console.log("maze-cast Multiple " + data.multiIndex + " / " + data.multiCount);
-
-      var msg = data.message;
-      if(startsWith(msg,'http') || startsWith(msg,'www.')) {
-         var url = msg;
-         console.log("Received URL: " + url);
-         if(data.multiIndex) {
-           window.open(url, "_blank");
-           var thumbImg = getThumbImg(data.multiIndex);
-           thumbImg.classList.add("link");
-           thumbImg.onclick = function() {
+        var msg = data.message;
+        if(startsWith(msg,'http') || startsWith(msg,'www.')) {
+           var url = msg;
+           console.log("Received URL: " + url);
+           if(data.multiIndex) {
              window.open(url, "_blank");
+             var thumbImg = getThumbImg(data.multiIndex);
+             thumbImg.classList.add("link");
+             thumbImg.onclick = function() {
+               window.open(url, "_blank");
+             }
+             thumbLinkTimeout(thumbImg);
+             if(thumbImg.classList.contains("no-preview"))
+               thumbImg.src = "static/img/thumbnail-file.png";
+           } else {
+             document.getElementById("inbox").value = "Redirecting to " + url + " ...";
+             show("txt-msg-zone");
+             window.location = url;
            }
-           thumbLinkTimeout(thumbImg);
-           if(thumbImg.classList.contains("no-preview"))
-             thumbImg.src = "static/img/thumbnail-file.png";
-         } else {
-           document.getElementById("inbox").value = "Redirecting to " + url + " ...";
-           show("txt-msg-zone");
-           window.location = url;
-         }
-         return;
-      }
-       //alert(data.message);
-       console.log("Received message: " + data.message);
-       document.getElementById("inbox").value = data.message;
-       show("txt-msg-zone");
-    });
-
-
+           return;
+        }
+         //alert(data.message);
+         console.log("Received message: " + data.message);
+         document.getElementById("inbox").value = data.message;
+         show("txt-msg-zone");
+      });
+    }
 
     function getThumbImg(i) {
       var thumb = document.getElementById("thumbnail-" + i);
@@ -462,29 +449,32 @@
       }, ms);
     }
 
-    // This request is supposed to be fast.
-    var testInternet = new XMLHttpRequest();
-    testInternet.onreadystatechange = function() {
-        if (testInternet.readyState == 4 ) {
-          if (testInternet.status == 200) {
-            // #110: response ensures we have internet connectivity,
-            // it unlocks the QR-code display.
-            render("black", embiggen);
-          } else {
-            showError("No internet...?");
+    function checkInternetAndExecute(action){
+      // This request is supposed to be fast.
+      var testInternet = new XMLHttpRequest();
+      testInternet.onreadystatechange = function() {
+          if (testInternet.readyState == 4 ) {
+            if (testInternet.status == 200) {
+              // #110: response ensures we have internet connectivity
+              action();
+            } else {
+              showError("No internet...?");
+            }
           }
-        }
-    };
-    testInternet.open("GET", backend+"/online", true);
-    testInternet.send( null );
+      };
+      testInternet.open("GET", backend+"/online", true);
+      testInternet.send( null );
+    }
 
-    // This request can be slow.
-    // We don't need to wait for the response.
-    var wakeup = new XMLHttpRequest();
-    var wuEndpoint = backend + "/wakeup";
-    var wuParam = "qrKey=" + qrKey;
-    wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
-    wakeup.send( null );
+    function wakeUpBackend(){
+      // This request can be slow.
+      // We don't need to wait for the response.
+      var wakeup = new XMLHttpRequest();
+      var wuEndpoint = backend + "/wakeup";
+      var wuParam = "qrKey=" + qrKey;
+      wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
+      wakeup.send( null );
+    }
 
     window.addEventListener('offline', function(){
       showError("Lost internet connectivity :(")
@@ -512,7 +502,37 @@
           help.style.display = "none";
       }
     }
-    handleEmbedMode();
+
+
+    function init() {
+      // Spin until we have checked for internet connectivity
+      spin();
+
+      //
+      // Generate qrKey/chanID -> Listen to Pusher channel -> Check internet -> Render QR-code
+      //
+      qrKey = genRandomQrKey();
+      chanID = qrKey;
+
+      if (typeof Pusher === 'undefined')
+        return showError("No internet connectivity :(");
+
+      pusher = new Pusher(coolMazePusherAppKey, {
+        encrypted: true
+      });
+      attachPusherBindings();
+      channel = pusher.subscribe(chanID);
+      attachPusherChannelBindings();
+
+      checkInternetAndExecute(function(){
+        // #110: internet connectivity unlocks the QR-code display.
+        render("black", embiggen);
+      });
+
+      wakeUpBackend();
+      handleEmbedMode();
+    }
+    init();
   </script>
   
   <script>
