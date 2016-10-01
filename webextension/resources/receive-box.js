@@ -1,6 +1,12 @@
 
 var backend = "https://cool-maze.appspot.com";
 var coolMazePusherAppKey = 'e36002cfca53e4619c15';
+// Since #108, qrKey==chanID and it is random generated in JS.
+var qrKey = "";
+var chanID = "";
+var pusher;
+var channel;
+var multiOpened = 0;
 
 function showError(errmsg) {
   console.log("Error: " + errmsg)
@@ -8,11 +14,6 @@ function showError(errmsg) {
   var errorZone = document.getElementById("errors");
   errorZone.innerHTML = errmsg;
 }
-
-// Since #108, qrKey==chanID and it is random generated in JS.
-var qrKey = "";
-var chanID = "";
-var channel;
 
 function render(colorDark){
   // QR-code has fixed size 400px
@@ -140,86 +141,85 @@ function success() {
 
 document.getElementById("inbox").value = "";
 
-// Spin while initializing, until everything ready.
-spin();
+function attachPusherBindings(){
+  pusher.connection.bind( 'error', function( err ) {
+    if( err.data.code === 4004 ) {
+      showError("We're very sorry, but the Cool Maze service currently runs at maximal capacity. We cannot provide a fresh QR-code right now.");
+    } else {
+      console.log(err);
+    }
+  });
+}
 
-//
-// Generate qrKey/chanID -> Listen to Pusher channel -> Render QR-code
-//
-qrKey = genRandomQrKey();
-chanID = qrKey;
+function attachPusherChannelBindings(){
+  var eventNotifScan = 'maze-scan';
+  channel.bind(eventNotifScan, function(data) {
+    console.log("Received scan notification. Payload coming soon.");
+    spin();
+  });
 
-var pusher = new Pusher(coolMazePusherAppKey, {
-  encrypted: true
-});
-channel = pusher.subscribe(chanID);
+  var eventCast = 'maze-cast';
+  channel.bind(eventCast, function(data) {
+      var msg = data.message;
+      console.log("Received message: " + msg);
 
-var eventNotifScan = 'maze-scan';
-channel.bind(eventNotifScan, function(data) {
-  console.log("Received scan notification. Payload coming soon.");
-  spin();
-});
+      if(startsWith(msg,'http') || startsWith(msg,'www.')) {
+         var newTabUrl = msg;
+         chrome.tabs.create({
+            "url":newTabUrl
+         });
 
-var multiOpened = 0;
-
-var eventCast = 'maze-cast';
-channel.bind(eventCast, function(data) {
-    var msg = data.message;
-    console.log("Received message: " + msg);
-
-    if(startsWith(msg,'http') || startsWith(msg,'www.')) {
-       var newTabUrl = msg;
-       chrome.tabs.create({
-          "url":newTabUrl
-       });
-
-       if(data.multiIndex){
-         multiOpened++;
-         if( multiOpened == data.multiCount) {
-           // Multi resources, each already opened in respective tab.
-           success();
-           multiOpened = 0;
+         if(data.multiIndex){
+           multiOpened++;
+           if( multiOpened == data.multiCount) {
+             // Multi resources, each already opened in respective tab.
+             success();
+             multiOpened = 0;
+           }
+         }else{
+           // Single resource opened.
+           // We may:
+           // - close the popin  (but how?)
+           // - keep QR-code displayed, to immediately cast further resources
+           // - display success icon
+           //
+           // TODO
          }
-       }else{
-         // Single resource opened.
-         // We may:
-         // - close the popin  (but how?)
-         // - keep QR-code displayed, to immediately cast further resources
-         // - display success icon
-         //
-         // TODO
-       }
-       return;
-    }
-
-    document.getElementById("inbox").value = msg;
-    show("txt-msg-zone");
-});
-
-// This request is supposed to be fast.
-var testInternet = new XMLHttpRequest();
-testInternet.onreadystatechange = function() {
-    if (testInternet.readyState == 4 ) {
-      if (testInternet.status == 200) {
-        // #110: response ensures we have internet connectivity,
-        // it unlocks the QR-code display.
-        render("black");
-      } else {
-        showError("No internet...?");
+         return;
       }
-    }
-};
 
-testInternet.open("GET", backend+"/online", true);
-testInternet.send( null );
+      document.getElementById("inbox").value = msg;
+      show("txt-msg-zone");
+  });
+}
 
-// This request can be slow.
-// We don't need to wait for the response.
-var wakeup = new XMLHttpRequest();
-var wuEndpoint = backend + "/wakeup";
-var wuParam = "qrKey=" + qrKey;
-wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
-wakeup.send( null );
+
+function checkInternetAndExecute(action){
+  // This request is supposed to be fast.
+  var tinyRequest = new XMLHttpRequest();
+  tinyRequest.onreadystatechange = function() {
+      if (tinyRequest.readyState == 4 ) {
+        if (tinyRequest.status == 200) {
+          // #110: response ensures we have internet connectivity
+          action();
+        } else {
+          showError("No internet...?");
+        }
+      }
+  };
+  tinyRequest.open("GET", backend+"/online", true);
+  tinyRequest.send( null );
+}
+
+function wakeUpBackend(){
+  // This request can be slow.
+  // We don't need to wait for the response.
+  var wakeup = new XMLHttpRequest();
+  var wuEndpoint = backend + "/wakeup";
+  var wuParam = "qrKey=" + qrKey;
+  wakeup.open("GET", wuEndpoint + "?" + wuParam, true);
+  wakeup.send( null );
+}
 
 window.addEventListener('offline', function(){
   showError("Lost internet connectivity :(")
@@ -232,3 +232,32 @@ window.setTimeout(function(){
     pusher.disconnect();
   }
 }, 10 * 60 * 1000);
+
+function init() {
+  // Spin until we have checked for internet connectivity
+  spin();
+
+  //
+  // Generate qrKey/chanID -> Listen to Pusher channel -> Check internet -> Render QR-code
+  //
+  qrKey = genRandomQrKey();
+  chanID = qrKey;
+
+  if (typeof Pusher === 'undefined')
+    return showError("No internet connectivity :(");
+
+  pusher = new Pusher(coolMazePusherAppKey, {
+    encrypted: true
+  });
+  attachPusherBindings();
+  channel = pusher.subscribe(chanID);
+  attachPusherChannelBindings();
+
+  checkInternetAndExecute(function(){
+    // #110: internet connectivity unlocks the QR-code display.
+    render("black");
+  });
+
+  wakeUpBackend();
+}
+init();

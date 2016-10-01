@@ -176,6 +176,12 @@
     // var backend = "http://localhost:8080";
     var coolMazePusherAppKey = 'e36002cfca53e4619c15';
 
+    // Since #108, qrKey==chanID and it is random generated in JS.
+    var qrKey = "";
+    var chanID = "";
+    var pusher;
+    var channel;
+
     function showError(errmsg) {
       console.log("Error: " + errmsg)
       clearQR();
@@ -184,12 +190,6 @@
       errorZone.innerHTML = errmsg;
       return false;
     }
-
-    // Since #108, qrKey==chanID and it is random generated in JS.
-    var qrKey = "";
-    var chanID = "";
-    var pusher;
-    var channel;
 
     var qrHundredth = 40;
     // Bookmarks or WebExtension can point directly to the big
@@ -451,10 +451,10 @@
 
     function checkInternetAndExecute(action){
       // This request is supposed to be fast.
-      var testInternet = new XMLHttpRequest();
-      testInternet.onreadystatechange = function() {
-          if (testInternet.readyState == 4 ) {
-            if (testInternet.status == 200) {
+      var tinyRequest = new XMLHttpRequest();
+      tinyRequest.onreadystatechange = function() {
+          if (tinyRequest.readyState == 4 ) {
+            if (tinyRequest.status == 200) {
               // #110: response ensures we have internet connectivity
               action();
             } else {
@@ -462,8 +462,8 @@
             }
           }
       };
-      testInternet.open("GET", backend+"/online", true);
-      testInternet.send( null );
+      tinyRequest.open("GET", backend+"/online", true);
+      tinyRequest.send( null );
     }
 
     function wakeUpBackend(){
