@@ -166,6 +166,10 @@
 
 
   <script type="text/javascript">
+    // Those are a few hundred lines of highly questionable JS.
+    // They should be rewritten entirely, but preferably keeping vanilla
+    // JS, avoiding jQuery (25KB compressed) or other framework.
+
     var backend = "https://cool-maze.appspot.com";
     // var backend = "https://dev-dot-cool-maze.appspot.com";
     // var backend = "http://localhost:8080";
@@ -174,6 +178,7 @@
     function showError(errmsg) {
       console.log("Error: " + errmsg)
       clearQR();
+      freezeResize();
       var errorZone = document.getElementById("errors");
       errorZone.innerHTML = errmsg;
     }
@@ -225,12 +230,10 @@
       //logo.style.display = "inline";
       window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
 
-      if (clickCallback) {
-        // The QR-code contents is clickable to embiggen, not the whole qr-zone
-        for(var i=0; i < qrcode.childNodes.length; i++) {
+      // The QR-code contents is clickable to embiggen, not the whole qr-zone
+      if (clickCallback)
+        for(var i=0; i < qrcode.childNodes.length; i++)
           qrcode.childNodes[i].onclick = clickCallback;
-        }
-      }
     }
 
     // Go fullscreen -> bigger QR
@@ -242,6 +245,11 @@
             render("black", embiggen);
         }, 300);
     };
+    function freezeResize(){
+      // after scan, or on fatal error, we don't need/want to
+      // redisplay a fresh black QR-code again.
+      window.onresize = function(){ return false; }
+    }
 
     function clearQR() {
       var node = document.getElementById("qrcode");
@@ -349,7 +357,7 @@
 
     document.getElementById("inbox").value = "";
 
-    // Spin while registering
+    // Spin until we have checked for internet connectivity
     spin();
 
     //
@@ -391,6 +399,7 @@
       }
 
       spin();
+      freezeResize();
     });
 
     var eventCast = 'maze-cast';
