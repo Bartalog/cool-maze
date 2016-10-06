@@ -276,11 +276,13 @@ public abstract class BaseActivity extends AppCompatActivity {
         // It is not used for file upload because the request to /new-gcs-urls already warms up a backend instance.
 
         newAsyncHttpClient().get(BACKEND_URL + "/wakeup", blackhole);
-    }AsyncHttpClient newAsyncHttpClient(){
+    }
+
+    AsyncHttpClient newAsyncHttpClient(){
         // TODO: reuse them instead of instantiating each time...?
         AsyncHttpClient client = new AsyncHttpClient();
         String cmDeviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        client.addHeader("User-Agent", "Cool Maze android app " + cmDeviceId);
+        client.addHeader("User-Agent", "Cool Maze android app " + BuildConfig.VERSION_NAME+ " code " + BuildConfig.VERSION_CODE + " device " + cmDeviceId);
         return client;
     }
 
