@@ -282,7 +282,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         // TODO: reuse them instead of instantiating each time...?
         AsyncHttpClient client = new AsyncHttpClient();
         String cmDeviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        client.addHeader("User-Agent", "Cool Maze android app " + BuildConfig.VERSION_NAME+ " code " + BuildConfig.VERSION_CODE + " device " + cmDeviceId);
+        client.addHeader("User-Agent", "Cool Maze android app, build " + BuildConfig.BUILD_DATE + " device " + cmDeviceId);
         return client;
     }
 

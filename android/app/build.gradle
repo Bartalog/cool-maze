@@ -10,6 +10,7 @@ android {
         targetSdkVersion 23
         versionCode 4
         versionName "1.0"
+        buildConfigField 'String', 'BUILD_DATE', 'new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.FRANCE).format(new java.util.Date(' + System.currentTimeMillis() +'L))'
     }
     buildTypes {
         release {
