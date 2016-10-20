@@ -63,6 +63,8 @@ var pkey []byte
 // - Hash, optional (since #32)
 // - Filename, optional (since #63)
 func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	c := appengine.NewContext(r)
 	var input PreUploadRequest
 	if r.Method != "POST" {

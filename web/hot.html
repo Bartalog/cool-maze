@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Hot Maze - Send your document from computer to mobile</title>
+  <script src="static/js/qrcodejs/qrcode.min.js"></script>
+  <link rel="SHORTCUT ICON" href="static/img/coolmaze_128.png">
+  <link rel="dns-prefetch" href="https://storage.googleapis.com/">
+  <style>
+  body {
+    text-align: center;
+    /*background-color: #64d8ff;*/
+  }
+  input[readonly]
+  {
+    background-color: white;
+  }
+  #qr-zone {
+    /*clear: both;*/
+  }
+  #qrcode {
+    text-align: center;
+  }
+  #qrcode img {
+    /*float: left;*/
+    margin: auto;
+    /*margin-top: 20px;*/
+    border-radius: 12px;
+    cursor: zoom-in;
+  }
+  #overprint-logo {
+    position: absolute;
+  }
+  #help {
+    float: left;
+    margin-left: 10px;
+    margin-bottom: 8px;
+    background-color: white;
+    border: 1px solid #AAA;
+    padding: 8px;
+    text-align: left;
+    border-radius: 15px;
+  }
+  #question-mark {
+    font-weight: bolder;
+    font-size: 2em;
+    cursor: pointer;
+    padding: 10px 8px 8px 10px;
+    margin: -2px 0 0 -2px;
+  }
+  #help-contents {
+    width: 100%;
+  }
+  #help-contents img.right {
+    float: right;
+    /*text-align: center;*/
+    margin: 12px;
+  }
+  #help-close {
+    float: right;
+    margin-top: -2em;
+    font-weight: bolder;
+    font-size: 2em;
+    cursor: pointer;
+  }
+  .mini-picto {
+    width: 1em; 
+    vertical-align:middle; 
+    padding-bottom:2px;
+  }
+  .rounded {
+    border: 1px solid #AAA;
+    border-radius: 5px;
+    padding-left: 2px;
+    padding-right: 2px;
+    white-space: nowrap;
+  }
+  .ib {
+    display: inline-block;
+  }
+  </style>
+</head>
+
+
+
+
+
+
+
+
+<body>
+  <div id="help">
+    <div><span id="question-mark">?</span></div>
+    <div id="help-contents" style="display: none;">
+      <div id="help-close">X</div>
+      <img src="static/img/schema_hot.png" width="296" height="400" class="right" />
+      <p>You can share a document from desktop computer to your mobile in seconds</p>
+    </div>
+  </div>
+
+  <div id="form-zone" style="display: none;">
+    <form id="upload"> 
+      <input type="file" />
+    </form>
+  </div>
+
+  <div id="qr-zone">
+    <div id="qrcode"> 
+    </div>
+  </div>
+
+  <div id="errors">
+  </div>
+
+  <link rel="prefetch" href="static/img/red_arrow.png">
+  <link rel="prefetch" href="static/img/red_spinner.gif">
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    // Those are a few hundred lines of highly questionable JS.
+    // They should be rewritten entirely, but preferably keeping vanilla
+    // JS, avoiding jQuery (25KB compressed) or other framework.
+
+    var backend = "https://cool-maze.appspot.com";
+    // var backend = "https://dev-dot-cool-maze.appspot.com";
+    // var backend = "http://localhost:8080";
+
+    var qrKey = "";
+
+    function showError(errmsg) {
+      console.log("Error: " + errmsg)
+      clearQR();
+      freezeResize();
+      var errorZone = document.getElementById("errors");
+      errorZone.innerHTML = errmsg;
+      return false;
+    }
+
+    var qrHundredth = 40;
+
+    function render(colorDark, clickCallback){
+      // qrHundredth == 95 is a "big QR-code" (almost fullscreen)
+      // qrHundredth == 50 is a "medium-size QR-code"
+
+      // -50 is for the small [?] box on the left
+      var w = Math.max(document.documentElement.clientWidth -50, (window.innerWidth || 0) -50) * qrHundredth / 100;
+      var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) * qrHundredth / 100;
+      var c = 400;
+      if ( w>0 )
+        c = w;
+      if ( h>0 && h<c )
+        c = h;
+
+      var logo = document.getElementById("overprint-logo");
+      if ( logo )
+        logo.style.display = "none";
+      clearQR();
+      new QRCode("qrcode", {
+        text: qrKey,
+        width: c,
+        height: c,
+        colorDark : colorDark,
+        colorLight : "white",
+        correctLevel : QRCode.CorrectLevel.M
+      });
+      var qrcode = document.getElementById("qrcode");
+
+      var cc = c/4;
+      logo = document.getElementById("overprint-logo"); // has changed
+      logo.style.width = cc + "px";
+      logo.style.height = cc + "px";
+      logo.style.top = ((1.5)*cc) + "px";
+      logo.style.marginLeft = (-cc/2) + "px";
+      //logo.style.display = "inline";
+      window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
+
+      // The QR-code contents is clickable to embiggen, not the whole qr-zone
+      if (clickCallback)
+        for(var i=0; i < qrcode.childNodes.length; i++)
+          qrcode.childNodes[i].onclick = clickCallback;
+    }
+
+    // Go fullscreen -> bigger QR
+    var resizeTimeOut = null;
+    window.onresize = function(){
+        if (resizeTimeOut != null)
+            clearTimeout(resizeTimeOut);
+        resizeTimeOut = setTimeout(function(){
+            render("black", embiggen);
+        }, 300);
+    };
+    function freezeResize(){
+      // after scan, or on fatal error, we don't need/want to
+      // redisplay a fresh black QR-code again.
+      window.onresize = function(){ return false; }
+    }
+
+    function clearQR() {
+      var node = document.getElementById("qrcode");
+      while (node.firstChild) {
+          node.removeChild(node.firstChild);
+      }
+      node.innerHTML='<img src="static/img/red_arrow.png" id="overprint-logo" style="display: none;" />';
+    }
+
+    function show(id) {
+      var qrzone = document.getElementById("qr-zone");
+      var help = document.getElementById("help");
+      var helpContents = document.getElementById("help-contents");
+
+      var dispQr = "none";
+      var dispHelpContents = "none";
+      var bgcolor = "#64d8ff";
+      switch(id) {
+        case "qr-zone":
+          dispQr = "block";
+          bgcolor = "white"; // or keep it always blue...?
+          break;
+        case "help-contents":
+          dispHelpContents = "block";
+          break;
+      }
+      qrzone.style.display = dispQr;
+      helpContents.style.display = dispHelpContents;
+      document.body.style.backgroundColor = bgcolor;
+    }
+
+    //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
+    document.getElementById("question-mark").onclick = function(event) { 
+        if ( document.getElementById("help-contents").style.display === "none" )
+          show("help-contents"); 
+    }
+    document.getElementById("help-close").onclick = function(event) { 
+        show("qr-zone"); 
+    }
+
+    function embiggen(event) { 
+        // Change size on each click
+        // 40, 68, 96, 40, 60, 96 ...
+        qrHundredth += 28;
+        if ( qrHundredth>100 )
+          qrHundredth = 40;
+        render("black", embiggen);
+    }
+
+    function spin() {
+      var logo = document.getElementById("overprint-logo");
+      if ( logo )
+        logo.src = "static/img/red_spinner.gif";
+    }
+
+    function unspin() {
+      var logo = document.getElementById("overprint-logo");
+      if ( logo )
+        logo.style.display = "none";
+    }
+
+
+    function requestGcsUrls(){
+      var r = new XMLHttpRequest();
+      r.onreadystatechange = function() {
+          if (r.readyState == 4 ) {
+            if (r.status == 200) {
+              console.log( r.response );
+
+
+              var formZone = document.getElementById("form-zone");
+              formZone.style.display = "block";
+              unspin();
+            } else {
+              showError("GCS urls request failed with " + r.status);
+            }
+          }
+      };
+      var endpoint = backend + "/new-gcs-urls";
+      var param = "filesize=" + 12345;
+      r.open("POST", endpoint + "?" + param, true);
+      r.send( null );
+    }
+
+    window.addEventListener('offline', function(){
+      showError("Lost internet connectivity :(")
+    });
+
+    // Handle slight differences in Embed mode (iframe)
+    function handleEmbedMode() {
+      var inFrame = false;
+      try {
+          inFrame = (window.self !== window.top);
+      } catch (e) {
+          inFrame = true;
+      }
+      if ( inFrame ) {
+        var help = document.getElementById("help");
+        if ( help )
+          help.style.display = "none";
+      }
+    }
+
+
+    function init() {
+      // Spin until we have fetched upload/download URLs
+      spin();
+
+      requestGcsUrls();
+      handleEmbedMode();
+    }
+    init();
+  </script>
+  
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-40444778-5', 'auto');
+    ga('send', 'pageview');
+  </script>
+</body>
+</html>
