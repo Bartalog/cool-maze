@@ -142,7 +142,7 @@
     var backend = "http://localhost:8080";
 
     var urlPut, urlGet;
-    var qrKey = "";
+    var qrText = "";
 
     function showError(errmsg) {
       console.log("Error: " + errmsg)
@@ -173,7 +173,7 @@
         logo.style.display = "none";
       clearQR();
       new QRCode("qrcode", {
-        text: qrKey,
+        text: qrText,
         width: c,
         height: c,
         colorDark : colorDark,
@@ -345,7 +345,10 @@
     }
 
     function displayGetQrCode() {
-      console.log("TODO displayGetQrCode");
+      // By default urlGet is much too long, QR-code gets much too complex.
+      // TODO create a shortURL instead.
+      qrText = urlGet;
+      render("black", embiggen);
     }
 
     document.addEventListener("DOMContentLoaded", function(){
