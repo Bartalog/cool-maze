@@ -109,7 +109,7 @@
 
   <div id="form-zone" style="display: none;">
     <form id="resource-upload"> 
-      <input type="file" name="resource" />
+      <input type="file" name="resource" id="resource" />
       <button type="submit">Send!</button>
     </form>
   </div>
@@ -293,8 +293,11 @@
           }
       };
       var endpoint = backend + "/new-gcs-urls";
-      var param = "filesize=" + 12345;
-      r.open("POST", endpoint + "?" + param, true);
+      var params = "type=application/octet-stream&filesize=123456";
+      // TODO real resource mime-type
+      // TODO real filesize
+      // TODO hash
+      r.open("POST", endpoint + "?" + params, true);
       r.send( null );
     }
 
@@ -320,8 +323,10 @@
     document.addEventListener("DOMContentLoaded", function(){
       document.getElementById('resource-upload').addEventListener("submit", function(e){
         e.preventDefault();
-        var form = e.target;
-        var data = new FormData(form);
+        var resource = document.getElementById('resource').files[0];
+        console.log(resource.name);
+        console.log(resource.size + " bytes");
+        console.log(resource.type);
         
         var request = new XMLHttpRequest();
         
@@ -330,7 +335,9 @@
         };
         
         request.open("PUT", urlPut);
-        request.send(data);
+        request.setRequestHeader("Content-type", "application/octet-stream");
+        // TODO the real resource mime-type
+        request.send(resource);
       })
     })
 
