@@ -95,12 +95,22 @@
       <div id="help-close">X</div>
       <img src="static/img/schema_hot.png" width="296" height="400" class="right" />
       <p>You can share a document from desktop computer to your mobile in seconds</p>
+      <p>
+        <ol>
+          <li>Select or drop a file from your computer</li>
+          <li>Scan the QR-code with your mobile</li>
+        </ol>
+      </p>
+      <p>That's it. No login, no passwords, no ads.</p>
+      <p>The two devices (source and target) must have internet connection</p>
+      <p><strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the <a href="terms.html">Privacy terms</a>.</p>
     </div>
   </div>
 
   <div id="form-zone" style="display: none;">
-    <form id="upload"> 
-      <input type="file" />
+    <form id="resource-upload"> 
+      <input type="file" name="resource" />
+      <button type="submit">Send!</button>
     </form>
   </div>
 
@@ -127,10 +137,11 @@
     // They should be rewritten entirely, but preferably keeping vanilla
     // JS, avoiding jQuery (25KB compressed) or other framework.
 
-    var backend = "https://cool-maze.appspot.com";
+    //var backend = "https://cool-maze.appspot.com";
     // var backend = "https://dev-dot-cool-maze.appspot.com";
-    // var backend = "http://localhost:8080";
+    var backend = "http://localhost:8080";
 
+    var urlPut, urlGet;
     var qrKey = "";
 
     function showError(errmsg) {
@@ -267,14 +278,17 @@
       r.onreadystatechange = function() {
           if (r.readyState == 4 ) {
             if (r.status == 200) {
-              console.log( r.response );
-
+              var jsonResponse = JSON.parse(r.responseText);
+              urlPut = jsonResponse.urlPut;
+              console.log( "urlPut = " + urlPut );
+              urlGet = jsonResponse.urlGet;
+              console.log( "urlGet = " + urlGet );
 
               var formZone = document.getElementById("form-zone");
               formZone.style.display = "block";
               unspin();
             } else {
-              showError("GCS urls request failed with " + r.status);
+              showError("GCS urls request failed with " + r.status + ": " + r.responseText);
             }
           }
       };
@@ -302,6 +316,23 @@
           help.style.display = "none";
       }
     }
+
+    document.addEventListener("DOMContentLoaded", function(){
+      document.getElementById('resource-upload').addEventListener("submit", function(e){
+        e.preventDefault();
+        var form = e.target;
+        var data = new FormData(form);
+        
+        var request = new XMLHttpRequest();
+        
+        request.onreadystatechange = function(){
+          console.log( request.responseText );
+        };
+        
+        request.open("PUT", urlPut);
+        request.send(data);
+      })
+    })
 
 
     function init() {
