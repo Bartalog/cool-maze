@@ -107,7 +107,7 @@
     </div>
   </div>
 
-  <div id="form-zone" style="display: none;">
+  <div id="form-zone" style="display: block;">
     <form id="resource-upload"> 
       <input type="file" name="resource" id="resource" />
       <button type="submit">Send!</button>
@@ -273,7 +273,7 @@
     }
 
 
-    function requestGcsUrls(){
+    function requestGcsUrls(action){
       var r = new XMLHttpRequest();
       r.onreadystatechange = function() {
           if (r.readyState == 4 ) {
@@ -287,6 +287,7 @@
               var formZone = document.getElementById("form-zone");
               formZone.style.display = "block";
               unspin();
+              action();
             } else {
               showError("GCS urls request failed with " + r.status + ": " + r.responseText);
             }
@@ -320,33 +321,52 @@
       }
     }
 
+    function doUpload(action) {
+          var resource = document.getElementById('resource').files[0];
+          console.log(resource.name);
+          console.log(resource.size + " bytes");
+          console.log(resource.type);
+          
+          var up = new XMLHttpRequest();
+          
+          up.onreadystatechange = function(){
+            if (up.readyState == 4 ) {
+              if (up.status == 200) {
+                console.log( up.responseText );
+                action();
+              }
+            }
+          };
+          
+          up.open("PUT", urlPut);
+          up.setRequestHeader("Content-type", "application/octet-stream");
+          // TODO the real resource mime-type
+          up.send(resource);
+    }
+
+    function displayGetQrCode() {
+      console.log("TODO displayGetQrCode");
+    }
+
     document.addEventListener("DOMContentLoaded", function(){
       document.getElementById('resource-upload').addEventListener("submit", function(e){
         e.preventDefault();
-        var resource = document.getElementById('resource').files[0];
-        console.log(resource.name);
-        console.log(resource.size + " bytes");
-        console.log(resource.type);
-        
-        var request = new XMLHttpRequest();
-        
-        request.onreadystatechange = function(){
-          console.log( request.responseText );
-        };
-        
-        request.open("PUT", urlPut);
-        request.setRequestHeader("Content-type", "application/octet-stream");
-        // TODO the real resource mime-type
-        request.send(resource);
+
+        requestGcsUrls(function(){
+          doUpload(function(){
+            displayGetQrCode();
+          });
+        });
+
       })
     })
 
 
     function init() {
       // Spin until we have fetched upload/download URLs
-      spin();
+      //spin();
 
-      requestGcsUrls();
+      //requestGcsUrls();
       handleEmbedMode();
     }
     init();
