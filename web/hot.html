@@ -110,7 +110,6 @@
   <div id="form-zone" style="display: block;">
     <form id="resource-upload"> 
       <input type="file" name="resource" id="resource" />
-      <button type="submit">Send!</button>
     </form>
   </div>
 
@@ -346,9 +345,8 @@
       render("black", embiggen);
     }
 
-    document.addEventListener("DOMContentLoaded", function(){
-      document.getElementById('resource-upload').addEventListener("submit", function(e){
-        e.preventDefault();
+    var resourceInput = document.getElementById('resource');
+    resourceInput.onchange = function(e) { 
         resourceFile = document.getElementById('resource').files[0];
 
         requestGcsUrls(function(){
@@ -356,19 +354,9 @@
             displayGetQrCode();
           });
         });
+    };
 
-      })
-    })
-
-
-    function init() {
-      // Spin until we have fetched upload/download URLs
-      //spin();
-
-      //requestGcsUrls();
-      handleEmbedMode();
-    }
-    init();
+    handleEmbedMode();
   </script>
   
   <script>
