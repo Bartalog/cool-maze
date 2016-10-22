@@ -142,6 +142,7 @@
     var backend = "http://localhost:8080";
 
     var urlPut, urlGet;
+    var resourceFile;
     var qrText = "";
 
     function showError(errmsg) {
@@ -294,9 +295,9 @@
           }
       };
       var endpoint = backend + "/new-gcs-urls";
-      var params = "type=application/octet-stream&filesize=123456";
-      // TODO real resource mime-type
-      // TODO real filesize
+      var params = "type=" + encodeURIComponent(resourceFile.type)
+                   + "&filesize=" + resourceFile.size
+                   + "&filename=" + encodeURIComponent(resourceFile.name) ;
       // TODO hash
       r.open("POST", endpoint + "?" + params, true);
       r.send( null );
@@ -321,12 +322,7 @@
       }
     }
 
-    function doUpload(action) {
-          var resource = document.getElementById('resource').files[0];
-          console.log(resource.name);
-          console.log(resource.size + " bytes");
-          console.log(resource.type);
-          
+    function doUpload(action) {          
           var up = new XMLHttpRequest();
           
           up.onreadystatechange = function(){
@@ -339,9 +335,8 @@
           };
           
           up.open("PUT", urlPut);
-          up.setRequestHeader("Content-type", "application/octet-stream");
-          // TODO the real resource mime-type
-          up.send(resource);
+          up.setRequestHeader("Content-type", resourceFile.type);
+          up.send(resourceFile);
     }
 
     function displayGetQrCode() {
@@ -354,6 +349,7 @@
     document.addEventListener("DOMContentLoaded", function(){
       document.getElementById('resource-upload').addEventListener("submit", function(e){
         e.preventDefault();
+        resourceFile = document.getElementById('resource').files[0];
 
         requestGcsUrls(function(){
           doUpload(function(){
