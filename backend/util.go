@@ -19,6 +19,12 @@ func randomString() string {
 	return fmt.Sprintf("%x%x", x, y)
 }
 
+// randomString20 returns exactly 20 hex digits
+func randomString20() string {
+	x, y := rand.Int63n(1<<40), rand.Int63n(1<<40)
+	return fmt.Sprintf("%010x%010x", x, y)
+}
+
 func randomGcsObjectName() string {
 	d := time.Now().Format("2006-01-02")
 	f := randomString()
