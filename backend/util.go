@@ -25,6 +25,12 @@ func randomString20() string {
 	return fmt.Sprintf("%010x%010x", x, y)
 }
 
+// randomString12 returns exactly 12 hex digits
+func randomString12() string {
+	x := rand.Int63n(1 << (4 * 12))
+	return fmt.Sprintf("%012x", x)
+}
+
 func randomGcsObjectName() string {
 	d := time.Now().Format("2006-01-02")
 	f := randomString()

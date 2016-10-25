@@ -104,6 +104,17 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	input.Size = fileSize
 	input.Filename = r.FormValue("filename")
 
+	doShort := func(response Response, urlGet string) {
+		if r.FormValue("shorten") == "1" {
+			shortUri, err := shorten(c, urlGet)
+			if err == nil {
+				response["shortUrlGet"] = shortUri
+			} else {
+				log.Warningf(c, "Problem with shortUrification: %v", err)
+			}
+		}
+	}
+
 	// Mobile source computed hash of resource before uploading it.
 	// Optional.
 	// See #32
@@ -116,6 +127,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 			// No "urlPut" because source won't need to upload anything.
 			"gcsObjectName": gcsObjectNameExisting,
 		}
+		doShort(response, urlGetExisting)
 		fmt.Fprintln(w, response)
 		return
 	}
@@ -135,6 +147,8 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		"urlGet":        data.UrlGet,
 		"gcsObjectName": data.GcsObjectName,
 	}
+	doShort(response, data.UrlGet)
+
 	fmt.Fprintln(w, response)
 }
 

@@ -283,6 +283,10 @@
               console.log( "urlPut = " + urlPut );
               urlGet = jsonResponse.urlGet;
               console.log( "urlGet = " + urlGet );
+              if( jsonResponse.shortUrlGet ){
+                urlGet = backend + jsonResponse.shortUrlGet;
+                console.log( "urlGet (short) = " + urlGet );
+              }
 
               var formZone = document.getElementById("form-zone");
               formZone.style.display = "block";
@@ -296,6 +300,7 @@
       var endpoint = backend + "/new-gcs-urls";
       var params = "type=" + encodeURIComponent(resourceFile.type)
                    + "&filesize=" + resourceFile.size
+                   + "&shorten=1"
                    + "&filename=" + encodeURIComponent(resourceFile.name) ;
       // TODO hash
       r.open("POST", endpoint + "?" + params, true);
