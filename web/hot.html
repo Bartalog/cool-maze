@@ -28,9 +28,6 @@
     border-radius: 12px;
     cursor: zoom-in;
   }
-  #overprint-logo {
-    position: absolute;
-  }
   #help {
     float: left;
     margin-left: 10px;
@@ -75,6 +72,10 @@
     padding-right: 2px;
     white-space: nowrap;
   }
+  #spin-img {
+    width: 64px;
+    height: 64px;
+  }
   .ib {
     display: inline-block;
   }
@@ -113,6 +114,10 @@
     </form>
   </div>
 
+  <div id="spin-zone">
+    <img id="spin-img" src="static/img/red_spinner.gif"  style="display: none;"/>
+  </div>
+
   <div id="qr-zone">
     <div id="qrcode"> 
     </div>
@@ -120,10 +125,6 @@
 
   <div id="errors">
   </div>
-
-  <link rel="prefetch" href="static/img/red_arrow.png">
-  <link rel="prefetch" href="static/img/red_spinner.gif">
-
 
 
 
@@ -168,9 +169,6 @@
       if ( h>0 && h<c )
         c = h;
 
-      var logo = document.getElementById("overprint-logo");
-      if ( logo )
-        logo.style.display = "none";
       clearQR();
       new QRCode("qrcode", {
         text: qrText,
@@ -181,15 +179,6 @@
         correctLevel : QRCode.CorrectLevel.M
       });
       var qrcode = document.getElementById("qrcode");
-
-      var cc = c/4;
-      logo = document.getElementById("overprint-logo"); // has changed
-      logo.style.width = cc + "px";
-      logo.style.height = cc + "px";
-      logo.style.top = ((1.5)*cc) + "px";
-      logo.style.marginLeft = (-cc/2) + "px";
-      //logo.style.display = "inline";
-      window.setTimeout(function(){ logo.style.display = "inline"; }, 40);
 
       // The QR-code contents is clickable to embiggen, not the whole qr-zone
       if (clickCallback)
@@ -217,7 +206,6 @@
       while (node.firstChild) {
           node.removeChild(node.firstChild);
       }
-      node.innerHTML='<img src="static/img/red_arrow.png" id="overprint-logo" style="display: none;" />';
     }
 
     function show(id) {
@@ -261,15 +249,13 @@
     }
 
     function spin() {
-      var logo = document.getElementById("overprint-logo");
-      if ( logo )
-        logo.src = "static/img/red_spinner.gif";
+      var spinner = document.getElementById("spin-img");
+      spinner.style.display = "block";
     }
 
     function unspin() {
-      var logo = document.getElementById("overprint-logo");
-      if ( logo )
-        logo.style.display = "none";
+      var spinner = document.getElementById("spin-img");
+      spinner.style.display = "none";
     }
 
 
@@ -287,10 +273,6 @@
                 urlGet = backend + jsonResponse.shortUrlGet;
                 console.log( "urlGet (short) = " + urlGet );
               }
-
-              var formZone = document.getElementById("form-zone");
-              formZone.style.display = "block";
-              unspin();
               action();
             } else {
               showError("GCS urls request failed with " + r.status + ": " + r.responseText);
@@ -352,10 +334,13 @@
 
     var resourceInput = document.getElementById('resource');
     resourceInput.onchange = function(e) { 
+        document.getElementById("form-zone").style.display = "none";
+        spin();
         resourceFile = document.getElementById('resource').files[0];
 
         requestGcsUrls(function(){
           doUpload(function(){
+            unspin();
             displayGetQrCode();
           });
         });
