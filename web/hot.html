@@ -274,6 +274,9 @@
                 console.log( "urlGet (short) = " + urlGet );
               }
               action();
+            } else if (r.status == 412) {
+              var jsonResponse = JSON.parse(r.responseText);
+              showError(jsonResponse.message);
             } else {
               showError("GCS urls request failed with " + r.status + ": " + r.responseText);
             }
