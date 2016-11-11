@@ -270,6 +270,14 @@
       spinner.style.display = "none";
     }
 
+    function wakeUpBackend(){
+      // This request can be slow.
+      // We don't need to wait for the response.
+      var wakeup = new XMLHttpRequest();
+      var wuEndpoint = backend + "/wakeup";
+      wakeup.open("GET", wuEndpoint, true);
+      wakeup.send( null );
+    }
 
     function requestGcsUrls(action){
       var r = new XMLHttpRequest();
@@ -370,6 +378,7 @@
         });
     };
 
+    wakeUpBackend();
     handleEmbedMode();
   </script>
   
