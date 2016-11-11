@@ -238,6 +238,18 @@
     document.getElementById("help-close").onclick = function(event) { 
         show("qr-zone"); 
     }
+    document.onkeydown = function(evt) {
+      evt = evt || window.event;
+      var isEscape = false;
+      if ("key" in evt) {
+        isEscape = (evt.key == "Escape" || evt.key == "Esc");
+      } else {
+        isEscape = (evt.keyCode == 27);
+      }
+      if (isEscape) {
+        show("qr-zone");
+      }
+    };
 
     function embiggen(event) { 
         // Change size on each click
