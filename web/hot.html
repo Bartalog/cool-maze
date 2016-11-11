@@ -10,10 +10,19 @@
   body {
     text-align: center;
     /*background-color: #64d8ff;*/
+    height: 100%;
+    min-height: 500px;
+    border: white solid 10px;
   }
   input[readonly]
   {
     background-color: white;
+  }
+  #drop-invite {
+    padding: 30px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #FCC;
   }
   #qr-zone {
     /*clear: both;*/
@@ -111,6 +120,7 @@
   <div id="form-zone" style="display: block;">
     <form id="resource-upload"> 
       <input type="file" name="resource" id="resource" />
+      <div id="drop-invite" style="display: none;">DROP FILE HERE</div>
     </form>
   </div>
 
@@ -377,6 +387,47 @@
           });
         });
     };
+
+    function handleDnd(){
+
+      // See https://css-tricks.com/drag-and-drop-file-uploading/
+      var div = document.createElement('div');
+      var dndFileSupported = (('draggable' in div) 
+        || ('ondragstart' in div && 'ondrop' in div)) 
+        && 'FormData' in window && 'FileReader' in window;
+      if (!dndFileSupported)
+        return;
+
+      var dropInvite = document.getElementById("drop-invite");
+      dropInvite.style.display = "block";
+
+      var dropZone = document.body; 
+
+      dropZone.addEventListener('dragover', function(evt){
+        //dropZone.style.background = 'red';
+        dropZone.style.border = 'red dotted 10px';
+        evt.stopPropagation();
+        evt.preventDefault();
+        evt.dataTransfer.dropEffect = 'copy';
+      }, false);
+
+      dropZone.addEventListener('drop', function(evt){
+        dropZone.style.background = '#AFA';
+        evt.stopPropagation();
+        evt.preventDefault();
+
+        var files = evt.dataTransfer.files;
+        for (var i = 0, f; f = files[i]; i++)
+          console.log(f.name);
+        // TODO upload 1st file.
+        // TODO upload all files ..?
+      }, false);
+
+      dropZone.addEventListener('dragleave', function(evt){
+        dropZone.style.border = 'white solid 10px';
+      }, false);
+    }
+    handleDnd();
 
     wakeUpBackend();
     handleEmbedMode();
