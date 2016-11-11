@@ -12,7 +12,7 @@
     /*background-color: #64d8ff;*/
     height: 100%;
     min-height: 500px;
-    border: white solid 10px;
+    border: #FFFFFF00 solid 10px;
   }
   input[readonly]
   {
@@ -374,22 +374,28 @@
       }, 9 * 60 * 1000);
     }
 
+    function processResourceFile() {
+       // Here, resourceFile has been set either through the file select input,
+       // or through a drag'n'drop.
+       // What happens next with resourceFile is the same in both use cases.
+
+      requestGcsUrls(function(){
+        doUpload(function(){
+          unspin();
+          displayGetQrCode();
+        });
+      });
+    }
+
     var resourceInput = document.getElementById('resource');
     resourceInput.onchange = function(e) { 
         document.getElementById("form-zone").style.display = "none";
         spin();
         resourceFile = document.getElementById('resource').files[0];
-
-        requestGcsUrls(function(){
-          doUpload(function(){
-            unspin();
-            displayGetQrCode();
-          });
-        });
+        processResourceFile();
     };
 
     function handleDnd(){
-
       // See https://css-tricks.com/drag-and-drop-file-uploading/
       var div = document.createElement('div');
       var dndFileSupported = (('draggable' in div) 
@@ -401,30 +407,45 @@
       var dropInvite = document.getElementById("drop-invite");
       dropInvite.style.display = "block";
 
-      var dropZone = document.body; 
+      var dropZone = document.body;
+
+      function highlightDropZone(){
+        dropZone.style.border = 'red dotted 10px';
+      }
+
+      function unhighlightDropZone(){
+        dropZone.style.border = '#FFFFFF00 solid 10px';
+      }
 
       dropZone.addEventListener('dragover', function(evt){
-        //dropZone.style.background = 'red';
-        dropZone.style.border = 'red dotted 10px';
+        highlightDropZone()
         evt.stopPropagation();
         evt.preventDefault();
         evt.dataTransfer.dropEffect = 'copy';
       }, false);
 
       dropZone.addEventListener('drop', function(evt){
-        dropZone.style.background = '#AFA';
         evt.stopPropagation();
         evt.preventDefault();
+        unhighlightDropZone()
+
+        document.getElementById("form-zone").style.display = "none";
 
         var files = evt.dataTransfer.files;
-        for (var i = 0, f; f = files[i]; i++)
-          console.log(f.name);
-        // TODO upload 1st file.
+        if( files.length>1 ){
+          showError("Multiple upload not supported (yet)");
+          return;
+        }
+
+        spin();
+        // Upload 1st file.
+        resourceFile = files[0];
+        processResourceFile();
         // TODO upload all files ..?
       }, false);
 
       dropZone.addEventListener('dragleave', function(evt){
-        dropZone.style.border = 'white solid 10px';
+        unhighlightDropZone()
       }, false);
     }
     handleDnd();
