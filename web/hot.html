@@ -341,10 +341,19 @@
     }
 
     function displayGetQrCode() {
-      // By default urlGet is much too long, QR-code gets much too complex.
-      // TODO create a shortURL instead.
+      // We generate th QR-code of a custom "medium-size" shortURL,
+      // much shorter than the full signed GCS download URL.
       qrText = urlGet;
       render("black", embiggen);
+
+      // GCS URL will be valid for a few minutes only.
+      // Discard QR-code after 9mn.
+      window.setTimeout(function(){ 
+        var qrzone = document.getElementById("qr-zone");
+        if ( qrzone.style.display == "block" || qrzone.style.display == "" ) {
+          showError("Please reload.");
+        }
+      }, 9 * 60 * 1000);
     }
 
     var resourceInput = document.getElementById('resource');
