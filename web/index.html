@@ -105,7 +105,7 @@
   }
   .thumb {
      border: 4px solid transparent;
-     margin: 2px;
+     margin: 6px;
   }
   .thumb.link {
     border: 4px solid yellow;
@@ -147,6 +147,9 @@
   <div id="qr-zone">
     <div id="qrcode"> 
     </div>
+  </div>
+
+  <div id="thumbs">
   </div>
 
   <div id="txt-msg-zone" style="display: none;">
@@ -193,6 +196,7 @@
     var msg = document.getElementById("txt-msg-zone");
     var txtMsgClose = document.getElementById("txt-msg-close");
     var inbox = document.getElementById("inbox");
+    var thumbs = document.getElementById("thumbs");
 
     function showError(errmsg) {
       console.log("Error: " + errmsg)
@@ -408,6 +412,7 @@
       });
 
       var eventCast = 'maze-cast';
+      var multipleReceived = 0;
       channel.bind(eventCast, function(data) {
         if(data.multiIndex)
           console.log("maze-cast Multiple " + data.multiIndex + " / " + data.multiCount);
@@ -426,6 +431,13 @@
              thumbLinkTimeout(thumbImg);
              if(thumbImg.classList.contains("no-preview"))
                thumbImg.src = "static/img/thumbnail-file.png";
+
+             multipleReceived ++;
+             if( multipleReceived == data.multiCount ){
+                var logo = document.getElementById("overprint-logo");
+                if ( logo )
+                  logo.style.display = "none";
+             }
            } else {
              inbox.value = "Redirecting to " + url + " ...";
              show("txt-msg-zone");
@@ -450,7 +462,7 @@
       newThumb.classList.add("empty");
       newThumb.src = "static/img/thumbnail-empty.png";
       // This is not always sorted 0, 1, ... N (for now)
-      qrzone.appendChild(newThumb);
+      thumbs.appendChild(newThumb);
       return newThumb;
     }
 
