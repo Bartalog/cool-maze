@@ -12,17 +12,15 @@
     /*background-color: #64d8ff;*/
     height: 100%;
     min-height: 500px;
-    border: #FFFFFF00 solid 10px;
+    border: rgba(255, 255, 255, 0) solid 10px;
   }
   input[readonly]
   {
     background-color: white;
   }
-  #drop-invite {
-    padding: 30px;
-    font-size: 32px;
-    font-weight: bold;
-    color: #FCC;
+  #progress-zone {
+    min-height: 20px;
+    padding-bottom: 8px;
   }
   #qr-zone {
     /*clear: both;*/
@@ -36,6 +34,12 @@
     /*margin-top: 20px;*/
     border-radius: 12px;
     cursor: zoom-in;
+  }
+  #drop-invite {
+    padding: 30px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #FCC;
   }
   #help {
     float: right;
@@ -117,6 +121,10 @@
     </div>
   </div>
 
+  <div id="progress-zone">
+    <progress value="0" max="100" id="upload-progress" style="display: none;"></progress>
+  </div>
+
   <div id="form-zone" style="display: block;">
     <form id="resource-upload"> 
       <input type="file" name="resource" id="resource" />
@@ -125,7 +133,7 @@
   </div>
 
   <div id="spin-zone">
-    <img id="spin-img" src="static/img/red_spinner.gif"  style="display: none;"/>
+    <img id="spin-img" src="static/img/red_spinner.gif" style="display: none;"/>
   </div>
 
   <div id="qr-zone">
@@ -155,11 +163,25 @@
     var resourceFile;
     var qrText = "";
 
+    var errorZone = document.getElementById("errors");
+    var progress = document.getElementById("upload-progress");
+    var formZone = document.getElementById("form-zone")
+    var qrcode = document.getElementById("qrcode");
+    var qrzone = document.getElementById("qr-zone");
+    var help = document.getElementById("help");
+    var helpContents = document.getElementById("help-contents");
+    var questionMark = document.getElementById("question-mark");
+    var help = document.getElementById("help");
+    var helpClose = document.getElementById("help-close");
+    var helpContents = document.getElementById("help-contents");
+    var spinner = document.getElementById("spin-img");
+    var resourceInput = document.getElementById('resource');
+    var dropInvite = document.getElementById("drop-invite");
+
     function showError(errmsg) {
       console.log("Error: " + errmsg)
       clearQR();
       freezeResize();
-      var errorZone = document.getElementById("errors");
       errorZone.innerHTML = errmsg;
       return false;
     }
@@ -188,7 +210,6 @@
         colorLight : "white",
         correctLevel : QRCode.CorrectLevel.M
       });
-      var qrcode = document.getElementById("qrcode");
 
       // The QR-code contents is clickable to embiggen, not the whole qr-zone
       if (clickCallback)
@@ -212,17 +233,13 @@
     }
 
     function clearQR() {
-      var node = document.getElementById("qrcode");
+      var node = qrcode;
       while (node.firstChild) {
           node.removeChild(node.firstChild);
       }
     }
 
     function show(id) {
-      var qrzone = document.getElementById("qr-zone");
-      var help = document.getElementById("help");
-      var helpContents = document.getElementById("help-contents");
-
       var dispQr = "none";
       var dispHelpContents = "none";
       var bgcolor = "#64d8ff";
@@ -241,11 +258,11 @@
     }
 
     //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
-    document.getElementById("question-mark").onclick = function(event) { 
-        if ( document.getElementById("help-contents").style.display === "none" )
+    questionMark.onclick = function(event) { 
+        if ( helpContents.style.display === "none" )
           show("help-contents"); 
     }
-    document.getElementById("help-close").onclick = function(event) { 
+    helpClose.onclick = function(event) { 
         show("qr-zone"); 
     }
     document.onkeydown = function(evt) {
@@ -271,12 +288,10 @@
     }
 
     function spin() {
-      var spinner = document.getElementById("spin-img");
-      spinner.style.display = "block";
+      spinner.style.display = "inline";
     }
 
     function unspin() {
-      var spinner = document.getElementById("spin-img");
       spinner.style.display = "none";
     }
 
@@ -303,6 +318,7 @@
                 urlGet = backend + jsonResponse.shortUrlGet;
                 console.log( "urlGet (short) = " + urlGet );
               }
+              progress.style.display = "inline";
               action();
             } else if (r.status == 412) {
               var jsonResponse = JSON.parse(r.responseText);
@@ -335,27 +351,36 @@
           inFrame = true;
       }
       if ( inFrame ) {
-        var help = document.getElementById("help");
         if ( help )
           help.style.display = "none";
       }
     }
 
     function doUpload(action) {          
-          var up = new XMLHttpRequest();
-          
-          up.onreadystatechange = function(){
-            if (up.readyState == 4 ) {
-              if (up.status == 200) {
-                console.log( up.responseText );
-                action();
-              }
-            }
-          };
-          
-          up.open("PUT", urlPut);
-          up.setRequestHeader("Content-type", resourceFile.type);
-          up.send(resourceFile);
+      var up = new XMLHttpRequest();
+      progress.value = 0;
+      
+      up.onreadystatechange = function(){
+        if (up.readyState == 4 ) {
+          if (up.status == 200) {
+            progress.value = 100;
+            console.log( up.responseText );
+            action();
+          }
+        }
+      };
+
+      (up.upload || up).addEventListener('progress', function(e) {
+          var done = e.position || e.loaded;
+          var total = e.totalSize || e.total;
+          var percent = Math.round(done/total*100);
+          //console.log('Upload progress: ' + percent + '%');
+          progress.value = percent;
+      });
+      
+      up.open("PUT", urlPut);
+      up.setRequestHeader("Content-type", resourceFile.type);
+      up.send(resourceFile);
     }
 
     function displayGetQrCode() {
@@ -367,7 +392,6 @@
       // GCS URL will be valid for a few minutes only.
       // Discard QR-code after 9mn.
       window.setTimeout(function(){ 
-        var qrzone = document.getElementById("qr-zone");
         if ( qrzone.style.display == "block" || qrzone.style.display == "" ) {
           showError("Please reload.");
         }
@@ -387,11 +411,10 @@
       });
     }
 
-    var resourceInput = document.getElementById('resource');
     resourceInput.onchange = function(e) { 
-        document.getElementById("form-zone").style.display = "none";
+        formZone.style.display = "none";
         spin();
-        resourceFile = document.getElementById('resource').files[0];
+        resourceFile = resourceInput.files[0];
         processResourceFile();
     };
 
@@ -404,7 +427,6 @@
       if (!dndFileSupported)
         return;
 
-      var dropInvite = document.getElementById("drop-invite");
       dropInvite.style.display = "block";
 
       var dropZone = document.body;
@@ -414,22 +436,22 @@
       }
 
       function unhighlightDropZone(){
-        dropZone.style.border = '#FFFFFF00 solid 10px';
+        dropZone.style.border = 'rgba(255, 255, 255, 0) solid 10px';
       }
 
       dropZone.addEventListener('dragover', function(evt){
-        highlightDropZone()
         evt.stopPropagation();
         evt.preventDefault();
+        highlightDropZone()
         evt.dataTransfer.dropEffect = 'copy';
       }, false);
 
       dropZone.addEventListener('drop', function(evt){
         evt.stopPropagation();
         evt.preventDefault();
-        unhighlightDropZone()
+        unhighlightDropZone();
 
-        document.getElementById("form-zone").style.display = "none";
+        formZone.style.display = "none";
 
         var files = evt.dataTransfer.files;
         if( files.length>1 ){
@@ -445,7 +467,7 @@
       }, false);
 
       dropZone.addEventListener('dragleave', function(evt){
-        unhighlightDropZone()
+        unhighlightDropZone();
       }, false);
     }
     handleDnd();
