@@ -183,11 +183,21 @@
     var pusher;
     var channel;
 
+    var errorZone = document.getElementById("errors");
+    var qrzone = document.getElementById("qr-zone");
+    var qrcode = document.getElementById("qrcode");
+    var questionMark = document.getElementById("question-mark");
+    var help = document.getElementById("help");
+    var helpContents = document.getElementById("help-contents");
+    var helpClose = document.getElementById("help-close");
+    var msg = document.getElementById("txt-msg-zone");
+    var txtMsgClose = document.getElementById("txt-msg-close");
+    var inbox = document.getElementById("inbox");
+
     function showError(errmsg) {
       console.log("Error: " + errmsg)
       clearQR();
       freezeResize();
-      var errorZone = document.getElementById("errors");
       errorZone.innerHTML = errmsg;
       return false;
     }
@@ -223,7 +233,6 @@
         colorLight : "white",
         correctLevel : QRCode.CorrectLevel.M
       });
-      var qrcode = document.getElementById("qrcode");
 
       var cc = c/4;
       logo = document.getElementById("overprint-logo"); // has changed
@@ -256,7 +265,7 @@
     }
 
     function clearQR() {
-      var node = document.getElementById("qrcode");
+      var node = qrcode;
       while (node.firstChild) {
           node.removeChild(node.firstChild);
       }
@@ -269,10 +278,6 @@
 
     function show(id) {
       // Show either "qr-zone", or "help-contents", or "txt-msg-zone".
-      var qrzone = document.getElementById("qr-zone");
-      var help = document.getElementById("help");
-      var helpContents = document.getElementById("help-contents");
-      var msg = document.getElementById("txt-msg-zone");
 
       var dispQr = "none";
       var dispHelpContents = "none";
@@ -324,12 +329,11 @@
       return s;
     }
 
-    //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
-    document.getElementById("question-mark").onclick = function(event) { 
-        if ( document.getElementById("help-contents").style.display === "none" )
+    questionMark.onclick = function(event) { 
+        if ( helpContents.style.display === "none" )
           show("help-contents"); 
     }
-    document.getElementById("help-close").onclick = function(event) { 
+    helpClose.onclick = function(event) { 
         show("qr-zone"); 
     }
     document.onkeydown = function(evt) {
@@ -345,10 +349,10 @@
       }
     };
 
-    document.getElementById("txt-msg-close").onclick = function(event) { 
+    txtMsgClose.onclick = function(event) { 
       show("qr-zone");
     }
-    document.getElementById("inbox").onclick = function(event) { 
+    inbox.onclick = function(event) { 
         event.stopPropagation();
     }
 
@@ -371,8 +375,7 @@
         logo.src = "static/img/red_spinner.gif";
     }
 
-    document.getElementById("inbox").value = "";
-
+    inbox.value = "";
 
     function attachPusherBindings(){
       pusher.connection.bind( 'error', function( err ) {
@@ -424,7 +427,7 @@
              if(thumbImg.classList.contains("no-preview"))
                thumbImg.src = "static/img/thumbnail-file.png";
            } else {
-             document.getElementById("inbox").value = "Redirecting to " + url + " ...";
+             inbox.value = "Redirecting to " + url + " ...";
              show("txt-msg-zone");
              window.location = url;
            }
@@ -432,7 +435,7 @@
         }
          //alert(data.message);
          console.log("Received message: " + data.message);
-         document.getElementById("inbox").value = data.message;
+         inbox.value = data.message;
          show("txt-msg-zone");
       });
     }
@@ -447,7 +450,6 @@
       newThumb.classList.add("empty");
       newThumb.src = "static/img/thumbnail-empty.png";
       // This is not always sorted 0, 1, ... N (for now)
-      var qrzone = document.getElementById("qr-zone");
       qrzone.appendChild(newThumb);
       return newThumb;
     }
@@ -494,7 +496,6 @@
     });
 
     window.setTimeout(function(){ 
-      var qrzone = document.getElementById("qr-zone");
       if ( qrzone.style.display == "block" || qrzone.style.display == "" ) {
         showError("Please reload.");
         pusher.disconnect();
@@ -510,7 +511,6 @@
           inFrame = true;
       }
       if ( inFrame ) {
-        var help = document.getElementById("help");
         if ( help )
           help.style.display = "none";
       }
