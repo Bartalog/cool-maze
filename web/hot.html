@@ -122,7 +122,7 @@
   </div>
 
   <div id="progress-zone">
-    <progress value="0" max="100" id="upload-progress" style="display: none;"></progress>
+    <progress value="0" id="upload-progress" style="display: none;"></progress>
   </div>
 
   <div id="form-zone" style="display: block;">
@@ -358,12 +358,12 @@
 
     function doUpload(action) {          
       var up = new XMLHttpRequest();
-      progress.value = 0;
+      progress.value = 0.0;
       
       up.onreadystatechange = function(){
         if (up.readyState == 4 ) {
           if (up.status == 200) {
-            progress.value = 100;
+            progress.value = 1.0;
             console.log( up.responseText );
             action();
           }
@@ -373,9 +373,9 @@
       (up.upload || up).addEventListener('progress', function(e) {
           var done = e.position || e.loaded;
           var total = e.totalSize || e.total;
-          var percent = Math.round(done/total*100);
-          //console.log('Upload progress: ' + percent + '%');
-          progress.value = percent;
+          var ratio = done/total;
+          // console.log('Upload progress: ' + Math.round(ratio*100) + '%');
+          progress.value = ratio;
       });
       
       up.open("PUT", urlPut);
