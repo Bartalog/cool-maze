@@ -32,6 +32,10 @@
   #overprint-logo {
     position: absolute;
   }
+  #progress-zone {
+    min-height: 34px;
+    padding: 8px;
+  }
   #txt-msg-zone {
     margin-left: 10%;
     width: 80%;
@@ -149,6 +153,10 @@
     </div>
   </div>
 
+  <div id="progress-zone">
+    <progress value="0.0" id="multi-progress" style="display: none;"></progress>
+  </div>
+
   <div id="thumbs">
   </div>
 
@@ -197,6 +205,7 @@
     var txtMsgClose = document.getElementById("txt-msg-close");
     var inbox = document.getElementById("inbox");
     var thumbs = document.getElementById("thumbs");
+    var multiProgress = document.getElementById("multi-progress");
 
     function showError(errmsg) {
       console.log("Error: " + errmsg)
@@ -394,9 +403,12 @@
     function attachPusherChannelBindings(){
       var eventNotifScan = 'maze-scan';
       channel.bind(eventNotifScan, function(data) {
-        if(data.multiIndex)
+        if(data.multiIndex) {
           console.log("maze-scan Multiple " + data.multiIndex + " / " + data.multiCount);
-        else
+          multiProgress.style.display = "inline";
+          // Scan notifs count as 20% of total
+          multiProgress.value += (0.2 / data.multiCount);
+        } else
           console.log("Received scan notification. Payload coming soon.");
         var thumbImg = getThumbImg(data.multiIndex);
         var thumbDataUri = data.message;
@@ -432,8 +444,12 @@
              if(thumbImg.classList.contains("no-preview"))
                thumbImg.src = "static/img/thumbnail-file.png";
 
+              // Cast notifs (data is ready!) count as 80% of total
+              multiProgress.value += (0.8 / data.multiCount);
+
              multipleReceived ++;
              if( multipleReceived == data.multiCount ){
+                multiProgress.value = 1.0;
                 var logo = document.getElementById("overprint-logo");
                 if ( logo )
                   logo.style.display = "none";
