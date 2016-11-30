@@ -134,7 +134,7 @@
     <progress value="0" id="upload-progress" style="display: none;"></progress>
   </div>
 
-  <div id="form-zone" style="display: block;">
+  <div id="form-zone" style="display: none;">
     <form id="resource-upload"> 
       <input type="file" name="resource" id="resource" />
       <div id="drop-invite" style="display: none;">DROP FILE HERE</div>
@@ -351,6 +351,24 @@
       showError("Lost internet connectivity :(")
     });
 
+
+    function checkInternetAndExecute(action){
+      // This request is supposed to be fast.
+      var tinyRequest = new XMLHttpRequest();
+      tinyRequest.onreadystatechange = function() {
+          if (tinyRequest.readyState == 4 ) {
+            if (tinyRequest.status == 200) {
+              // Response ensures we have internet connectivity
+              action();
+            } else {
+              showError("No internet...?");
+            }
+          }
+      };
+      tinyRequest.open("GET", backend+"/online", true);
+      tinyRequest.send( null );
+    }
+
     // Handle slight differences in Embed mode (iframe)
     function handleEmbedMode() {
       var inFrame = false;
@@ -482,6 +500,10 @@
     }
     handleDnd();
 
+    checkInternetAndExecute(function(){
+      // #135: Unlock upload widgets, only if we do have internet!
+      formZone.style.display = "block";
+    });
     wakeUpBackend();
     handleEmbedMode();
   </script>
