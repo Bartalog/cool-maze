@@ -4,7 +4,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Hot Maze - Send your document from computer to mobile</title>
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
-  <link rel="SHORTCUT ICON" href="static/img/coolmaze_128.png">
+  <link rel="SHORTCUT ICON" href="static/img/hotmaze_128.png">
   <link rel="dns-prefetch" href="https://storage.googleapis.com/">
   <style>
   body {
@@ -73,6 +73,11 @@
     font-size: 2em;
     cursor: pointer;
   }
+  .link-to-dual {
+    display: inline-block;
+    margin-top: 50px;
+    border-top: dotted #AAA;
+  }
   .mini-picto {
     width: 1em; 
     vertical-align:middle; 
@@ -116,8 +121,12 @@
         </ol>
       </p>
       <p>That's it. No login, no passwords, no ads.</p>
-      <p>The two devices (source and target) must have internet connection</p>
+      <p>The two devices (source and target) must have internet connection.</p>
       <p><strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the <a href="terms.html">Privacy terms</a>.</p>
+
+      <div class="link-to-dual">
+      But I want to send from mobile to desktop instead! Use <a href="/">Cool Maze</a>.
+      </div>
     </div>
   </div>
 
@@ -125,7 +134,7 @@
     <progress value="0" id="upload-progress" style="display: none;"></progress>
   </div>
 
-  <div id="form-zone" style="display: block;">
+  <div id="form-zone" style="display: none;">
     <form id="resource-upload"> 
       <input type="file" name="resource" id="resource" />
       <div id="drop-invite" style="display: none;">DROP FILE HERE</div>
@@ -342,6 +351,24 @@
       showError("Lost internet connectivity :(")
     });
 
+
+    function checkInternetAndExecute(action){
+      // This request is supposed to be fast.
+      var tinyRequest = new XMLHttpRequest();
+      tinyRequest.onreadystatechange = function() {
+          if (tinyRequest.readyState == 4 ) {
+            if (tinyRequest.status == 200) {
+              // Response ensures we have internet connectivity
+              action();
+            } else {
+              showError("No internet...?");
+            }
+          }
+      };
+      tinyRequest.open("GET", backend+"/online", true);
+      tinyRequest.send( null );
+    }
+
     // Handle slight differences in Embed mode (iframe)
     function handleEmbedMode() {
       var inFrame = false;
@@ -449,6 +476,7 @@
       dropZone.addEventListener('drop', function(evt){
         evt.stopPropagation();
         evt.preventDefault();
+        show("qr-zone");
         unhighlightDropZone();
 
         formZone.style.display = "none";
@@ -472,6 +500,10 @@
     }
     handleDnd();
 
+    checkInternetAndExecute(function(){
+      // #135: Unlock upload widgets, only if we do have internet!
+      formZone.style.display = "block";
+    });
     wakeUpBackend();
     handleEmbedMode();
   </script>
