@@ -406,7 +406,8 @@
       });
       
       up.open("PUT", urlPut);
-      up.setRequestHeader("Content-type", resourceFile.type);
+      up.setRequestHeader("Content-Type", resourceFile.type);
+      up.setRequestHeader("Content-Disposition", "filename=\"" + encodeURIComponent(resourceFile.name) + "\"");
       up.send(resourceFile);
     }
 
