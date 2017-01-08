@@ -21,12 +21,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.InputStreamEntity;
 import cz.msebera.android.httpclient.entity.StringEntity;
+import cz.msebera.android.httpclient.message.BasicHeader;
 
 /**
  * Handles ACTION_SEND_MULTIPLE.
@@ -291,9 +293,21 @@ public class MultipleFileActivity extends BaseActivity {
 
             Log.i("CoolMazeLogMultiUpload", "Uploading resource " + preUpload.resp.UrlPut.split("\\?")[0]);
             preUpload.status = PreUpload.Status.UPLOADING;
+            Header[] putRequestHeaders = new Header[]{};
+            if (preUpload.req.Filename!=null && !"".equals(preUpload.req.Filename)) {
+                try {
+                    String encodedFilename = URLEncoder.encode(preUpload.req.Filename, "UTF-8");
+                    putRequestHeaders = new Header[]{
+                            new BasicHeader("Content-Disposition", "filename=\"" + encodedFilename + "\""),
+                    };
+                } catch (UnsupportedEncodingException e) {
+                    Log.e("CoolMazeLogMultiUpload", "Could not encode filename " + preUpload.req.Filename);
+                }
+            }
             newAsyncHttpClient().put(
                     context,
                     preUpload.resp.UrlPut,
+                    putRequestHeaders,
                     entity,
                     preUpload.req.ContentType,
                     new AsyncHttpResponseHandler() {
