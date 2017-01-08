@@ -74,6 +74,18 @@ public class Util {
         return null;
     }
 
+    static String extractFileNameWithExtension(ContentResolver resolver, Uri uri) {
+        String filename = extractFileName(resolver, uri);
+        String mime = resolver.getType(uri);
+        if(mime!=null && !"".equals(mime)) {
+            String fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime);
+            if(fileExtension!=null && !"".equals(fileExtension))
+                return filename + "." + fileExtension;
+        }
+        // Not found, return without extension
+        return filename;
+    }
+
     // From http://stackoverflow.com/a/23421126/871134
     static String hash(BufferedInputStream input) {
         // This is currently a MD5 hash.

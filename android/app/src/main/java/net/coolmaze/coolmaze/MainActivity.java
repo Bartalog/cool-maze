@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 import com.loopj.android.http.*;
 import org.json.JSONException;
@@ -258,7 +260,7 @@ public class MainActivity extends BaseActivity {
         }
 
         // Issue #105. May be null.
-        String filename = Util.extractFileName(getContentResolver(), localFileUri);
+        String filename = Util.extractFileNameWithExtension(getContentResolver(), localFileUri);
 
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
@@ -338,11 +340,27 @@ public class MainActivity extends BaseActivity {
         InputStreamEntity entity = new InputStreamEntity(inputStream);
         Context context = null; // ?
 
+        Header[] putRequestHeaders = new Header[]{
+                new BasicHeader("Content-Type", mimeType)
+        };
+        String filename = Util.extractFileNameWithExtension(getContentResolver(), localFileUri);
+        if( filename!= null && !"".equals(filename) ) {
+            try {
+                String encodedFilename = URLEncoder.encode(filename, "UTF-8");
+                putRequestHeaders = new Header[]{
+                        new BasicHeader("Content-Type", mimeType),
+                        new BasicHeader("Content-Disposition", "filename=\"" + encodedFilename + "\""),
+                };
+            } catch (UnsupportedEncodingException e) {
+                Log.e("CoolMazeLogUpload", "Could not encode filename " + filename);
+            }
+        }
+
         Log.i("CoolMazeLogEvent", "Uploading resource " + resourcePutUrl.split("\\?")[0] );
         newAsyncHttpClient().put(
                 context,
                 resourcePutUrl,
-                new Header[]{ new BasicHeader("Content-Type", mimeType) },
+                putRequestHeaders,
                 entity,
                 mimeType,
                 new AsyncHttpResponseHandler() {

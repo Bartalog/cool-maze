@@ -156,7 +156,7 @@ public class MultipleFileActivity extends BaseActivity {
                 inputStream = new BufferedInputStream(getContentResolver().openInputStream(localFileUri));
 
                 // Issue #105. May be null.
-                preUpload.req.Filename = Util.extractFileName(getContentResolver(), localFileUri);
+                preUpload.req.Filename = Util.extractFileNameWithExtension(getContentResolver(), localFileUri);
 
                 JSONObject item = new JSONObject();
                 item.put("ContentType", preUpload.req.ContentType);
