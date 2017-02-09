@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"sync"
 	"time"
 )
@@ -58,3 +59,16 @@ func pow(a, b int) int {
 	}
 	return x
 }
+
+// Keep ascii letters and digits. Discard everything else.
+// Save from headaches and encoding nightmares.
+//
+// Note that the backend currenlty does _not_ set the
+// content-disposition filename, the mobile app sets
+// it through PUT request to GCS.
+func sanitizeFilename(filename string) string {
+	// any forbidden char becomes an underscore
+	return forbiddenChars.ReplaceAllLiteralString(filename, "_")
+}
+
+var forbiddenChars = regexp.MustCompile("[^a-zA-Z0-9._\\-]")

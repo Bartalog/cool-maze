@@ -103,15 +103,16 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	input.Size = fileSize
 	input.Filename = r.FormValue("filename")
+	input.Filename = sanitizeFilename(input.Filename)
 
 	doShort := func(response Response, urlGet string) {
 		if r.FormValue("shorten") == "1" {
 			shortUri, err := shorten(c, urlGet)
-			if err == nil {
-				response["shortUrlGet"] = shortUri
-			} else {
+			if err != nil {
 				log.Warningf(c, "Problem with shortUrification: %v", err)
+				return
 			}
+			response["shortUrlGet"] = shortUri
 		}
 	}
 
@@ -119,7 +120,7 @@ func gcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	// Optional.
 	// See #32
 	input.Hash = r.FormValue("hash")
-	if found, urlGetExisting, gcsObjectNameExisting := findByHash(c, input.Hash); found {
+	if found, urlGetExisting, gcsObjectNameExisting := findBySignature(c, input.Hash, input.Filename); found {
 		response := Response{
 			"success":  true,
 			"existing": true,
@@ -184,10 +185,18 @@ func createUrls(c context.Context, in PreUploadRequest) (out PreUploadResponse, 
 	return
 }
 
-func findByHash(c context.Context, hash string) (found bool, urlGet string, gcsObjectName string) {
+// Signature contains Hash and Filename.
+//
+// Filename is important because the same original file sent
+// with 2 distinct names cannot use the same GCS object.
+// Further optimization for far future me: in this corner case,
+// copy first GCS object to a new GCS object with new Content-Disposition,
+// so the file contents needn't be uploaded anew.
+func findBySignature(c context.Context, hash, filename string) (found bool, urlGet string, gcsObjectName string) {
 	// Look in Memcache.
 	// Memcache entries are volatile, someday we may want to use Datastore too.
-	cacheKey := "objectName_for_" + hash
+	signature := hash + "_" + filename
+	cacheKey := "objectName_for_" + signature
 	var cacheItem *memcache.Item
 	var errMC error
 	cacheItem, errMC = memcache.Get(c, cacheKey)
@@ -215,8 +224,11 @@ func findByHash(c context.Context, hash string) (found bool, urlGet string, gcsO
 	// TODO if cachedObjectName is already scheduled for deletion, then postpone the deletion.
 	// Make sure #31 doesn't delete freshly re-sent files.
 
+	// #63: If hash was already encountered but filename doesn't match,
+	// then the "signature" doesn't match and distinct GCS objects are created.
+
 	found = true
-	log.Infof(c, "Found existing GCE object [%s] for hash [%s]", gcsObjectName, hash)
+	log.Infof(c, "Found existing GCE object [%s] for hash [%s] and filename [%s]", gcsObjectName, hash, filename)
 	return
 }
 
@@ -271,8 +283,8 @@ func multipleGcsUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	for i, param := range params {
 		upload := &uploads[i]
 
-		// Known hash?
-		if found, urlGetExisting, gcsObjectNameExisting := findByHash(c, param.Hash); found {
+		// Known file?
+		if found, urlGetExisting, gcsObjectNameExisting := findBySignature(c, param.Hash, param.Filename); found {
 			upload.Existing = true
 			upload.UrlGet = urlGetExisting
 			upload.GcsObjectName = gcsObjectNameExisting

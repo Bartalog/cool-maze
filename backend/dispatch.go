@@ -142,6 +142,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	message := r.FormValue("message")
 	gcsObjectName := r.FormValue("gcsObjectName")
 	hash := r.FormValue("hash")
+	filename := r.FormValue("filename")
+	filename = sanitizeFilename(filename)
 
 	if qrKey == "" {
 		log.Warningf(c, "Missing mandatory parameter: qrKey")
@@ -208,8 +210,9 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	log.Infof(c, "Pusher events = %v", be)
 
 	if hash != "" && hash != "null" && gcsObjectName != "" && gcsObjectName != "null" {
-		// #32 memorize Hash->ObjectName in Memcache, in case the same file is sent again.
-		cacheKey := "objectName_for_" + hash
+		// #32 memorize (Hash,Filename)->ObjectName in Memcache, in case the same file is sent again.
+		signature := hash + "_" + filename
+		cacheKey := "objectName_for_" + signature
 		cacheItem := &memcache.Item{
 			Key:        cacheKey,
 			Value:      []byte(gcsObjectName),

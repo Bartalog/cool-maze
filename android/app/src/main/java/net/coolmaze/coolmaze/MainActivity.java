@@ -30,6 +30,7 @@ public class MainActivity extends BaseActivity {
     protected String thumbnailDataURI = "<?>";
     protected String gcsObjectName = null;
     protected String resourceHash = null;
+    protected String resourceFilename = null;
 
     protected boolean finishedUploading = false;
 
@@ -41,6 +42,7 @@ public class MainActivity extends BaseActivity {
         thumbnailDataURI = savedInstanceState.getString("thumbnailDataURI");
         gcsObjectName = savedInstanceState.getString("gcsObjectName");
         resourceHash = savedInstanceState.getString("resourceHash");
+        resourceFilename = savedInstanceState.getString("resourceFilename");
     }
 
     @Override
@@ -51,6 +53,7 @@ public class MainActivity extends BaseActivity {
         outState.putString("thumbnailDataURI", thumbnailDataURI);
         outState.putString("gcsObjectName", gcsObjectName);
         outState.putString("resourceHash", resourceHash);
+        outState.putString("resourceFilename", resourceFilename);
     }
 
     void scanAndSend(Intent intent) {
@@ -66,6 +69,7 @@ public class MainActivity extends BaseActivity {
                 finishedUploading = true;
                 Log.i("CoolMazeLogEvent", MainActivity.this.hashCode() + " finishedScanning==" + finishedScanning + ", finishedUploading==" + finishedUploading);
                 resourceHash = null;
+                resourceFilename = null;
                 gcsObjectName = null;
 
                 wakeupBackend();
@@ -106,6 +110,7 @@ public class MainActivity extends BaseActivity {
                 finishedScanning = false;
                 finishedUploading = false;
                 resourceHash = null;
+                resourceFilename = null;
                 gcsObjectName = null;
                 String mimeType = Util.extractMimeType(getContentResolver(), intent, localFileUri);
                 gentleUploadStep1(localFileUri, mimeType);
@@ -182,7 +187,13 @@ public class MainActivity extends BaseActivity {
             showError("Unfortunately, we're experiencing bug #55. The message was not sent to the dispatch server.");
             return;
         }
-        RequestParams params = new RequestParams("qrKey", qrKeyToSignal, "message", messageToSignal, "gcsObjectName", gcsObjectName, "hash", resourceHash);
+        RequestParams params = new RequestParams(
+                "qrKey", qrKeyToSignal,
+                "message", messageToSignal,
+                "gcsObjectName", gcsObjectName,
+                "hash", resourceHash,
+                "filename", resourceFilename
+        );
         // conn.setReadTimeout(15000);
         // conn.setConnectTimeout(15000);
         newAsyncHttpClient().post(
@@ -260,11 +271,16 @@ public class MainActivity extends BaseActivity {
         }
 
         // Issue #105. May be null.
-        String filename = Util.extractFileNameWithExtension(getContentResolver(), localFileUri);
+        resourceFilename = Util.extractFileNameWithExtension(getContentResolver(), localFileUri);
 
         newAsyncHttpClient().post(
                 BACKEND_URL + "/new-gcs-urls",
-                new RequestParams("type", mimeType, "filesize", resourceSize, "hash", resourceHash, "filename", filename),
+                new RequestParams(
+                        "type", mimeType,
+                        "filesize", resourceSize,
+                        "hash", resourceHash,
+                        "filename", resourceFilename
+                ),
                 new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -343,16 +359,15 @@ public class MainActivity extends BaseActivity {
         Header[] putRequestHeaders = new Header[]{
                 new BasicHeader("Content-Type", mimeType)
         };
-        String filename = Util.extractFileNameWithExtension(getContentResolver(), localFileUri);
-        if( filename!= null && !"".equals(filename) ) {
+        if( resourceFilename!= null && !"".equals(resourceFilename) ) {
             try {
-                String encodedFilename = URLEncoder.encode(filename, "UTF-8");
+                String encodedFilename = URLEncoder.encode(resourceFilename, "UTF-8");
                 putRequestHeaders = new Header[]{
                         new BasicHeader("Content-Type", mimeType),
                         new BasicHeader("Content-Disposition", "filename=\"" + encodedFilename + "\""),
                 };
             } catch (UnsupportedEncodingException e) {
-                Log.e("CoolMazeLogUpload", "Could not encode filename " + filename);
+                Log.e("CoolMazeLogUpload", "Could not encode filename " + resourceFilename);
             }
         }
 
