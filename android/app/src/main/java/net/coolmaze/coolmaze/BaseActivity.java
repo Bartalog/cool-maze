@@ -185,7 +185,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         /*
         This check was too strict, it made the qrKey format change less flexible.
         Also, the showError call doesn't work well for some reason.
-        Also, it would be better to catch backend error "invalid qrKey" and then display the error message.
+        Also, it would be better to catch backend error "qrKey must be valid" and then display the error message.
         if (!isValidQrKey(qrKeyToSignal)) {
             setContentView(R.layout.activity_main);
             showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");

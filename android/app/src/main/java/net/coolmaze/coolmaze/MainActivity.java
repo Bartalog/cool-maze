@@ -214,6 +214,14 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
                         Log.e("CoolMazeLogEvent", MainActivity.this.hashCode() + ".sendMessage POST request response code " + statusCode);
+                        try {
+                            if( new String(errorResponse, "UTF-8").contains("qrKey must be valid")) {
+                                showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");
+                                return;
+                            }
+                        } catch (UnsupportedEncodingException e1) {
+                            // Whatever
+                        }
                         showError("Unfortunately, we could not send this message to the dispatch server.");
                     }
                 });

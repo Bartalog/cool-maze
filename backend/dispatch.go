@@ -73,6 +73,8 @@ func scanNotification(w http.ResponseWriter, r *http.Request) {
 	if !isValidQrKey(qrKey) {
 		log.Warningf(c, "[%s] is not a valid qrKey", qrKey)
 		w.WriteHeader(http.StatusBadRequest)
+		// Warning: the following message will be specifically
+		// interpreted in mobile app UI.
 		fmt.Fprintln(w, "qrKey must be valid")
 		return
 	}
