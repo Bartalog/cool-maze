@@ -3,7 +3,9 @@ package net.coolmaze.coolmaze;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Binder;
 import android.util.Log;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -103,28 +105,42 @@ public class MultipleFileActivity extends BaseActivity {
             case "video":
             case "audio":
             case "application":
+            case "*":
                 // 1) We request pairs of upload/download URLs from the backend
                 // 2) We upload the files
                 // 3) We send the download URLs to the broker
                 preUploads = new ArrayList<>(8);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                    ClipData clip = intent.getClipData();
-                    if ( clip.getItemCount() == 0 ) {
-                        Log.e("CoolMazeLogMulti", "ClipData having 0 item :(");
-                        showError("Couldn't find the resource to be shared.");
-                        return;
-                    }
-                    for(int i=0; i<clip.getItemCount(); i++) {
-                        ClipData.Item item = clip.getItemAt(i);
-                        PreUpload preUpload = new PreUpload(i);
-                        preUpload.localResourceUri = item.getUri();
-                        preUploads.add(preUpload);
-                    }
-                }else{
+                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
                     showError("Multiple share via Cool Maze requires at least Android 4.1 (Jelly Bean)");
                     return;
                 }
-                Log.i("CoolMazeLogStart", "Initiating upload of " + preUploads + " ...");
+                ClipData clip = intent.getClipData();
+                if ( clip.getItemCount() == 0 ) {
+                    Log.e("CoolMazeLogMulti", "ClipData having 0 item :(");
+                    showError("Couldn't find the resource to be shared.");
+                    return;
+                }
+                for(int i=0; i<clip.getItemCount(); i++) {
+                    ClipData.Item item = clip.getItemAt(i);
+                    PreUpload preUpload = new PreUpload(i);
+                    preUpload.localResourceUri = item.getUri();
+                    boolean granted = checkUriPermission(preUpload.localResourceUri, Binder.getCallingPid(), Binder.getCallingUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION) == PackageManager.PERMISSION_GRANTED;
+                    if(granted){
+                        // Most apps (Gallery, Gmail, Music, Videos, SMS) grant fine-grained
+                        // per-URI permissions just fine.
+                        // preUpload.localResourceUri usually looks like "content://...".
+                    }else{
+                        if(!checkStoragePermission()) {
+                            holdOnIntent = intent;
+                            apologizeForStoragePermission(intent);
+                            requestStoragePermission();
+                            return;
+                        }
+                    }
+
+                    preUploads.add(preUpload);
+                }
+                Log.i("CoolMazeLogMultiStart", "Initiating upload of " + preUploads + " ...");
                 setContentView(R.layout.activity_main);
                 showSpinning();
                 showCaption("Uploading...");

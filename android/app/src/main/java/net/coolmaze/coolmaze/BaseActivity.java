@@ -38,7 +38,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
     // static final String BACKEND_URL = "https://dev-dot-cool-maze.appspot.com";
 
-    static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan it!";
+    static final String SCAN_INVITE = "Open " + FRONTPAGE_DOMAIN + " on target computer and scan!";
     static final AsyncHttpResponseHandler blackhole = new BlackholeHttpResponseHandler();
 
     protected String qrKeyToSignal = "<?>";
@@ -53,29 +53,50 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     //static final int MAX_UPLOAD_SIZE = XX * 1024 * 1024; Issue #101: max size is now checked server-side
 
-    boolean checkPermissions() {
-        // Cool-Maze can't work at all without acces to Camera.
-        // Also, it (currently) needs READ_EXTERNAL_STORAGE when sending a file.
+    boolean checkCameraPermission() {
+        // Cool-Maze can't work at all without access to Camera.
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // Version >= 23
             if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
                 return false;
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-                return false;
         } else {
-            // Version < 23 : we just assume permission were accepted at installation
+            // Version < 23 : we just assume permissions were accepted at installation
         }
         return true;
     }
 
-    void requestPermissions(){
+    void requestCameraPermission(){
         // Cool-Maze can't work at all without access to Camera.
-        // Also, it (currently) needs READ_EXTERNAL_STORAGE when sending a file.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int requestCode = 0; //??
+            int requestCode = 111; // Arbitrary, for my camera request
             requestPermissions( new String[]{
                     Manifest.permission.CAMERA,
+            }, requestCode);
+        }
+    }
+
+    boolean checkStoragePermission() {
+        // We should in principle not need READ_EXTERNAL_STORAGE,
+        // but we sometimes do, depending on content provider (source app).
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Version >= 23
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                return false;
+        } else {
+            // Version < 23 : we just assume permissions were accepted at installation
+        }
+        return true;
+    }
+
+    void requestStoragePermission(){
+        // We should in principle not request READ_EXTERNAL_STORAGE,
+        // but we're sometimes forced to, depending on content provider (source app).
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int requestCode = 222; // Arbitrary, for my storage request
+            requestPermissions( new String[]{
                     Manifest.permission.READ_EXTERNAL_STORAGE,
             }, requestCode);
         }
@@ -83,8 +104,24 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if ( checkPermissions() )
-            scanAndSend(holdOnIntent);
+        switch(requestCode){
+            case 111:
+                if ( checkCameraPermission() )
+                    // User agreed
+                    scanAndSend(holdOnIntent);
+                else
+                    // User refused
+                    finish();
+                return;
+            case 222:
+                if ( checkStoragePermission() )
+                    // User agreed
+                    scanAndSend(holdOnIntent);
+                else
+                    // User refused
+                    finish();
+                return;
+        }
     }
 
     //
@@ -116,9 +153,9 @@ public abstract class BaseActivity extends AppCompatActivity {
             return;
         }
 
-        if (!checkPermissions()){
+        if (!checkCameraPermission()){
             holdOnIntent = intent;
-            requestPermissions();
+            requestCameraPermission();
             return;
         }
 
@@ -296,6 +333,21 @@ public abstract class BaseActivity extends AppCompatActivity {
                     @Override
                     public void onDismiss(DialogInterface dialog) {
                         finish();
+                    }
+                })
+                .show();
+    }
+
+    void apologizeForStoragePermission(final Intent fIntent){
+        new AlertDialog.Builder(this)
+                .setTitle("Cool Maze")
+                .setMessage("We're afraid this specific resource will need access to your device storage.\n"
+                        + "\n"
+                        + "We apologize for the rather intrusive request that comes next.")
+                .setIcon(R.mipmap.ic_launcher)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        requestStoragePermission();
                     }
                 })
                 .show();

@@ -1,9 +1,12 @@
 package net.coolmaze.coolmaze;
 
-import android.content.ClipData;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
@@ -88,18 +91,25 @@ public class MainActivity extends BaseActivity {
                 // 3) We send the download URL to the broker
                 Uri localFileUri = intent.getData();
                 if ( localFileUri == null ) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                        ClipData clip = intent.getClipData();
-                        if ( clip.getItemCount() == 0 ) {
-                            Log.e("CoolMazeLogSignal", "ClipData having 0 item :(");
-                            showError("Couldn't find the resource to be shared.");
-                            return;
-                    }
-                        ClipData.Item item = clip.getItemAt(0);
-                        localFileUri = item.getUri();
-                    }else{
+                    if ( android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
                         showError("This Cool Maze share requires at least Android 4.1 (Jelly Bean)");
+                        // TODO: is JELLY_BEAN the real threshold?
+                        // for getClipData(), getParcelableExtra(), or other feature?
                         return;
+                    }
+
+                    localFileUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                    boolean granted = checkUriPermission(localFileUri, Binder.getCallingPid(), Binder.getCallingUid(), Intent.FLAG_GRANT_READ_URI_PERMISSION)== PackageManager.PERMISSION_GRANTED;
+                    if(granted) {
+                        // Most apps (Gallery, Gmail, Music, Videos, SMS) grant fine-grained
+                        // per-URI permissions just fine.
+                        // localFileUri usually looks like "content://...".
+                    }else{
+                        if(!checkStoragePermission()) {
+                            holdOnIntent = intent;
+                            apologizeForStoragePermission(intent);
+                            return;
+                        }
                     }
                 }
                 Log.i("CoolMazeLogStart", "Initiating upload of " + localFileUri + " ...");
