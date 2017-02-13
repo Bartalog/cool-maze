@@ -63,7 +63,11 @@ public class Util {
             if (cursor != null) {
                 String filename = null;
                 if (cursor.getCount() != 0) {
-                    int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.TITLE);
+                    int columnIndex = cursor.getColumnIndex(MediaStore.Images.Media.TITLE);
+                    if(columnIndex==-1){
+                        cursor.close();
+                        return null;
+                    }
                     cursor.moveToFirst();
                     filename = cursor.getString(columnIndex);
                 }

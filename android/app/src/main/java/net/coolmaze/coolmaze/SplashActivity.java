@@ -46,7 +46,9 @@ public class SplashActivity extends AppCompatActivity {
 
     void launchSampleSend(){
         new AlertDialog.Builder(this)
-                .setMessage("Please choose to share via \"Cool Maze\"")
+                .setMessage("Please choose to share via \"Cool Maze\"\n"
+                    +"\n"
+                    +"The app will use camera to scan QR-code.")
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .setPositiveButton("Got it", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
