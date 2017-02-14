@@ -368,7 +368,8 @@ public class MultipleFileActivity extends BaseActivity {
                 "multiCount", preUploads.size(),
                 "message", preUpload.resp.UrlGet,
                 "gcsObjectName", preUpload.resp.GcsObjectName,
-                "hash", preUpload.req.Hash
+                "hash", preUpload.req.Hash,
+                "filename", preUpload.req.Filename
         );
 
         newAsyncHttpClient().post(
