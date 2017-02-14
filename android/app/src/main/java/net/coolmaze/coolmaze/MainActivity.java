@@ -107,7 +107,7 @@ public class MainActivity extends BaseActivity {
                     }else{
                         if(!checkStoragePermission()) {
                             holdOnIntent = intent;
-                            apologizeForStoragePermission(intent);
+                            apologizeForStoragePermission();
                             return;
                         }
                     }

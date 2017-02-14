@@ -338,7 +338,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                 .show();
     }
 
-    void apologizeForStoragePermission(final Intent fIntent){
+    void apologizeForStoragePermission(){
         new AlertDialog.Builder(this)
                 .setTitle("Cool Maze")
                 .setMessage("We're afraid this specific resource will need access to your device storage.\n"
@@ -348,6 +348,12 @@ public abstract class BaseActivity extends AppCompatActivity {
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         requestStoragePermission();
+                    }
+                })
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                    @Override
+                    public void onCancel(DialogInterface dialog) {
+                        BaseActivity.this.finish();
                     }
                 })
                 .show();

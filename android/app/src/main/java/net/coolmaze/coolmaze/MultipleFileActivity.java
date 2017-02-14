@@ -132,7 +132,7 @@ public class MultipleFileActivity extends BaseActivity {
                     }else{
                         if(!checkStoragePermission()) {
                             holdOnIntent = intent;
-                            apologizeForStoragePermission(intent);
+                            apologizeForStoragePermission();
                             requestStoragePermission();
                             return;
                         }
