@@ -230,7 +230,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Done :)")
 }
 
-// isValidQrKey validates a string encoded in a QR-code on page coolmaze.net .
+// isValidQrKey validates a string encoded in a QR-code on page coolmaze.io .
 // Since #108 a valid qrKey is string of exactly 11 characters
 // from 62-char-set [0-9a-zA-Z].
 func isValidQrKey(s string) bool {

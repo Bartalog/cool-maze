@@ -16,7 +16,7 @@ import java.security.MessageDigest;
 public class Util {
 
     static boolean isValidQrKey(String s) {
-        // A valid qrKey is a string encoded in a QR-code on page coolmaze.net .
+        // A valid qrKey is a string encoded in a QR-code on page coolmaze.io .
         // Since #108 a valid qrKey is string of exactly 11 characters
         // from 62-char-set [0-9a-zA-Z].
         return s.matches("^[0-9a-zA-Z]{11}$");

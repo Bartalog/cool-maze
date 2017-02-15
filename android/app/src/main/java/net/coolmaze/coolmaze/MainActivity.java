@@ -140,7 +140,7 @@ public class MainActivity extends BaseActivity {
 
     void notifyScan() {
         // This is a small request sent in the background. It shows nothing on the Android device screen.
-        // It should however show some acknowledgement on the freshly scanned coolmaze.net browser tab.
+        // It should however show some acknowledgement on the freshly scanned coolmaze.io browser tab.
         // It may contain a thumbnail to display on target.
         //
         // It is optional (workflow not broken if notif is lost, or not sent at all).
@@ -226,7 +226,7 @@ public class MainActivity extends BaseActivity {
                         Log.e("CoolMazeLogEvent", MainActivity.this.hashCode() + ".sendMessage POST request response code " + statusCode);
                         try {
                             if( new String(errorResponse, "UTF-8").contains("qrKey must be valid")) {
-                                showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");
+                                showError("Please open webpage coolmaze.io on your computer and scan its QR-code.");
                                 return;
                             }
                         } catch (UnsupportedEncodingException e1) {

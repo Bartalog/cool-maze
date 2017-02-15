@@ -32,7 +32,7 @@ import com.loopj.android.http.BlackholeHttpResponseHandler;
  * Created by valou on 9/28/16.
  */
 public abstract class BaseActivity extends AppCompatActivity {
-    static final String FRONTPAGE_DOMAIN = "coolmaze.net";
+    static final String FRONTPAGE_DOMAIN = "coolmaze.io";
     //static final String FRONTPAGE_DOMAIN = "coolmaze.io";   maybe later
     static final String FRONTPAGE_URL = "https://" + FRONTPAGE_DOMAIN;
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
@@ -225,7 +225,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         Also, it would be better to catch backend error "qrKey must be valid" and then display the error message.
         if (!isValidQrKey(qrKeyToSignal)) {
             setContentView(R.layout.activity_main);
-            showError("Please open webpage coolmaze.net on your computer and scan its QR-code.");
+            showError("Please open webpage coolmaze.io on your computer and scan its QR-code.");
             finish();
             // Try again
             //new IntentIntegrator(MainActivity.this)
