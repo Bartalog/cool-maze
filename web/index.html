@@ -179,6 +179,7 @@
 
   <link rel="prefetch" href="static/img/red_arrow.png">
   <link rel="prefetch" href="static/img/red_spinner.gif">
+  <link rel="prefetch" href="static/img/check_128.png">
 
 
 
@@ -442,7 +443,9 @@
         if(startsWith(msg,'http') || startsWith(msg,'www.')) {
            var url = msg;
            console.log("Received URL: " + url);
+
            if(data.multiIndex) {
+             // Multiple resource
              window.open(url, "_blank");
              var thumbImg = getThumbImg(data.multiIndex);
              thumbImg.classList.add("link");
@@ -461,9 +464,11 @@
                 multiProgress.value = 1.0;
                 var logo = document.getElementById("overprint-logo");
                 if ( logo )
-                  logo.style.display = "none";
+                  logo.src = "static/img/check_128.png";
              }
+
            } else {
+             // Single resource
              inbox.value = "Redirecting to " + url + " ...";
              show("txt-msg-zone");
              window.location = url;
