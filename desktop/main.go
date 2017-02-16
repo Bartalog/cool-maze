@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"golang.org/x/exp/shiny/driver"
@@ -106,7 +107,7 @@ func listenPusherChannels() {
 		dataNotifScan, err := pusherClient.Bind(eventNotifScan)
 		checkerr(err)
 		for evt := range dataNotifScan {
-			log.Println(evt.Event, evt.Data)
+			// log.Println(evt.Event, evt.Data)
 
 			var r Response
 			err = json.Unmarshal([]byte(evt.Data), &r)
@@ -122,25 +123,50 @@ func listenPusherChannels() {
 	go func() {
 		dataCast, err := pusherClient.Bind(eventCast)
 		checkerr(err)
+		folder := ""
+		downloaded := 0
 		for evt := range dataCast {
 			log.Println(evt.Event, evt.Data)
 
 			var r Response
 			err = json.Unmarshal([]byte(evt.Data), &r)
 			checkerr(err)
-			msg := r["message"].(string)
-			if strings.HasPrefix(msg, "http://") || strings.HasPrefix(msg, "https://") {
-				url := msg
-				filepath, err := download(url)
+
+			multiCount, multi := r["multiCount"]
+			if multi {
+				multiCount, err := strconv.Atoi(multiCount.(string))
 				checkerr(err)
+				if folder == "" {
+					folder, err = ioutil.TempDir("", "coolmaze")
+					checkerr(err)
+				}
+				url := r["message"].(string)
+				filepath, err := download(url, folder)
+				checkerr(err)
+				downloaded++
 				log.Println("Successfully downloaded to", filepath)
-				view(filepath)
+				if downloaded == multiCount {
+					// All resources downloaded :)
+					viewFolder(folder)
+					// Ready to receive new salvo
+					downloaded = 0
+					folder = ""
+				}
+			} else {
+				msg := r["message"].(string)
+				if strings.HasPrefix(msg, "http://") || strings.HasPrefix(msg, "https://") {
+					url := msg
+					filepath, err := download(url, "")
+					checkerr(err)
+					log.Println("Successfully downloaded to", filepath)
+					view(filepath)
+				}
 			}
 		}
 	}()
 }
 
-func download(url string) (localpath string, err error) {
+func download(url, localdir string) (localpath string, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -149,7 +175,7 @@ func download(url string) (localpath string, err error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("Status: %v", resp.Status)
 	}
-	tmpfile, err := ioutil.TempFile("", "")
+	tmpfile, err := ioutil.TempFile(localdir, "")
 	if err != nil {
 		return "", err
 	}
@@ -159,6 +185,8 @@ func download(url string) (localpath string, err error) {
 		return "", err
 	}
 	return tmpfile.Name(), nil
+	// TODO look at Content-Disposition response header and
+	// rename file.
 }
 
 func view(filepath string) {
@@ -166,6 +194,12 @@ func view(filepath string) {
 
 	// Well, this one would only work on some linuxes
 	err := exec.Command("xdg-open", filepath).Run()
+	checkerr(err)
+}
+
+func viewFolder(path string) {
+	// Well, this one would only work on some linuxes
+	err := exec.Command("xdg-open", path).Run()
 	checkerr(err)
 }
 
