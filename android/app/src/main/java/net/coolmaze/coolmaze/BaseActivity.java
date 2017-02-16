@@ -32,8 +32,8 @@ import com.loopj.android.http.BlackholeHttpResponseHandler;
  * Created by valou on 9/28/16.
  */
 public abstract class BaseActivity extends AppCompatActivity {
+    //static final String FRONTPAGE_DOMAIN = "coolmaze.net";  deprecated
     static final String FRONTPAGE_DOMAIN = "coolmaze.io";
-    //static final String FRONTPAGE_DOMAIN = "coolmaze.io";   maybe later
     static final String FRONTPAGE_URL = "https://" + FRONTPAGE_DOMAIN;
     static final String BACKEND_URL = "https://cool-maze.appspot.com";
     // static final String BACKEND_URL = "https://dev-dot-cool-maze.appspot.com";
