@@ -333,7 +333,7 @@
       var crypto = window.crypto || window.msCrypto;
       if( crypto ) {
         var buf = new Uint8Array(L);
-        window.crypto.getRandomValues(buf);
+        crypto.getRandomValues(buf);
         for(var i=0; i<L; i++) {
           // 01234567 would be slightly more frequent, which is OK for our use case
           var j = buf[i] % M;
