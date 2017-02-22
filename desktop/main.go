@@ -190,16 +190,12 @@ func download(url, localdir string) (localpath string, err error) {
 }
 
 func view(filepath string) {
-	// TODO open freshly downloaded resource
-
-	// Well, this one would only work on some linuxes
-	err := exec.Command("xdg-open", filepath).Run()
+	err := exec.Command(openCommand, filepath).Run()
 	checkerr(err)
 }
 
 func viewFolder(path string) {
-	// Well, this one would only work on some linuxes
-	err := exec.Command("xdg-open", path).Run()
+	err := exec.Command(openCommand, path).Run()
 	checkerr(err)
 }
 
