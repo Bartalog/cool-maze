@@ -1,2 +1,2 @@
 # cool-maze
-Web clients for quick mobile-to-desktop share app, through matrix barcode
+Web and desktop clients for quick mobile-to-desktop share app, through matrix barcode
