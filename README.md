@@ -14,4 +14,4 @@ This repo does not contain (closed source):
 - [Android app](https://play.google.com/apps/testing/net.coolmaze.coolmaze)
 - iOS app
 
-The [Issue tracker](https://github.com/Deleplace/cool-maze/issues) welcomes bugs of all components.
+The [Issue tracker](https://github.com/Bartalog/cool-maze/issues) welcomes bugs of all components.
