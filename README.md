@@ -4,6 +4,7 @@
 This repo contains (open source):
 - Web client for [Cool Maze](https://coolmaze.io/)
 - Web client for reverse use case [Hot Maze](https://hotmaze.io/)
+- WebExtension client (experimental)
 - Desktop client (experimental)
 
 This repo does not contain (closed source):
