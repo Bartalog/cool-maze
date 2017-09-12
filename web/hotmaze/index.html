@@ -5,7 +5,6 @@
   <title>Hot Maze - Send your document from computer to mobile</title>
   <script src="static/js/qrcodejs/qrcode.min.js"></script>
   <link rel="SHORTCUT ICON" href="static/img/hotmaze_128.png">
-  <link rel="dns-prefetch" href="https://storage.googleapis.com/">
   <style>
   body {
     text-align: center;
@@ -19,11 +18,12 @@
     background-color: white;
   }
   #progress-zone {
+    clear: both;
     min-height: 20px;
-    padding-bottom: 8px;
+    padding-bottom: 25px;
   }
   #qr-zone {
-    /*clear: both;*/
+    clear: both;
   }
   #qrcode {
     text-align: center;
@@ -35,18 +35,31 @@
     border-radius: 12px;
     cursor: zoom-in;
   }
+  #resource-upload {
+    display: inline-block;
+    background-image: url('static/img/empty_QR.png');
+    background-repeat: no-repeat;
+    min-width: 337px;
+    min-height: 337px;
+    padding-top: 80px;
+    padding-left: 90px;
+  }
+  #resource-upload > form{
+    width: 180px;
+  }
   #drop-invite {
-    padding: 30px;
+    /*padding: 30px;*/
+    margin-bottom: 20px;
     font-size: 32px;
     font-weight: bold;
-    color: #FCC;
+    color: #F77;
   }
   #help {
     float: right;
     margin-left: 10px;
     margin-bottom: 8px;
     background-color: white;
-    border: 1px solid #AAA;
+    border: 8px solid black;
     padding: 8px;
     text-align: left;
     border-radius: 15px;
@@ -65,6 +78,7 @@
     float: right;
     /*text-align: center;*/
     margin: 12px;
+    max-width: 50%;
   }
   #help-close {
     float: right;
@@ -112,20 +126,21 @@
     <div><span id="question-mark">?</span></div>
     <div id="help-contents" style="display: none;">
       <div id="help-close">X</div>
-      <img src="static/img/schema_hot.png" width="296" height="400" class="right" />
+      <img src="static/img/schema_hot.png" width="296" class="right" />
       <p>You can share a document from desktop computer to your mobile in seconds</p>
       <p>
         <ol>
-          <li>Select a file from your computer on page coolmaze.io/hot</li>
+          <li>Select a file from your computer on page <b>hotmaze.io</b></li>
           <li>Scan the QR-code with your mobile</li>
         </ol>
       </p>
       <p>That's it. No login, no passwords, no ads.</p>
+      <p>Your mobile device must have a QR-code reader (get one <a href="https://play.google.com/store/search?q=QR%20reader" target="_blank">for Android</a>, or <a href="https://itunes.apple.com/app/qr-code-reader-and-scanner/id388175979?mt=8" target="_blank">for iOS</a>).</p>
       <p>The two devices (source and target) must have internet connection.</p>
       <p><strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the <a href="terms.html">Privacy terms</a>.</p>
 
       <div class="link-to-dual">
-      But I want to send from mobile to desktop instead! Use <a href="/">Cool Maze</a>.
+      But I want to send from mobile to desktop instead! Use <a href="https://coolmaze.io/">Cool Maze</a>.
       </div>
     </div>
   </div>
@@ -135,10 +150,12 @@
   </div>
 
   <div id="form-zone" style="display: none;">
-    <form id="resource-upload"> 
-      <input type="file" name="resource" id="resource" />
-      <div id="drop-invite" style="display: none;">DROP FILE HERE</div>
-    </form>
+    <div id="resource-upload"> 
+      <form> 
+        <div id="drop-invite" style="display: none;">DROP FILE HERE</div>
+        <input type="file" name="resource" id="resource" />
+      </form>
+    </div>
   </div>
 
   <div id="spin-zone">
@@ -249,21 +266,14 @@
     }
 
     function show(id) {
-      var dispQr = "none";
-      var dispHelpContents = "none";
-      var bgcolor = "#64d8ff";
       switch(id) {
         case "qr-zone":
-          dispQr = "block";
-          bgcolor = "white"; // or keep it always blue...?
+          helpContents.style.display = "none";
           break;
-        case "help-contents":
-          dispHelpContents = "block";
+          case "help-contents":
+          helpContents.style.display = "block";
           break;
       }
-      qrzone.style.display = dispQr;
-      helpContents.style.display = dispHelpContents;
-      document.body.style.backgroundColor = bgcolor;
     }
 
     //document.body.onclick = function() { alert("BG"); show("qr-zone"); }
