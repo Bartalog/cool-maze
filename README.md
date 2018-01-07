@@ -11,7 +11,7 @@ This repo contains (open source):
 
 This repo does not contain (closed source):
 - Backend services
-- [Android app](https://play.google.com/apps/testing/net.coolmaze.coolmaze)
-- iOS app
+- [Android app](https://play.google.com/store/apps/details?id=com.bartalog.coolmaze)
+- [iOS app](https://itunes.apple.com/us/app/cool-maze/id1284597516?mt=8)
 
 The [Issue tracker](https://github.com/Bartalog/cool-maze/issues) welcomes bugs of all components.
