@@ -120,6 +120,15 @@ input[readonly]
   /* text-align: center; */
   /* margin: 12px; */
 }
+#help-contents .dim {
+  color: #777;
+}
+#help-contents .dim a:link{
+  color: #66A;
+}
+#help-contents .dim a:visited{
+  color: #70538b;
+}
 #help-close {
   float: right;
   margin-top: -2em;
@@ -127,7 +136,19 @@ input[readonly]
   font-size: 2em;
   cursor: pointer;
 }
+.stores {
+  margin-top: 6px;
+}
+.stores img {
+  width: 160px;
+  margin-right: 12px;
+}
+.stores .verysoon {
+  border: 5px black dashed;
+  border-radius: 6px;
+}
 .warning-specific-QR {
+  margin-left: 50%;
   color: #D77;
   font-weight: bold;
 }
@@ -175,7 +196,9 @@ body,
 }
 
 header {
+  /*
   height: 7%;
+  */
   background-color: black;
   color: grey;
   box-sizing: border-box;
@@ -255,7 +278,7 @@ table.topbar {
 
 img.help-schema {
   padding-left: 16px;
-  max-width: 100%;
+  max-width: 50%;
   height: auto;
 }
 
@@ -287,9 +310,23 @@ img.help-schema {
   */
 }
 
-.resource-thumb {
+.resource-receiving {
   border: dotted 8px;
   cursor: progress;
+  padding: 5px;
+}
+
+.resource-thumb {
+  /* border: dotted 8px; */
+  border: solid 4px black;
+  cursor: progress;
+  -webkit-filter: blur(3px);
+  filter: blur(3px) contrast(110%);
+}
+
+.very-blurry{
+  filter: blur(30px);
+  -webkit-filter: blur(30px);
 }
 
 .resource-picture {
@@ -301,7 +338,12 @@ img.help-schema {
 .resource-video {
   border: 8px solid black;
   border-radius: 15px;
-  cursor: pointer;
+}
+
+.resource-audio {
+  border: 8px solid black;
+  border-radius: 15px;
+  padding: 1rem;
 }
 
 .fit-down {
@@ -339,6 +381,7 @@ img.help-schema {
   border: 8px solid black;
   border-radius: 15px;
   box-sizing: border-box;
+  overflow-y: scroll;
 }
 
 #inbox-text > h3 {
@@ -366,6 +409,27 @@ img.help-schema {
   padding: 10px;
 }
 
+.file-item button {
+  background: white;
+  border: none;
+}
+
+.selected-color-invert {
+  display: inline-block;
+  color: white;
+  background-color: black;
+  padding-top: 0;
+  padding-bottom: .1rem;
+  padding-left: 1rem;
+  padding-right: 0rem;
+  margin: 0.2rem;
+}
+
+.big-caret {
+  font-size: 1.1rem;
+  font-weight: normal;
+}
+
 #text-message {
   height: 90%;
   min-height: 50px;
@@ -376,6 +440,8 @@ img.help-schema {
   padding-top: 10px;
   padding-left: 10px;
   padding-right: 10px;
+
+  white-space: pre-line;
   font-size: 3em;
   font-family: "Arial Black", Gadget, sans-serif;
 }
@@ -438,11 +504,129 @@ button:disabled{
 }
 
 .multi-item img.thumb{
-  border: dotted 4px;
+  /* border: dotted 4px; */
   cursor: progress;
+  -webkit-filter: blur(3px);
+  filter: blur(3px) contrast(110%);
 }
 
 .multi-item img.resource{
   cursor: pointer;
   min-height: 100px;
+}
+
+.downscaled svg {
+  margin-top: -4px;
+  padding-right: 4px;
+  height: 1.5em;
+  width: 1.5em;
+}
+
+.downscaled {
+  font-size: 0.8em;
+  color: #777;
+}
+
+.zip-progress progress {
+  margin-left: 0.8rem;
+  margin-right: 0.4rem;
+  background-color: white;
+}
+
+progress::-moz-progress-bar { 
+  background-color: blue;
+}
+progress.complete::-moz-progress-bar { 
+  background-color: green;
+}
+progress::-webkit-progress-value {
+  background-color: blue;
+}
+progress.complete::-webkit-progress-value {
+  background-color: green;
+}
+progress {
+  color: blue;
+}
+progress.complete {
+  color: green;
+}
+
+.ios-only, .android-only {
+  display: none;
+} 
+
+@media (max-width: 5in) {
+  @supports (-webkit-overflow-scrolling: touch) {
+    .ios-only {
+      display: block;
+    } 
+  }
+
+  @supports not (-webkit-overflow-scrolling: touch) {
+    /* CSS for other than iOS devices */ 
+
+    .android-only  {
+      display: block;
+    }
+  }
+}
+
+.mobile-app-banner-promo {
+  padding: 2rem 1rem 2rem 1rem;
+}
+
+.mobile-app-banner-promo .product{
+  padding-bottom: 1rem;
+}
+
+.mobile-app-banner-promo img {
+  width: 100%;
+}
+
+/* Fullscreen mode: display a big promotional URL bar. */
+.browserbar {
+    display: none;
+    background-color: #cecece;
+    padding-top: 0.3rem;
+    padding-bottom: 0.5rem;
+}
+@media (max-device-height: 102vh) {
+  .browserbar {
+      display: block;
+  }
+}
+.urlbar {
+    border: 2px solid #8c8c8c;
+    border-radius: 12px;
+    background-color: white;
+    margin-left: 4rem;
+    margin-right: 2rem;
+    padding-left: 12px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    font-size: 3rem;
+    text-align: left;
+}
+.urlbar span{
+    padding: 0;
+}
+.urlbar .lock {
+  padding: 0;
+  display: inline-block;
+  font-size: 2.5rem;
+}
+.urlbar .pipe {
+  margin-left: 0.6rem;
+  margin-right: 0.6rem;
+}
+.urlbar .green {
+    color: #070;
+}
+.urlbar .gray {
+    color: #AAA;
+}
+.urlbar .star {
+    position: absolute;
+    right: 3rem;
 }
