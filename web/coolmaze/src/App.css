@@ -38,6 +38,9 @@ input[readonly]
   /*clear: both;*/
 }
 #qrcode {
+  border: 0.5rem solid white;
+  border-radius: 1rem;
+  background-color: white;
   text-align: center;
 }
 #qrcode img {
@@ -135,6 +138,21 @@ input[readonly]
   font-weight: bolder;
   font-size: 2em;
   cursor: pointer;
+}
+ol.steps {
+  display: inline-block;
+  max-width: 45%;
+}
+.steps li {
+  background-color: #DED;
+  padding: 0.5em;
+  padding-right: 1em;
+  margin-bottom: 1em;
+  border-radius: 1em;
+  border-bottom-right-radius: 3em;
+  font-size: 1.2em;
+  color: #353;
+  font-weight: bolder;
 }
 .stores {
   margin-top: 6px;
@@ -584,7 +602,8 @@ progress.complete {
   width: 100%;
 }
 
-/* Fullscreen mode: display a big promotional URL bar. */
+/* Fullscreen mode: display a big promotional URL bar.
+   Disabled: see bigurl.js.
 .browserbar {
     display: none;
     background-color: #cecece;
@@ -629,4 +648,22 @@ progress.complete {
 .urlbar .star {
     position: absolute;
     right: 3rem;
+}
+ */
+
+/* Fullscreen mode: display a big promotional domain name. */
+.promodomain {
+  display: none;
+  position: fixed;
+  bottom: 2rem;
+  left: 2rem;
+  font-weight: bolder;
+  color: #BBB;
+  font-size: 7rem;
+  font-family: "Bookman";
+}
+@media (max-device-height: 102vh) {
+  .promodomain {
+      display: block;
+  }
 }

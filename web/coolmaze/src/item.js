@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
 import ProgressiveImage from 'react-progressive-image';
 import Linkify from 'react-linkify';
-import FaFilePdfO from 'react-icons/lib/fa/file-pdf-o';
-import FaFileO from 'react-icons/lib/fa/file-o';
+import ResourceIcon from './resourceicon.js';
 import MdAspectRatio from 'react-icons/lib/md/aspect-ratio';
 import base64toBlob from './util.js';
 
@@ -14,6 +13,7 @@ export default class Item extends Component {
     render() {
 
       if (this.props.resourceData_b64){
+        let index = this.props.multiIndex || 0;
         let type = this.props.resourceType;
         let data = this.props.resourceData_b64;
         let filename = this.props.resourceFilename;
@@ -29,13 +29,13 @@ export default class Item extends Component {
           dummy.click();
           document.body.removeChild(dummy);
         }
-        console.log("Item type " + type);
+        console.debug("Item " + index + " type " + type);
         if (isImageType(type)) {
-          console.log("  Item displayed as image");
+          console.debug("  Item " + index + " displayed as image");
           let bigdataURI = "data:image/jpeg;base64," + data; // TODO any image, not just JPEG!
 
           let downscaledWarning;
-          if( filename && filename.toLowerCase().indexOf("-resized.") !== -1) {
+          if( this.props.resized || (filename && filename.toLowerCase().indexOf("-resized.") !== -1)) {
             let downscaledDimensions;
             if( this.props.resourceWidth && this.props.resourceHeight )
               downscaledDimensions = " to " + this.props.resourceWidth + "x" + this.props.resourceHeight;
@@ -49,8 +49,8 @@ export default class Item extends Component {
               onClick={dl}
               key="image" />,
               downscaledWarning];
-        } else if (isVideoType(this.props.resourceType)) {
-          console.log("  Item displayed as video");
+        } else if (isVideoType(type)) {
+          console.debug("  Item " + index + " displayed as video");
           let bigdataURI = "data:video/mp4;base64," + data; // TODO any video, not just MP4!
           return (
             <video src={bigdataURI} controls autoPlay className="resource-video fit-down">
@@ -58,12 +58,12 @@ export default class Item extends Component {
             </video>
           );
         } else {
-          console.log("  Item displayed as downloadable file");
+          console.debug("  Item " + index + " displayed as downloadable file");
           return (
             <div id="inbox-file">
               <div className="file-item">
                 <button onClick={dl} >
-                  <FaFileO size={140} /><br/>
+                  <ResourceIcon resourceType={type} resourceFilename={filename} /><br/>
                   {filename || "Your file"}
                 </button>
               </div>
@@ -105,19 +105,6 @@ export default class Item extends Component {
           );
         }
   
-        if( /\/pdf/.test(this.props.resourceType) ){
-          return (
-            <div id="inbox-file">
-              <div className="file-item">
-                <a href={this.props.resourceUrl}
-                  target="_blank" rel="noopener noreferrer"><FaFilePdfO size={140} /></a> <br/>
-                <a href={this.props.resourceUrl}
-                  target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "Your PDF"}</a>
-              </div>
-            </div>
-          )          
-        }
-  
         if( !this.props.thumb
             && this.props.resourceType 
             && !isImageType(this.props.resourceType) ){
@@ -125,7 +112,7 @@ export default class Item extends Component {
             <div id="inbox-file">
               <div className="file-item">
                 <a href={this.props.resourceUrl}
-                  target="_blank" rel="noopener noreferrer"><FaFileO size={140} /></a> <br/>
+                  target="_blank" rel="noopener noreferrer"><ResourceIcon resourceType={this.props.resourceType} resourceFilename={this.props.resourceFilename} /></a> <br/>
                 <a href={this.props.resourceUrl}
                   target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "Your file"}</a>
               </div>
@@ -141,7 +128,7 @@ export default class Item extends Component {
         }
   
         let downscaledWarning;
-        if( filename && filename.toLowerCase().indexOf("-resized.") !== -1) {
+        if( this.props.resized || (filename && filename.toLowerCase().indexOf("-resized.") !== -1)) {
           let downscaledDimensions;
           if( this.props.resourceWidth && this.props.resourceHeight )
             downscaledDimensions = " to " + this.props.resourceWidth + "x" + this.props.resourceHeight;

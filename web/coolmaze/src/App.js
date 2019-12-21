@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import Pusher from 'pusher-js';
 import CryptoJS from 'crypto-js';
 
-import BigUrlBar from './bigurl.js';
 import genRandomKey from './qrkey.js';
 import sha256 from './derive.js';
 import {wakeUpBackend, ackBackend} from './backend.js';
@@ -52,12 +51,12 @@ class App extends Component {
       resourceData_b64: null,
       resourceWebpageUrl: null,
       resourceFilename: null,
+      resourceResized: null,
       resourceWidth: null,
       resourceHeight: null,
       multi: false,
       multiItems: [],
       zipProgressRatio: null,
-
       textMessage: null,
       infoMessage: null,
       errorMessage: null,
@@ -65,12 +64,13 @@ class App extends Component {
     }
     this.crypto_algo = null;
     this.crypto_iv = null;
+    this.decryptDuration = null;
   }
 
   render() {
     var spinning = this.state.scanNotif;
     if(this.state.multi)
-      spinning = !this.multiFinished();
+      spinning = !this.multiFinished(false); // ??????? TODO determine encryption
     var errorBox;
     if(this.state.errorMessage) {
       spinning = false;
@@ -79,7 +79,9 @@ class App extends Component {
 
     return (
       <div className="App">
-        <BigUrlBar />
+        <div className="promodomain">
+          cmaz.io
+        </div>
         <TopBar 
           helpAction={this.toggleHelp}
           clear={this.clear}
@@ -106,6 +108,7 @@ class App extends Component {
           resourceData_b64={this.state.resourceData_b64}
           resourceWebpageUrl={this.state.resourceWebpageUrl}
           resourceFilename={this.state.resourceFilename}
+          resourceResized={this.state.resourceResized}
           resourceWidth={this.state.resourceWidth}
           resourceHeight={this.state.resourceHeight}
           textMessage={this.state.textMessage}
@@ -138,7 +141,7 @@ class App extends Component {
     this.qrKey = CM_CLIENT_PREFIX + this.symCryptoKey;
     let that = this;
     sha256(this.symCryptoKey).then(function(chanKey) {
-      console.log("Derived " + that.symCryptoKey + " => " + chanKey);
+      console.debug("Derived " + that.symCryptoKey + " => " + chanKey);
       that.initQRwith(chanKey);
     });
   }
@@ -148,7 +151,7 @@ class App extends Component {
     this.pusher = new Pusher(coolMazePusherAppKey, {
       encrypted: true
     });
-    console.log("Listening to [" + this.chanKey + "]");
+    console.debug("Listening to [" + this.chanKey + "]");
     this.channel = this.pusher.subscribe(this.chanKey);
     this.qrDisplayTime = new Date();
     this.singleNotifTime = null;
@@ -158,17 +161,17 @@ class App extends Component {
     var cb = this.handlePusherData;
     // TODO refactor this into 1 generic bind to cb?
     this.channel.bind('maze-scan', function(data) {
-      console.log('maze-scan');
+      console.debug('maze-scan');
       data.event = 'maze-scan';
       cb(data);
     });
     this.channel.bind('maze-cast', function(data) {
-      console.log('maze-cast');
+      console.debug('maze-cast');
       data.event = 'maze-cast';
       cb(data);
     });
     this.channel.bind('maze-error', function(data) {
-      console.log('maze-error');
+      console.debug('maze-error');
       data.event = 'maze-error';
       cb(data);
     });
@@ -195,24 +198,39 @@ class App extends Component {
       }
     });
 
-
     // Warning: this does NOT update this.state.
   }
 
   handleScanNotif(data) {
-    if(this.state.resourceUrl || this.state.resourceData_b64 || this.state.textMessage)
-      return; // Too late, ignoring
+    if(this.state.textMessage) {
+      console.log("Ignoring scan notif because single text message has already arrived");
+      return;
+    }
 
-    if(this.state.multi && this.multiFinished())
-      return; // Too late, ignoring
+    if(this.state.resourceData_b64) {
+      console.log("Ignoring scan notif because single encrypted resource has already arrived");
+      return;
+    }
+
+    if(this.state.resourceUrl) {
+      //console.log("Ignoring scan notif because single resource URL has already arrived");
+      //return;
+      // Actually a thumbnail could be useful, if the encrypted picture is not fully downloaded yet...
+    }
+
+    let encryption = data.crypto_iv ? true : false;
+    if(this.state.multi && this.multiFinished(encryption)) {
+      console.log("Ignoring scan notif " + data.multiIndex + " because all the resources have already arrived");
+      return;
+    }
 
     this.crypto_algo = data.crypto_algo;
-    if (data.crypto_iv) {
+    if (encryption) {
       this.crypto_iv = data.crypto_iv;
-      console.log("Found encrypted message IV!!");
+      console.debug("Found encrypted message IV");
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
-      console.log("Decrypted ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
+      console.log("Decrypted scan notif ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
       data.message = "data:image/jpeg;base64," + data_b64;
       // This thumb is always implicitly JPEG.
       // TODO: consider PNG, or other?
@@ -235,19 +253,6 @@ class App extends Component {
     let actionID = data.actionID || this.state.actionID;
 
     if (data.message
-        && (data.message.startsWith("http://") || data.message.startsWith("https://"))) {
-      console.log("DOES THIS CASE EVEN EXIST?");   
-      this.setState(prevState => ({
-        actionID: actionID,
-        scanNotif: true,
-        resourceType: data.contentType,
-        resourceUrl: data.message,
-        textMessage: null
-      }));
-      return;
-    }
-
-    if (data.message
         && data.message.startsWith('data:image/')) {
       console.log('Received thumbnail');
       window.setTimeout( this.unblurryThumb.bind(this, 0, 1000), 100 ); // TODO what's the proper way??
@@ -267,7 +272,7 @@ class App extends Component {
     }));
 
     // TODO some nice default pictogram for known and
-    // unknown resource types.
+    // unknown resource types. See resourceicons.js
   }
 
   handleScanNotifMulti(data) {
@@ -276,26 +281,38 @@ class App extends Component {
     //
     let actionID = data.actionID || this.state.actionID;
 
-    var items = this.state.multiItems;
-    if (!items || items.length!==parseInt(data.multiCount,10)) {
-      items = [];
-      for(var i=0;i<data.multiCount;i++)
-        items.push(Object());
+    let index = data.multiIndex;
+    let item = {};
+    if( this.state.multiItems && this.state.multiItems[index] )
+      item = this.state.multiItems[index];
+
+    if(item.resourceData_b64 || item.resourceUrl) {
+      console.log("Scan notif for resource " + index + " arrived late, ignoring.")
+      return;
     }
 
-    var index = data.multiIndex;
     if (data.message && data.message.startsWith('data:image/')) {
-      items[index].thumb = data.message;
+      item.thumb = data.message;
       // TODO index arg to unblurryThumb is not what we want!!
       window.setTimeout( this.unblurryThumb.bind(this, index, 1000), 100 ); // TODO what's the proper way??
     }
-    items[index].resourceType = data.contentType;
+    item.resourceType = data.contentType;
   
-    this.setState(prevState => ({
-      actionID: actionID,
-      multi: true,
-      multiItems: items
-    }));
+    this.setState(prevState => {
+      let items = prevState.multiItems;
+      if (!items || items.length!==parseInt(data.multiCount,10)) {
+        items = [];
+        for(var i=0;i<data.multiCount;i++)
+          items.push(Object());
+      }
+      items[index].thumb = item.thumb;
+      items[index].resourceType = item.resourceType;
+      return {
+        actionID: actionID,
+        multi: true,
+        multiItems: items
+      }
+    });
   }
 
   handleCast(data) {
@@ -325,7 +342,7 @@ class App extends Component {
     this.crypto_algo = data.crypto_algo;
     if (data.crypto_iv) {
       this.crypto_iv = data.crypto_iv;
-      console.log("Got a crypto IV");
+      console.debug("Got a crypto IV");
       // Let K = the target browser's secret passphrase
       // Let P = the mobile source's secret passphrase
       // Let M = the short text message
@@ -367,7 +384,7 @@ class App extends Component {
       if(data.mobile_secret_scrambled) {
         let decryptedWords = Decrypt(data.crypto_algo, data.mobile_secret_scrambled, data.crypto_iv, this.symCryptoKey);
         mobileKey = decryptedWords.toString(CryptoJS.enc.Utf8);
-        console.log("Decrypted mobile secret: " + mobileKey);
+        console.debug("Decrypted mobile secret: " + mobileKey);
       }
       console.log("Fetching encrypted resource");
       if(data.message.startsWith("https://storage.googleapis.com/cool-maze-transit/")){
@@ -394,6 +411,7 @@ class App extends Component {
           actionID: actionID,
           resourceType: data.contentType,
           resourceFilename: data.filename,
+          resourceResized: data.resized,
           resourceWidth: data.contentWidth,
           resourceHeight: data.contentHeight
         }));
@@ -446,6 +464,7 @@ class App extends Component {
         resourceType: data.contentType,
         resourceUrl: data.message,
         resourceFilename: data.filename,
+        resourceResized: data.resized,
         resourceWidth: data.contentWidth,
         resourceHeight: data.contentHeight,
         textMessage: null,
@@ -540,35 +559,37 @@ class App extends Component {
     //
     let actionID = data.actionID || this.state.actionID;
 
-    var items = this.state.multiItems;
-    if (!items || items.length!==parseInt(data.multiCount,10)) {
-      items = [];
-      for(var i=0;i<data.multiCount;i++)
-        items.push(Object());
-    }
-
     var index = data.multiIndex;
-    items[index].resourceUrl = data.message;
-    items[index].resourceType = data.contentType;
-    items[index].resourceFilename = data.filename;
 
     let mobileKey = "";
     this.crypto_algo = data.crypto_algo;
     if (data.crypto_iv) {
       this.crypto_iv = data.crypto_iv;
-      console.log("Got a crypto IV");
+      console.debug("Got a crypto IV");
       // See handleCastSingle for definition of K, P, M, IV
 
       // Decoding the message M is straightforward
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
-      console.log("Decrypted message:" + data.message);
+      console.log("Decrypted message " + index + ":" + data.message);
+
+      // Decoding the filename is straightforward
+      if (data.filename){
+        // TODO make sure the filename *is* encrypted
+        try {
+          decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
+          data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
+          console.log("  Decrypted filename: " + data.filename);
+        } catch(error) {
+          console.log("  Could not decrypt filename \"" + data.filename + "\" — maybe it wasn't encrypted?");
+        }
+      }
 
       // Decoding the resource will require a different key P, emitted by Mobile source.
       if(data.mobile_secret_scrambled) {
         let decryptedWords = Decrypt(data.crypto_algo, data.mobile_secret_scrambled, data.crypto_iv, this.symCryptoKey);
         mobileKey = decryptedWords.toString(CryptoJS.enc.Utf8);
-        console.log("Decrypted mobile secret: " + mobileKey);
+        console.debug("Decrypted mobile secret: " + mobileKey);
       }
       if(data.message.startsWith("https://storage.googleapis.com")){
         // Fetch encrypted file
@@ -593,25 +614,39 @@ class App extends Component {
     }
 
     if(data.thumb) {
-      console.log("  cast has an attached thumb");
+      console.log("  cast " + index + " has an attached thumb");
       // Display thumb smoothly until full resource is fetched.
       if (data.crypto_iv) {
         let decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
         let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
-        items[index].thumb = "data:image/jpeg;base64," + data_b64; // This thumb is always implicitly JPEG.
+        data.thumb = "data:image/jpeg;base64," + data_b64; // This thumb is always implicitly JPEG.
         // TODO: consider PNG, or other?
       }
       // TODO unblurry anim 0.4s?
     }
 
-    this.setState(prevState => ({
-      actionID: actionID,
-      multi: true,
-      multiItems: items
-    }));
+    this.setState(prevState => {
+      let items = prevState.multiItems;
+      if (!items || items.length!==parseInt(data.multiCount,10)) {
+        items = [];
+        for(var i=0;i<data.multiCount;i++)
+          items.push(Object());
+      }
+      items[index].resourceUrl = data.message;
+      items[index].resourceType = data.contentType;
+      items[index].resourceFilename = data.filename;
+      items[index].resourceResized = data.resized;
+      items[index].resourceWidth = data.contentWidth;
+      items[index].resourceHeight = data.contentHeight;
+      return {
+        actionID: actionID,
+        multi: true,
+        multiItems: items
+      }
+    });
 
-    if(this.multiFinished()) {
-      //console.log(items);
+    let encryption = data.crypto_iv ? true : false;
+    if(this.multiFinished(encryption)) {
       this.multipleAllCastTime = new Date();
       this.teardown();
     }
@@ -623,11 +658,11 @@ class App extends Component {
         this.handleScanNotif(data);
         break;
       case 'maze-cast':
-        console.log('message = ' + data.message);
+        console.debug('message = ' + data.message);
         this.handleCast(data);
         break;
       case 'maze-error':
-        console.log('Error message = ' + data.message);
+        console.warn('Error message = ' + data.message);
         this.setState(prevState => ({
           errorMessage: data.message
         }));
@@ -639,14 +674,15 @@ class App extends Component {
   }
 
   handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey) {
-    //let byteArray = new Uint8Array(arrayBuffer);
-    //console.log("Fetched resource of size " + byteArray.byteLength + " :)");
+    let tip = new Date().getTime();
     // Decrypt it
     var words = CryptoJS.lib.WordArray.create(arrayBuffer);
     let decryptedWords = DecryptWords(this.crypto_algo, words, this.crypto_iv, mobileKey);
     // Display/generate it to user
     let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
-    console.log("Decrypted ciphertext into base64 message of size " + data_b64.length);
+    let top = new Date().getTime();
+    this.decryptDuration = (top -tip);
+    console.debug("Decrypted ciphertext into base64 message of size " + data_b64.length + " in " + this.decryptDuration + "ms");
     this.setState(prevState => ({
       resourceData_b64: data_b64,
       scanNotif: false
@@ -660,7 +696,7 @@ class App extends Component {
     let decryptedWords = DecryptWords(this.crypto_algo, words, this.crypto_iv, mobileKey);
     // Display/generate it to user
     let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
-    console.log("Decrypted ciphertext " + index + " into base64 message of size " + data_b64.length);
+    console.debug("Decrypted ciphertext " + index + " into base64 message of size " + data_b64.length);
 
     this.setState(prevState => {
       //console.log("Setting base64 data of item " + index);
@@ -671,6 +707,11 @@ class App extends Component {
         multiItems: items
       }
     });
+
+    if(this.multiFinished(true)) {
+      this.multipleAllCastTime = new Date();
+      this.teardown();
+    }
   }
 
   expireQR() {
@@ -811,18 +852,31 @@ class App extends Component {
     this.crypto_iv = null;
   }
 
-  multiFinished() {
+  multiFinished(encryption) {
     var n = this.state.multiItems.length;
     var m = 0;
-    for(var i=0; i<n; i++)
-      if(this.state.multiItems[i].resourceUrl)
-        m++;
-    var allFinished = (m===n);
-    return allFinished;
+
+    if(encryption) {
+      // We are "finished" as soon as all resources have been downloaded
+      // TODO: and decrypted?
+      for(let i=0; i<n; i++)
+        if(this.state.multiItems[i].resourceData_b64)
+          m++;
+      let allFinished = (m===n);
+      return allFinished;
+    }else{
+      // We are "finished" as soon as all resource URLs are known
+      // TODO: and downloaded?
+      for(let i=0; i<n; i++)
+        if(this.state.multiItems[i].resourceUrl)
+          m++;
+      let allFinished = (m===n);
+      return allFinished;
+    }
   }
 
   unblurryThumb(index, durationMs) {
-    console.log("Animating .resource-thumb [" + index + "]!"); 
+    console.debug("Animating .resource-thumb [" + index + "]"); 
     let th = document.getElementsByClassName("resource-thumb")[index];
     if(!th)
       return;
@@ -859,7 +913,7 @@ class App extends Component {
       if( this.multipleAllCastTime )
         qrToCastDuration = this.multipleAllCastTime - this.qrDisplayTime;
     }
-    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration);
+    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.decryptDuration);
     this.quitPusherChannel();
   }
 }
@@ -887,6 +941,7 @@ class MainZone extends Component {
     var textMessage = this.props.textMessage;
     var youtubeID = this.props.youtubeID;
     var resourceFilename = this.props.resourceFilename;
+    var resourceResized = this.props.resourceResized;
     var resourceWidth = this.props.resourceWidth;
     var resourceHeight = this.props.resourceHeight;
     var multi = this.props.multi;
@@ -927,6 +982,7 @@ class MainZone extends Component {
           resourceWebpageUrl={resourceWebpageUrl}
           textMessage={textMessage}
           resourceFilename={resourceFilename}
+          resourceResized={resourceResized}
           resourceWidth={resourceWidth}
           resourceHeight={resourceHeight}
           youtubeID={youtubeID}
@@ -955,7 +1011,8 @@ class InboxMulti extends Component {
       for (var i=0; i < items.length; i++) {
         subBoxes.push(
           <div className="multi-item" key={i}>
-            <Item {...items[i]} 
+            <Item multiIndex={i}
+                {...items[i]} 
                 spinning={this.props.spinning} />
           </div>
         )

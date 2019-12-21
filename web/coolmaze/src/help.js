@@ -4,6 +4,7 @@ import googlePlay from './img/get-it-on-google-play.png';
 import appStore from './img/download-on-the-app-store.png';
 import FaClose from 'react-icons/lib/fa/close';
 import FaExclamationTriangle from 'react-icons/lib/fa/exclamation-triangle';
+import FaShareAlt from 'react-icons/lib/fa/share-alt';
 import picto128 from './img/coolmaze_128.png';
 
 export default class Help extends Component {
@@ -17,7 +18,7 @@ export default class Help extends Component {
             <img src={schema} width="296" height="400" className="help-schema right" alt="Illustration: Mobile-to-Desktop action" />
             <p>You can share a document from your mobile device to a computer or video projector</p>
             <span>
-              <ol>
+              <ol class="steps">
                 <li>
                   Install <strong>Cool Maze</strong> on your mobile
                   <div className="stores">
@@ -30,7 +31,7 @@ export default class Help extends Component {
                   </div>
                 </li>
                 <li>Open <strong>coolmaze.io</strong> in your computer browser</li>
-                <li>On mobile resource (photo, video, URL, PDF), select <span className="rounded"><strong><i>Share via</i></strong></span> > <span className="rounded"><img src={picto128} className="mini-picto" alt="" /> <strong>Cool Maze</strong></span></li>
+                <li>On mobile resource (photo, video, URL, PDF), select <span className="rounded"><strong><FaShareAlt /></strong></span><i>Share via</i> &gt; <span className="rounded"><img src={picto128} className="mini-picto" alt="" /> <strong>Cool Maze</strong></span></li>
                 <li>Scan the QR-code</li>
               </ol>
             </span>
