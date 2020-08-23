@@ -1,0 +1,3 @@
+Contact: mailto:bartalogsoftware@gmail.com
+Preferred-Languages: en
+Canonical: https://coolmaze.io/.well-known/security.txt

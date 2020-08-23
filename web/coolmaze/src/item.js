@@ -3,6 +3,7 @@ import ProgressiveImage from 'react-progressive-image';
 import Linkify from 'react-linkify';
 import ResourceIcon from './resourceicon.js';
 import MdAspectRatio from 'react-icons/lib/md/aspect-ratio';
+import MdLockOutline from 'react-icons/lib/md/lock-outline';
 import base64toBlob from './util.js';
 
 require('string.prototype.startswith');
@@ -11,6 +12,9 @@ require('string.prototype.startswith');
 // To be used in a single or multi inbox. 
 export default class Item extends Component {
     render() {
+      let e2eeLock;
+      if(this.props.e2ee)
+        e2eeLock = <div className="e2ee-message item-extra-info" key="e2ee-message"><MdLockOutline/>This transfer was <span title="Data sent with Cool Maze for Android is encrypted in such a way that the Cool Maze service provider can't read it." className="hint">end-to-end encrypted</span>.</div>;
 
       if (this.props.resourceData_b64){
         let index = this.props.multiIndex || 0;
@@ -39,7 +43,7 @@ export default class Item extends Component {
             let downscaledDimensions;
             if( this.props.resourceWidth && this.props.resourceHeight )
               downscaledDimensions = " to " + this.props.resourceWidth + "x" + this.props.resourceHeight;
-            downscaledWarning = <div className="downscaled" key="warning"><MdAspectRatio/>This picture was downscaled{downscaledDimensions}.</div>;
+            downscaledWarning = <div className="downscaled item-extra-info" key="downscaled-message"><MdAspectRatio/>This picture was downscaled{downscaledDimensions}.</div>;
           }
 
           return [<img 
@@ -48,37 +52,44 @@ export default class Item extends Component {
               className="resource-picture fit-down" 
               onClick={dl}
               key="image" />,
-              downscaledWarning];
+              downscaledWarning,
+              e2eeLock];
         } else if (isVideoType(type)) {
           console.debug("  Item " + index + " displayed as video");
           let bigdataURI = "data:video/mp4;base64," + data; // TODO any video, not just MP4!
-          return (
-            <video src={bigdataURI} controls autoPlay className="resource-video fit-down">
+          return [
+            <video src={bigdataURI} controls autoPlay className="resource-video fit-down" key="video">
               Video <a href={this.props.resourceUrl} target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "here"}</a>
-            </video>
-          );
+            </video>,
+            e2eeLock
+          ];
         } else {
           console.debug("  Item " + index + " displayed as downloadable file");
-          return (
-            <div id="inbox-file">
+          return [
+            <div id="inbox-file" key="file">
               <div className="file-item">
                 <button onClick={dl} >
                   <ResourceIcon resourceType={type} resourceFilename={filename} /><br/>
                   {filename || "Your file"}
                 </button>
               </div>
-            </div>
-          )          
+            </div>,
+            e2eeLock
+          ]
         }
       }
       
       if (this.props.resourceUrl){
   
         if(this.props.youtubeID) {
-          var embedURL = "https://www.youtube.com/embed/" + this.props.youtubeID ; 
+          var embedURL = "https://www.youtube.com/embed/" + this.props.youtubeID; 
           embedURL += "?autoplay=1";
+          let linkToYT = "https://www.youtube.com/watch?v=" + this.props.youtubeID;
           return (
-            <iframe id="ytplayer" title="YouTUbe player" type="text/html" src={embedURL} width="100%" height="600" allowFullScreen />
+            <div class="youtube-item">
+              <a href={linkToYT} target="_blank" rel="noopener noreferrer" class="external-link">Link to YouTube video</a>
+              <iframe id="ytplayer" title="YouTUbe player" type="text/html" src={embedURL} width="100%" height="600" allowFullScreen />
+            </div>
           )
         }
   
@@ -132,7 +143,7 @@ export default class Item extends Component {
           let downscaledDimensions;
           if( this.props.resourceWidth && this.props.resourceHeight )
             downscaledDimensions = " to " + this.props.resourceWidth + "x" + this.props.resourceHeight;
-          downscaledWarning = <div className="downscaled" key="warning"><MdAspectRatio/>This picture was downscaled{downscaledDimensions}.</div>;
+          downscaledWarning = <div className="downscaled item-extra-info" key="warning"><MdAspectRatio/>This picture was downscaled{downscaledDimensions}.</div>;
         }
   
         return (

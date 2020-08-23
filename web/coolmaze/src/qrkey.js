@@ -27,7 +27,7 @@ export default function genRandomKey() {
     }
 
     let secretKey = randomString(SECRET_KEY_LENGTH);
-    console.log("Generated secret key [" + secretKey + "]");
+    console.debug("Generated secret key [" + secretKey + "]");
 
     return secretKey;
   }

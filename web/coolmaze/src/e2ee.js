@@ -77,7 +77,7 @@ function decryptWords(algo, cipherWords, iv_b64, passPhrase) {
   console.debug("aesKey.toString(): " + aesKey.toString());
 
   // warning the following line is super-slow when cipherWords is large!
-  //console.log(preview("cipherWords="+cipherWords, 100) + "(" + (""+cipherWords).length + " chars)");
+  //console.debug(preview("cipherWords="+cipherWords, 100) + "(" + (""+cipherWords).length + " chars)");
   let ivWords = CryptoJS.enc.Base64.parse(iv_b64);
   console.debug("ivWords="+ivWords);
   let decryptedWords = CryptoJS.AES.decrypt(

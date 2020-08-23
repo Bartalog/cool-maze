@@ -5,7 +5,7 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 
 function makeZip(resourceURLs, setZipProgress){
-    console.log("makeZip(" + resourceURLs + ")");
+    console.debug("makeZip(" + resourceURLs + ")");
 
     // Some resources may be unavailable, yet it's useful to be able
     // to generate a ZIP of the resources that we do already have.
@@ -62,13 +62,13 @@ function makeZip(resourceURLs, setZipProgress){
         filenamesSet.add(name);
 
         filename[i] = name;
-        // console.log(filename[i]);
+        // console.debug(filename[i]);
         filedata[i] = arrayBuffer;
         m--;
         setZipProgress(0.10 + 0.9*((n-m)/n));
         if (m===0)
           generate();
-        //console.log(m + " left");
+        //console.debug(m + " left");
       };
       oReq.send();
     }
@@ -81,7 +81,7 @@ function makeZip(resourceURLs, setZipProgress){
 function makeZipFromE2EE(items, setZipProgress){
   // With E2EE the clear resources local. Let's build a zip
   // out of already-decrypted in-memory data.
-  console.log("makeZipFromE2EE()");
+  console.debug("makeZipFromE2EE()");
 
   // Some resources may be unavailable, yet it's useful to be able
   // to generate a ZIP of the resources that we do already have.
@@ -97,7 +97,7 @@ function makeZipFromE2EE(items, setZipProgress){
   if(n!==original_n){
     if(!window.confirm("Generate ZIP for " + n + " resources?"))
       return;
-    console.log("Generating partial ZIP: " + n + " files out of " + original_n);
+    console.debug("Generating partial ZIP: " + n + " files out of " + original_n);
   }
 
   setZipProgress(0.10);
@@ -132,7 +132,7 @@ function extractFilename(contentDisposition) {
     var matches = filenameRegex.exec(contentDisposition);
     if (matches != null && matches[1]) { 
       var filename = matches[1].replace(/['"]/g, '');
-      //console.log("extractFilename(" + contentDisposition + ") -> " + filename);
+      //console.debug("extractFilename(" + contentDisposition + ") -> " + filename);
       return filename;
     }
 }
@@ -143,7 +143,7 @@ class Progress extends Component {
       if(!ratio) {
         return null;
       }
-      //console.log("ZipProgress ratio="+ratio)
+      //console.debug("ZipProgress ratio="+ratio)
       var clazz = "";
       var checkMark = null;
       if(ratio > 0.999){

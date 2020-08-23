@@ -18,7 +18,7 @@ function wakeUp(qrKey){
 // Tell the server that the resource was sucessfully received by client.
 // Same acknowledgement for Single and Multi.
 // We don't need to wait for the response.
-function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, decryptDuration) {
+function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, fetchDuration, decryptDuration) {
     var ack = new XMLHttpRequest();
     var endpoint = backend + "/ack";
     var params = "qrKey=" + qrKey + "&actionid=" + actionID;
@@ -28,6 +28,8 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, decryptDurati
         params += "&qrttcast=" + qrToCastDuration;
     if(decryptDuration)
         params += "&ttd=" + decryptDuration;
+    if(fetchDuration)
+        params += "&ttf=" + fetchDuration;
     ack.open("POST", endpoint, true);
     ack.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     ack.send( params );

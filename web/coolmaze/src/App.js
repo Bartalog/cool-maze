@@ -64,6 +64,7 @@ class App extends Component {
     }
     this.crypto_algo = null;
     this.crypto_iv = null;
+    this.fetchDuration = null;
     this.decryptDuration = null;
   }
 
@@ -76,6 +77,7 @@ class App extends Component {
       spinning = false;
       errorBox = <div className="error-box">{this.state.errorMessage}</div>;
     }
+    var e2ee = this.crypto_algo ? true : false;
 
     return (
       <div className="App">
@@ -122,6 +124,7 @@ class App extends Component {
           clear={this.clear}
           embiggen={this.embiggen}
           openAsDownload={this.openAsDownload}
+          e2ee={e2ee}
         />
       </div>
     );
@@ -185,7 +188,7 @@ class App extends Component {
     // Current tab suddenly visible again => Refresh idle QR
     document.addEventListener("visibilitychange", function() {
       if( that.state.qrKey==="reload" && document.visibilityState === "visible") {
-        console.log( "Welcome back (visible), new QR" );
+        console.debug( "Welcome back (visible), new QR" );
         that.clear();
       }
     });
@@ -193,7 +196,7 @@ class App extends Component {
     // Browser window suddenly gets focus again => Refresh idle QR
     window.addEventListener("focus", function(event) {
       if( that.state.qrKey==="reload" ) {
-        console.log( "Welcome back (focus), new QR" );
+        console.debug( "Welcome back (focus), new QR" );
         that.clear();
       }
     });
@@ -230,7 +233,7 @@ class App extends Component {
       console.debug("Found encrypted message IV");
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
-      console.log("Decrypted scan notif ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
+      console.debug("Decrypted scan notif ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
       data.message = "data:image/jpeg;base64," + data_b64;
       // This thumb is always implicitly JPEG.
       // TODO: consider PNG, or other?
@@ -248,13 +251,13 @@ class App extends Component {
     //
     this.singleNotifTime = new Date();
     if(this.qrDisplayTime)
-      console.log("Got single notif after " + (this.singleNotifTime-this.qrDisplayTime) + "ms");
+      console.debug("Got single notif after " + (this.singleNotifTime-this.qrDisplayTime) + "ms");
 
     let actionID = data.actionID || this.state.actionID;
 
     if (data.message
         && data.message.startsWith('data:image/')) {
-      console.log('Received thumbnail');
+      console.debug('Received thumbnail');
       window.setTimeout( this.unblurryThumb.bind(this, 0, 1000), 100 ); // TODO what's the proper way??
       this.setState(prevState => ({
         actionID: actionID,
@@ -357,18 +360,18 @@ class App extends Component {
       // Decoding the message M is straightforward
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
-      console.log("  Decrypted message: " + data.message);
+      console.debug("  Decrypted message: " + data.message);
 
       // Decoding the filename is straightforward
       if (data.filename){
         decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
         data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
-        console.log("  Decrypted filename: " + data.filename);
+        console.debug("  Decrypted filename: " + data.filename);
       }
 
       // Decode thumbnail (if any). See #374.
       if (data.thumb){
-        console.log("  Got encrypted thumbnail, length " + data.thumb.length);
+        console.debug("  Got encrypted thumbnail, length " + data.thumb.length);
         decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
         let thumb_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
         thumb_b64 = "data:image/jpeg;base64," + thumb_b64;
@@ -386,7 +389,7 @@ class App extends Component {
         mobileKey = decryptedWords.toString(CryptoJS.enc.Utf8);
         console.debug("Decrypted mobile secret: " + mobileKey);
       }
-      console.log("Fetching encrypted resource");
+      console.debug("Fetching encrypted resource");
       if(data.message.startsWith("https://storage.googleapis.com/cool-maze-transit/")){
         // Fetch encrypted file
         let url = data.message;
@@ -394,8 +397,11 @@ class App extends Component {
         xhr.open('GET', url);
         xhr.responseType = "arraybuffer";
         let app = this;
+        let tip = new Date().getTime();
         xhr.onload = function() {
-          console.log("Fetched encrypted resource");
+          let top = new Date().getTime();
+          app.fetchDuration = (top -tip);
+          console.debug("Fetched encrypted resource in " + app.fetchDuration + "ms");
           let arrayBuffer = xhr.response;
           if (arrayBuffer) {
             app.handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey);
@@ -422,13 +428,13 @@ class App extends Component {
 
     this.singleCastTime = new Date();
     if(this.qrDisplayTime)
-      console.log("Got single message after " + (this.singleCastTime-this.qrDisplayTime) + "ms");
+      console.debug("Got single message after " + (this.singleCastTime-this.qrDisplayTime) + "ms");
 
     if ( data.message.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/sample")
         || data.message.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/demo")) {
       // Specific case for the sample photo, because it may be sent as a URL without
       // an explicit content-type. But we want to display directly the picture, not the URL.
-      console.log("Receiving sample photo");
+      console.debug("Receiving sample photo");
       this.setState(prevState => ({
         actionID: actionID,
         resourceType: "image/jpeg",
@@ -442,7 +448,7 @@ class App extends Component {
 
     var ytID = youtubeVideoID(data.message);
     if ( ytID ) {
-      console.log("Receiving a youtube URL");
+      console.debug("Receiving a youtube URL");
       this.setState(prevState => ({
         actionID: actionID,
         resourceType: "youtube",
@@ -458,7 +464,7 @@ class App extends Component {
     if ( data.message.startsWith("https://storage.googleapis.com/cool-maze-")
          || data.message.startsWith("https://cool-maze.appspot.com/f/") ) {
       // This resource is a file uploaded from mobile app
-      console.log("Receiving shared file resource");
+      console.debug("Receiving shared file resource");
       this.setState(prevState => ({
         actionID: actionID,
         resourceType: data.contentType,
@@ -477,7 +483,7 @@ class App extends Component {
     if (data.message.startsWith("http://") || data.message.startsWith("https://")) {  
       // This is a generic URL shared from mobile app, let's just redirect to it
       // (because auto opening in new tab would be blocked by browser)
-      console.log("Receiving shared URL");
+      console.debug("Receiving shared URL");
       var url = data.message;
 
       // Direct redirect?  (this is abrupt)
@@ -490,7 +496,7 @@ class App extends Component {
         scanNotif: false
       }));
       this.teardown();
-      console.log("Redirect to " + url + " in 500ms...");
+      console.debug("Redirect to " + url + " in 500ms...");
       window.setTimeout(function(){
         window.location = url;
       }, 500);
@@ -527,7 +533,7 @@ class App extends Component {
         scanNotif: false
       }));
       this.teardown();
-      console.log("Redirect to " + urlEnd + " in 500ms...");
+      console.debug("Redirect to " + urlEnd + " in 500ms...");
       window.setTimeout(function(){
         window.location = urlEnd;
       }, 500);
@@ -536,7 +542,7 @@ class App extends Component {
     }
 
 
-    console.log("Receiving shared text message");
+    console.debug("Receiving shared text message");
     this.setState(prevState => ({
       actionID: actionID,
       resourceType: data.contentType,
@@ -571,7 +577,7 @@ class App extends Component {
       // Decoding the message M is straightforward
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
-      console.log("Decrypted message " + index + ":" + data.message);
+      console.debug("Decrypted message " + index + ":" + data.message);
 
       // Decoding the filename is straightforward
       if (data.filename){
@@ -579,7 +585,7 @@ class App extends Component {
         try {
           decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
           data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
-          console.log("  Decrypted filename: " + data.filename);
+          console.debug("  Decrypted filename: " + data.filename);
         } catch(error) {
           console.log("  Could not decrypt filename \"" + data.filename + "\" — maybe it wasn't encrypted?");
         }
@@ -614,7 +620,7 @@ class App extends Component {
     }
 
     if(data.thumb) {
-      console.log("  cast " + index + " has an attached thumb");
+      console.debug("  cast " + index + " has an attached thumb");
       // Display thumb smoothly until full resource is fetched.
       if (data.crypto_iv) {
         let decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
@@ -699,7 +705,7 @@ class App extends Component {
     console.debug("Decrypted ciphertext " + index + " into base64 message of size " + data_b64.length);
 
     this.setState(prevState => {
-      //console.log("Setting base64 data of item " + index);
+      //console.debug("Setting base64 data of item " + index);
       let items = prevState.multiItems;
       items[index].resourceData_b64 = data_b64;
       return {
@@ -717,7 +723,7 @@ class App extends Component {
   expireQR() {
     if( this.pusher.connection.state !== 'connected' )
       return;
-    console.log("Closing idle channel, hiding QR-code");
+    console.debug("Closing idle channel, hiding QR-code");
     this.pusher.disconnect();
     this.setState(prevState => ({
       // magic value :(
@@ -761,7 +767,7 @@ class App extends Component {
       let type = this.state.resourceType;
       let data = this.state.resourceData_b64;
       let filename = this.state.resourceFilename;
-      console.log("Download for type " + type + ", filename " + filename);
+      console.debug("Download for type " + type + ", filename " + filename);
       let blob = base64toBlob(data, type);
       let objURL = URL.createObjectURL(blob);
 
@@ -850,6 +856,8 @@ class App extends Component {
       zipProgressRatio: null
     }));
     this.crypto_iv = null;
+    this.fetchDuration = null;
+    this.decryptDuration = null;
   }
 
   multiFinished(encryption) {
@@ -896,10 +904,10 @@ class App extends Component {
     if( !this.pusher  )
       return;
     if( this.pusher.connection.state !== "connected" ) {
-      console.log("Not closing channel because Pusher state: " + this.pusher.connection.state);
+      console.debug("Not closing channel because Pusher state: " + this.pusher.connection.state);
       return;
     }
-    console.log("Closing channel");
+    console.debug("Closing channel");
     this.pusher.disconnect();
   }
 
@@ -913,7 +921,7 @@ class App extends Component {
       if( this.multipleAllCastTime )
         qrToCastDuration = this.multipleAllCastTime - this.qrDisplayTime;
     }
-    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.decryptDuration);
+    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.fetchDuration, this.decryptDuration);
     this.quitPusherChannel();
   }
 }
@@ -948,6 +956,7 @@ class MainZone extends Component {
     var multiItems = this.props.multiItems;
     var spinning = this.props.spinning;
     var openAsDownload = this.props.openAsDownload;
+    var e2ee = this.props.e2ee;
 
     if (!thumb && !resourceUrl && !resourceData_b64 && !resourceWebpageUrl && !textMessage && !multi && !spinning)
       return (
@@ -988,6 +997,7 @@ class MainZone extends Component {
           youtubeID={youtubeID}
           spinning={spinning}
           openAsDownload={openAsDownload}
+          e2ee={e2ee}
         />
       </div>
     );

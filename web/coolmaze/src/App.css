@@ -139,11 +139,11 @@ input[readonly]
   font-size: 2em;
   cursor: pointer;
 }
-ol.steps {
+#help ol.steps {
   display: inline-block;
   max-width: 45%;
 }
-.steps li {
+#help .steps li {
   background-color: #DED;
   padding: 0.5em;
   padding-right: 1em;
@@ -165,7 +165,7 @@ ol.steps {
   border: 5px black dashed;
   border-radius: 6px;
 }
-.warning-specific-QR {
+#help .warning-specific-QR {
   margin-left: 50%;
   color: #D77;
   font-weight: bold;
@@ -432,6 +432,11 @@ img.help-schema {
   border: none;
 }
 
+.youtube-item .external-link{
+  display: block;
+  margin-bottom: 0.4em;
+}
+
 .selected-color-invert {
   display: inline-block;
   color: white;
@@ -533,16 +538,25 @@ button:disabled{
   min-height: 100px;
 }
 
-.downscaled svg {
+.downscaled svg,
+.e2ee-message svg {
   margin-top: -4px;
   padding-right: 4px;
   height: 1.5em;
   width: 1.5em;
 }
 
-.downscaled {
+.item-extra-info {
+  margin: 0.5em;
   font-size: 0.8em;
   color: #777;
+}
+
+.e2ee-message .hint {
+  text-decoration: none;
+  border-bottom-style: dotted;
+  border-bottom-width: 2px;
+  border-bottom-color: #BBB;
 }
 
 .zip-progress progress {
@@ -575,6 +589,8 @@ progress.complete {
 } 
 
 @media (max-width: 5in) {
+  /* Narrow screen (phones, portrait mode) */
+
   @supports (-webkit-overflow-scrolling: touch) {
     .ios-only {
       display: block;
@@ -587,6 +603,23 @@ progress.complete {
     .android-only  {
       display: block;
     }
+  }
+
+
+  #help ol.steps {
+    max-width: 80%;
+  }
+
+  #help img.help-schema {
+    padding-left: 8%;
+    padding-right: 8%;
+    width: 84%;
+    max-width: 84%;
+  }
+
+
+  #help .warning-specific-QR {
+    margin-left: 0%;
   }
 }
 
@@ -665,5 +698,30 @@ progress.complete {
 @media (max-device-height: 102vh) {
   .promodomain {
       display: block;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Dark theme: see issues/427 */
+  body {
+	  background-color: #003;
+	  color: #DDD;
+  }
+  #help {
+	  background-color: #025;
+	  color: #EEE;
+  }
+  #help .steps li {
+    background-color: #147;
+    color: #EEE;
+  }
+  #help-contents .dim {
+    color: #AAC;
+  }
+  #help .warning-specific-QR {
+    color: #F70;
+  }
+  .e2ee-message .hint {
+    border-bottom-color: #444;
   }
 }

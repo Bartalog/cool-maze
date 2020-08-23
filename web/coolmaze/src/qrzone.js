@@ -37,7 +37,7 @@ export default class QrZone extends Component {
       // On zoom: just the qrKey, easier to scan from afar
       if (this.props.qrSize > 2)
         qrText = this.props.qrKey;
-      console.log("qrText="+qrText);
+      console.debug("qrText="+qrText);
   
       return (
         <div id="qr-zone">
@@ -85,7 +85,7 @@ export default class QrZone extends Component {
           ctx.drawImage(image, dx, dy, dwidth, dheight);
       }
       image.onerror = function(x, y) {
-          console.log("Error on loading red arrow logo :(");
+          console.warn("Error on loading red arrow logo :(");
       }
       image.src = arrow;
     }
