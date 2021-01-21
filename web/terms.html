@@ -8,6 +8,16 @@
   body {
     font-family: monospace;
   }
+  dl {
+    margin-top: 0.5em;
+    margin-bottom: 1.5em;
+  }
+  dt {
+    margin-left: 2em;
+  }
+  dd {
+    margin-bottom: 1em;
+  }
   </style>
 </head>
 
@@ -15,7 +25,7 @@
   <h1>Cool Maze privacy terms</h1>
 
   <p>
-    These terms apply since August, 2016.
+    These terms apply since September, 2019.
   </p>
 
   <p>
@@ -74,11 +84,15 @@
   </p>
 
   <p>
-    Cool Maze currently doesn't implement end-to-end encryption. This means that the service owner could (theorically) read the data <b>D</b> transiting through the Service.
+    The Service uses cloud computing infrastructure providers. The facilities are Google App Engine, Google Cloud Storage, and Pusher.
   </p>
 
   <p>
-    The Service uses cloud computing infrastructure providers. The facilities are Google App Engine, Google Cloud Storage, and Pusher. The infrastructure providers are bound by explicit privacy policies. However, it is technically feasible that they read the data <b>D</b> transiting through the Service. Whether this would constitute a violation of their own policies is debatable on a case-by-case basis.
+    Cool Maze for Android uses end-to-end encryption (E2EE) since its version 1.1.1909 released in September 2019. This means that the service owner and the cloud infrastructure vendors can't read the data <b>D</b> transiting through the Service.
+  </p>
+
+  <p>
+    Cool Maze for iOS currently doesn't implement end-to-end encryption. This means that the service owner could (theorically) read the data <b>D</b> transiting through the Service. The infrastructure providers are bound by explicit privacy policies. However, it is technically feasible that they read the data <b>D</b> transiting through the Service. Whether this would constitute a violation of their own policies is debatable on a case-by-case basis.
   </p>
 
   <p>
@@ -91,17 +105,121 @@
     </ul>
   </p>
 
+  <div>
+    Data sent from the mobile to the server, necessary for proper message delivery:
+    <dl>
+      <dt>actionid</dt>
+      <dd>The unique ID of the current "Share" action</dd>
+
+      <dt>qrKey</dt>
+      <dd>The unique ID of the ephemeral communication channel of the current "Share" action</dd>
+
+      <dt>crypto</dt>
+      <dd>The encryption scheme used by the current "Share" action to achieve E2EE (when E2EE is active)</dd>
+
+      <dt>cryptoiv</dt>
+      <dd>The Initialization vector (IV) used by the current encryption scheme of the current "Share" action to achieve E2EE</dd>
+
+      <dt>multiCount</dt>
+      <dd>Number of resources being shared by the current "Share" action</dd>
+
+      <dt>message</dt>
+      <dd>Text message being shared or URL to the resource being shared (when E2EE is active, this field is encrypted)</dd>
+
+      <dt>filename</dt>
+      <dd>Filename of the resource being shared (when E2EE is active, this field is encrypted)</dd>
+
+      <dt>thumb</dt>
+      <dd>Thumbnail of the resource being shared (when E2EE is active, this field is encrypted)</dd>
+
+      <dt>resized</dt>
+      <dd>Whether the shared resource was resized by the Cool Maze mobile app</dd>
+
+      <dt>width</dt>
+      <dd>The width of the shared resource (after optional resizing)</dd>
+
+      <dt>height</dt>
+      <dd>The height of the shared resource (after optional resizing)</dd>
+
+      <dt>bup</dt>
+      <dd>Number of resource bytes already sent, when QR-code is read</dd>
+
+      <dt>gcsObjectName</dt>
+      <dd>File server path to the data being shared</dd>
+
+      <dt>hash</dt>
+      <dd>Hash of the resource being shared (not used when E2EE is active)</dd>
+
+      <dt>user-agent</dt>
+      <dd>The Cool-Maze mobile app User Agent contains: App name, App version, App build number, plus 3 fields for service quality monitoring</dd>
+
+    </dl>
+
+    Data sent from the mobile to the server for service quality monitoring:
+    <dl>
+      <dt>connection</dt>
+      <dd>Mobile connexion type: wifi, or mobile data</dd>
+
+      <dt>type</dt>
+      <dd>MIME type of the resource being shared</dd>
+
+      <dt>nth</dt>
+      <dd>Number of "Share" actions made by the current mobile app instance (since installation)</dd>
+
+      <dt>dark</dt>
+      <dd>Whether Cool Maze is displayed in Dark Mode</dd>
+
+      <dt>tte</dt>
+      <dd>Time to encrypt the resource on the mobile before uploading, in milliseconds (when E2EE is active)</dd>
+
+      <dt>ttup</dt>
+      <dd>Time to upload the single resource from the mobile to the cloud File server, in milliseconds</dd>
+
+      <dt>ttmultup</dt>
+      <dd>Time to upload all of the multiple resources from the mobile to the cloud File server, in milliseconds</dd>
+
+      <dt>ttscan</dt>
+      <dd>Time between the start of the "Share" action and the QR-code scan, in milliseconds</dd>
+
+
+      <dt></dt>
+      <dd></dd>
+
+      <dt>user-agent</dt>
+      <dd>The Cool-Maze mobile app User Agent contains: App installation ID, mobile OS, mobile model, plus 3 necessary App fields</dd>
+    </dl>
+
+    Data sent from the target web browser to the server for service quality monitoring:
+    <dl>
+      <dt>ttf</dt>
+      <dd>Time to fetch (download) the resource from the cloud File server, in milliseconds</dd>
+
+      <dt>ttd</dt>
+      <dd>Time to decrypt the resource on the target web browser, in milliseconds</dd>
+
+      <dt>qrttnotif</dt>
+      <dd>Time between the generation of the QR-code and a scan notification for a single resource received by the web browser, in milliseconds</dd>
+
+      <dt>qrttcast</dt>
+      <dd>Time between the generation of the QR-code and a notification of (single or multiple) resource ready received by the web browser, in milliseconds</dd>      
+    </dl>
+  </div>
+
   <h1>Acknowlegements</h1>
 
   <p>We thank 
     <ul>
-      <li>companies <a href="https://www.kubity.com/">Kubity</a>, <a href="https://www.whatsapp.com">WhatsApp</a>, <a href="http://web.airdroid.com/">AirDroid</a> and <a href="http://www.avaya.com/en/avaya-labs/">Avaya Labs
-</a> for the good idea of a "listening" matrix barcode to establish a connection between two devices.</li>
       <li>infrastructure providers <a href="https://cloud.google.com/">Google Cloud Platform</a> and <a href="https://pusher.com">Pusher</a>.</li>
       <li><a href="https://github.com/">GitHub</a>.</li>
       <li><a href="https://davidshimjs.github.io/qrcodejs/">qrcode.js</a>, <a href="https://github.com/zxing/zxing">ZXing</a>, <a href="http://loopj.com/android-async-http/">Android Asynchronous Http Client</a>.</li>
     </ul>
   <p>
+
+  <h1>Copyright</h1>
+  
+    <p>
+      ©2017-2021 Bartalog Software
+    </p>
 
   <h1>Contact</h1>
 
