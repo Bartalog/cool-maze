@@ -5,7 +5,6 @@
 
 This repo contains (open source):
 - Web client for [Cool Maze](https://coolmaze.io/)
-- Web client for reverse use case [Hot Maze](https://hotmaze.io/)
 - WebExtension client (experimental)
 - Desktop client (experimental)
 
@@ -14,4 +13,7 @@ This repo does not contain (closed source):
 - [Android app](https://play.google.com/store/apps/details?id=com.bartalog.coolmaze)
 - [iOS app](https://itunes.apple.com/us/app/cool-maze/id1284597516?mt=8)
 
-The [Issue tracker](https://github.com/Bartalog/cool-maze/issues) welcomes bugs of all components.
+This repo does not contain (open source):
+- The backend and frontend of the reverse use case [Hot Maze](https://hotmaze.io/), which have moved to [this repo](https://github.com/Deleplace/hot-maze).
+
+The [Issue tracker](https://github.com/Bartalog/cool-maze/issues) welcomes bugs of all components of Cool Maze.
