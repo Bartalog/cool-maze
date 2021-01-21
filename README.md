@@ -9,9 +9,9 @@ This repo contains (open source):
 - Desktop client (experimental)
 
 This repo does not contain (closed source):
-- Backend services
-- [Android app](https://play.google.com/store/apps/details?id=com.bartalog.coolmaze)
-- [iOS app](https://itunes.apple.com/us/app/cool-maze/id1284597516?mt=8)
+- Cool Maze Backend services
+- [Cool Maze Android app](https://play.google.com/store/apps/details?id=com.bartalog.coolmaze)
+- [Cool Maze iOS app](https://itunes.apple.com/us/app/cool-maze/id1284597516?mt=8)
 
 This repo does not contain (open source):
 - The backend and frontend of the reverse use case [Hot Maze](https://hotmaze.io/), which have moved to [this repo](https://github.com/Deleplace/hot-maze).
