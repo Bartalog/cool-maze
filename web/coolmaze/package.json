@@ -5,22 +5,22 @@
   "dependencies": {
     "@csstools/normalize.css": "github:csstools/normalize.css",
     "@types/caseless": "^0.12.2",
-    "@types/node": "^12.12.54",
+    "@types/node": "^12.19.15",
     "@types/tough-cookie": "^2.3.7",
-    "ajv": "^6.12.4",
+    "ajv": "^6.12.6",
     "crypto-js": "^3.3.0",
     "file-saver": "^1.3.8",
     "jszip": "^3.5.0",
-    "mime-types": "^2.1.27",
+    "mime-types": "^2.1.28",
     "pako": "^1.0.11",
     "prop-types": "^15.7.2",
     "pusher": "^2.2.2",
     "pusher-js": "^4.4.0",
     "qrcode.react": "^0.7.2",
     "qrcodejs": "^1.0.0",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-ga": "^2.5.7",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
+    "react-ga": "^2.7.0",
     "react-icons": "^2.2.7",
     "react-linkify": "^0.2.2",
     "react-progressive-image": "^0.6.0",
@@ -30,7 +30,7 @@
     "uc.micro": "^1.0.6"
   },
   "devDependencies": {
-    "react-scripts": "^3.4.3"
+    "react-scripts": "^4.0.1"
   },
   "scripts": {
     "start": "react-scripts start",

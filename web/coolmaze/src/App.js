@@ -230,7 +230,7 @@ class App extends Component {
     this.crypto_algo = data.crypto_algo;
     if (encryption) {
       this.crypto_iv = data.crypto_iv;
-      console.debug("Found encrypted message IV");
+      console.debug("Found encryption ", this.crypto_algo);
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
       console.debug("Decrypted scan notif ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
@@ -341,6 +341,10 @@ class App extends Component {
     // We're not expecting any separate thumb or anything else after this.
     this.quitPusherChannel();
 
+    this.singleCastTime = new Date();
+    if(this.qrDisplayTime)
+      console.debug("Got single message after " + (this.singleCastTime-this.qrDisplayTime) + "ms");
+
     let mobileKey = "";
     this.crypto_algo = data.crypto_algo;
     if (data.crypto_iv) {
@@ -357,14 +361,18 @@ class App extends Component {
       //
       // IV is the same for all of the above (but changed at every actionID)
 
-      // Decoding the message M is straightforward
-      let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
-      data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
-      console.debug("  Decrypted message: " + data.message);
+      // Decoding the message M (if necessary) is straightforward
+      if( data.messageIsClearText || data.message.startsWith("http")) {
+        console.debug("  No need to decrypt clear text message:", data.message);
+      } else {
+        let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
+        data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
+        console.debug("  Decrypted message: ", data.message);
+      }
 
       // Decoding the filename is straightforward
       if (data.filename){
-        decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
+        let decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
         data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
         console.debug("  Decrypted filename: " + data.filename);
       }
@@ -372,7 +380,7 @@ class App extends Component {
       // Decode thumbnail (if any). See #374.
       if (data.thumb){
         console.debug("  Got encrypted thumbnail, length " + data.thumb.length);
-        decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
+        let decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
         let thumb_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
         thumb_b64 = "data:image/jpeg;base64," + thumb_b64;
         // This thumb is always implicitly JPEG.
@@ -390,7 +398,9 @@ class App extends Component {
         console.debug("Decrypted mobile secret: " + mobileKey);
       }
       console.debug("Fetching encrypted resource");
-      if(data.message.startsWith("https://storage.googleapis.com/cool-maze-transit/")){
+      if( data.message.startsWith("https://storage.googleapis.com/cool-maze-transit/")
+          || data.message.includes(".appspot.com/f/")
+          || data.message.includes(":8080/f/") ){
         // Fetch encrypted file
         let url = data.message;
         let xhr = new XMLHttpRequest();
@@ -426,10 +436,6 @@ class App extends Component {
       }
     }
 
-    this.singleCastTime = new Date();
-    if(this.qrDisplayTime)
-      console.debug("Got single message after " + (this.singleCastTime-this.qrDisplayTime) + "ms");
-
     if ( data.message.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/sample")
         || data.message.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/demo")) {
       // Specific case for the sample photo, because it may be sent as a URL without
@@ -462,7 +468,8 @@ class App extends Component {
     }
 
     if ( data.message.startsWith("https://storage.googleapis.com/cool-maze-")
-         || data.message.startsWith("https://cool-maze.appspot.com/f/") ) {
+         || data.message.startsWith("https://cool-maze.appspot.com/f/")
+         || data.message.startsWith("https://cool-maze.uc.r.appspot.com/f/") ) {
       // This resource is a file uploaded from mobile app
       console.debug("Receiving shared file resource");
       this.setState(prevState => ({
@@ -476,7 +483,7 @@ class App extends Component {
         textMessage: null,
         scanNotif: false
       }));
-      this.teardown();
+      this.teardown(); // TODO no ack until resource has been downloaded (& decrypted?)
       return;
     }
 

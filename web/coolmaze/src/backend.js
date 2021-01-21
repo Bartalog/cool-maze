@@ -1,15 +1,18 @@
-let backend = "https://cool-maze.appspot.com";
+let backend = "https://cool-maze.uc.r.appspot.com";
+// let backend = "http://localhost:8080";
+// let backend = "http://192.168.1.80:8080";
+// let backend = "https://dev-dot-cool-maze.uc.r.appspot.com";
 
 // Google App Engine sometimes causes "cold start" problems
 // (a few hundred ms delay for a Go backend), which we want
-// to mitigate by sending a wekup/warmup request as early as
+// to mitigate by sending a wakeup/warmup request as early as
 // possible.
 // The request may be slow or fast, anyway we don't need to 
 // wait for the response.
-function wakeUp(qrKey){
+function wakeUp(chanID){
     var wakeup = new XMLHttpRequest();
     var wuEndpoint = backend + "/wakeup";
-    var wuParam = "qrKey=" + qrKey;
+    var wuParam = "qrKey=" + chanID;
     wakeup.open("POST", wuEndpoint, true);
     wakeup.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     wakeup.send( wuParam );

@@ -23,7 +23,7 @@ function decrypt(algo, cipherText_b64, iv_b64, passPhrase) {
   console.debug("aesKey.toString(): " + aesKey.toString());
 
   let cipherWords = CryptoJS.enc.Base64.parse(cipherText_b64);
-  console.debug(preview("cipherWords="+cipherWords, 100) + "(" + (""+cipherWords).length + " chars)");
+  console.debug(preview("cipherWords="+cipherWords, 160) + "(" + (""+cipherWords).length + " chars)");
   // let ivHex =     'a217f5a0fb926f7009a4c821d76e6788';
   // let ivWords = CryptoJS.enc.Hex.parse(ivHex);
   let ivWords = CryptoJS.enc.Base64.parse(iv_b64);
