@@ -1,4 +1,6 @@
 import React from 'react';
+import { withTranslation, Trans } from 'react-i18next';
+
 import whitewheel from './img/wheel_black_white_128.gif';
 import MdErrorOutline from 'react-icons/lib/md/error-outline';
 import FaQuestionCircle from 'react-icons/lib/fa/question-circle';
@@ -6,7 +8,9 @@ import FaClose from 'react-icons/lib/fa/close';
 import FaExternalLink from 'react-icons/lib/fa/external-link';
 import FaDownload from 'react-icons/lib/fa/download';
 
-export default function TopBar(props) {
+function TopBar(props) {
+    const { t } = props;
+
     var showHelpButton = true;
     var hasResource = (props.resourceUrl || props.resourceData_b64) ? true : false;
     var clearable = (props.textMessage || hasResource || props.resourceWebpageUrl || props.spinning || props.zippable) ? true : false;
@@ -42,9 +46,9 @@ export default function TopBar(props) {
     if (props.errorMessage) {
       error = <MdErrorOutline className="error"/>;
     }
-    var download = <button onClick={props.openAsDownload} title="Save" disabled={!hasResource}><FaDownload /></button>;
+    var download = <button onClick={props.openAsDownload} title={t('topbar.tooltips.save')} disabled={!hasResource}><FaDownload /></button>;
     if (props.zippable)
-      download = <button onClick={props.openAsDownloadZip} title="Save all in ZIP"><FaDownload /></button>;
+      download = <button onClick={props.openAsDownloadZip} title={t('topbar.tooltips.saveAsZIP')}><FaDownload /></button>;
   
     return (
       <header>
@@ -52,10 +56,10 @@ export default function TopBar(props) {
           <tbody>
             <tr>
               <td>
-                <button onClick={props.helpAction} title="What is this all about" disabled={!showHelpButton} className={helpCssClass}><FaQuestionCircle /></button>
+                <button onClick={props.helpAction} title={t('topbar.tooltips.whatIsThis')} disabled={!showHelpButton} className={helpCssClass}><FaQuestionCircle /></button>
               </td>
               <td>
-                <button onClick={props.openInNewTab} title="Open in new tab" disabled={!openableUrl}><FaExternalLink /></button>
+                <button onClick={props.openInNewTab} title={t('topbar.tooltips.openInNewTab')} disabled={!openableUrl}><FaExternalLink /></button>
               </td>
               <td>
                 {download}
@@ -65,7 +69,7 @@ export default function TopBar(props) {
                 {error}
               </td>
               <td>
-                <button onClick={props.clear} title="Clear" disabled={!clearable}><FaClose /></button>
+                <button onClick={props.clear} title={t('topbar.tooltips.clear')} disabled={!clearable}><FaClose /></button>
               </td>
             </tr>
           </tbody>
@@ -74,3 +78,4 @@ export default function TopBar(props) {
     )
 }
   
+export default withTranslation()(TopBar);

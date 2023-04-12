@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { withTranslation, Trans } from 'react-i18next';
+
 import arrow from './img/red_arrow.png';
 import picto128 from './img/coolmaze_128.png';
 
@@ -9,9 +11,10 @@ let QRCode = require('qrcode.react');
 // let QRCode = require('qrcode-react');
 
 // QrZone is for displaying a QR-code.
-export default class QrZone extends Component {
+class QrZone extends Component {
 
     render() {
+      const { t } = this.props;
       if ( this.props.qrKey === "reload" ) {
         // Dirty magic value to detect removed QR-code.
         // issues/244 after 10mn, QR-code removed, user must click.
@@ -19,11 +22,11 @@ export default class QrZone extends Component {
           <div id="qr-zone" className="please-reload">
             <div>
               <button onClick={this.props.clear}>
-                <img src={picto128} alt="Reload" />
+                <img src={picto128} alt={t('qrZone.reload')} />
               </button>
             </div>
             <div>
-              <i>Please reload</i>
+              <i>{t('qrZone.pleaseReload')}</i>
             </div>
           </div>
         )
@@ -32,8 +35,8 @@ export default class QrZone extends Component {
       // #355
       // By default: a full URL for app discoverability.
       // TODO https for cmaz
-      //var qrText = 'https://cmaz.io/' + this.props.qrKey;
-      var qrText = 'cmaz.io/' + this.props.qrKey;
+      //var qrText = 'https://cmaz.io/#' + this.props.qrKey;
+      var qrText = 'cmaz.io/#' + this.props.qrKey;
       // On zoom: just the qrKey, easier to scan from afar
       if (this.props.qrSize > 2)
         qrText = this.props.qrKey;
@@ -41,7 +44,7 @@ export default class QrZone extends Component {
   
       return (
         <div id="qr-zone">
-          <div id="qrcode" title="Click to enlarge" onClick={this.props.embiggen}> 
+          <div id="qrcode" title={t('qrZone.clickToEnlarge')} onClick={this.props.embiggen} className={this.props.qrAnimClass}> 
             <QRCode value={qrText} size={125 * this.props.qrSize} logo={arrow} level="M" />
           </div>
         </div>
@@ -91,3 +94,4 @@ export default class QrZone extends Component {
     }
 }
   
+export default withTranslation()(QrZone);

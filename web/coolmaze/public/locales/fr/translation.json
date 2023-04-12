@@ -1,0 +1,68 @@
+{
+    "topbar": {
+      "tooltips": {
+        "whatIsThis": "De quoi s'agit-il…",
+        "openInNewTab": "Ouvrir dans nouvel onglet",
+        "save": "Enregistrer",
+        "saveAsZIP": "Enregistrer tout dans un ZIP",
+        "clear": "Recommencer"
+      }
+    },
+
+    "help": {
+        "qrOnlyWithCoolMaze": "Ce QR-code fonctionne uniquement avec l'appli mobile Cool Maze!",
+        "intro": "Partagez un document de votre mobile vers un ordinateur ou vers un projecteur vidéo",
+        "steps": {
+            "1": "Installez <strong>Cool Maze</strong> sur votre mobile",
+            "2": "Ouvrez <strong>coolmaze.io</strong> sur l'ordinateur",
+            "3": {
+                "text": "Dans le document sur mobile (photo, video, URL, PDF), choisissez",
+                "shareVia": "Partager avec"
+            },
+            "4": "Scannez le QR-code"
+        },
+        "demoVideoURL": "https://www.youtube.com/embed/-RnA7L8qtjE",
+        "thatsIt": "C'est tout. Pas de compte, pas de mot de passe, pas de pub.",
+        "needInternet": "Les deux appareils (source et cible) doivent avoir accès à internet.",
+        "privacy": {
+          "text": "<strong>Vos données restent privées</strong>. Elles ne sont pas disponibles publiquement et ne sont pas communiquées à des tiers. Voir la",
+          "termsTitle": "Politique de confidentialité",
+          "inEnglish": "(en Anglais)"
+        },
+        "timeout": "Le document transféré reste disponible seulement quelques minutes après le transfert, il faut donc explicitement l'enregistrer dans l'ordinateur.",
+        "reportBug": "Signaler un bug",
+        "hotmaze": {
+          "text": "Mais je voudrais plutôt envoyer de l'ordi vers le mobile! Alors utilisez"
+        }
+    },
+
+    "qrZone": {
+        "clickToEnlarge": "Cliquez pour agrandir",
+        "reload": "Recharger",
+        "pleaseReload": "Veuillez recharger"
+    },
+
+    "item": {
+        "beingReceivedPlaceholder": "...  Document transféré  ...",
+        "wasDownscaled": {
+            "text": "Cette image a été réduite",
+            "to": "à"
+        },
+        "e2ee": {
+            "text": "Ce partage est",
+            "e2ee": "chiffré de bout en bout",
+            "tooltip": "Les données envoyées par l'appli Cool Maze (Android) sont chiffrées de façon à ce que le fournisseur de service de Cool Maze ne puisse pas les lire.",
+            "shortText": "Chiffré de bout en bout"
+        }
+    },
+
+    "zip": {
+        "makingZIP": "Création du ZIP …",
+        "zipFilenamePrefix": "fichiers-du-mobile_"
+    },
+
+    "mobileBanner": {
+        "coolMazeForAndroid": "Cool Maze pour Android",
+        "coolMazeForIOS": "Cool Maze pour iOS"
+    }
+  }

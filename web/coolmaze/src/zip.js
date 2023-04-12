@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { withTranslation, Trans } from 'react-i18next';
 
 // The JSZip dependency is super-expensive, though it is used only in niche cases.
 import JSZip from 'jszip';
@@ -35,7 +36,7 @@ function makeZip(resourceURLs, setZipProgress){
       zip.generateAsync({type:"blob"})
         .then(function(content) {
         let now = new Date().toISOString().replace(/T/, "_").replace(/[-:Z]/g, "").slice(0,15); // e.g. "20190909_130830"
-        let zipFilename = "resources-from-mobile_" + now + ".zip";
+        let zipFilename = "resources-from-mobile_" + now + ".zip"; // TODO i18n this: zip.zipFilenamePrefix
         FileSaver.saveAs(content, zipFilename);
       });
     }
@@ -139,6 +140,7 @@ function extractFilename(contentDisposition) {
 
 class Progress extends Component {
     render() {
+      const { t } = this.props;
       var ratio = this.props.ratio;
       if(!ratio) {
         return null;
@@ -152,7 +154,7 @@ class Progress extends Component {
       }
       return (
         <div className="zip-progress">
-          Making ZIP ...
+          {t('zip.makingZIP')}
           <progress value={ratio*100} min="0" max="100" className={clazz}>0%</progress>
           {checkMark}
         </div>
@@ -162,4 +164,4 @@ class Progress extends Component {
 
 export const MakeZip = makeZip;
 export const MakeZipFromE2EE = makeZipFromE2EE;
-export const ZipProgress = Progress;
+export const ZipProgress = withTranslation()(Progress);

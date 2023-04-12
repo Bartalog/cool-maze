@@ -1,18 +1,18 @@
-import React, { Component } from 'react';
+import React, { Component, Suspense } from 'react';
 import Pusher from 'pusher-js';
 import CryptoJS from 'crypto-js';
 
-import genRandomKey from './qrkey.js';
+import {genRandomKey} from './qrkey.js';
 import sha256 from './derive.js';
-import {wakeUpBackend, ackBackend} from './backend.js';
+import {wakeUpBackend, ackBackend, partialAckBackend, using} from './backend.js';
 import MobileBanner from './mobile-banner.js';
 import TopBar from './topbar.js';
-import Help from './help.js';
-import QrZone from './qrzone.js';
-import Item from './item.js';
+import MainZone from './mainzone.js';
 import {MakeZip, MakeZipFromE2EE, ZipProgress} from './zip.js';
 import {Decrypt, DecryptWords} from './e2ee.js';
-import base64toBlob from './util.js';
+import {base64toBlob, youtubeVideoID} from './util.js';
+import {preDownload, preDownloaded} from './precast.js';
+import schema from './img/schema.png';
 
 import './App.css';
 
@@ -35,6 +35,7 @@ class App extends Component {
     this.setZipProgress = this.setZipProgress.bind(this);
     this.clear = this.clear.bind(this);
     this.embiggen = this.embiggen.bind(this);
+    this._keydownHandler = this._keydownHandler.bind(this);
 
     this.initQR();
 
@@ -43,6 +44,7 @@ class App extends Component {
       symCryptoKey: this.symCryptoKey,
       qrKey: this.qrKey,
       qrSize: localStorage.getItem("qrSize") || 2,
+      qrAnimClass: "qr-resize-1-to-" + (localStorage.getItem("qrSize") || 2),
       actionID: null,
       scanNotif: false,
       thumb: null,
@@ -56,6 +58,7 @@ class App extends Component {
       resourceHeight: null,
       multi: false,
       multiItems: [],
+      preDownloadedTtpf: {},  // can't be part of multiItems, before the real scan action
       zipProgressRatio: null,
       textMessage: null,
       infoMessage: null,
@@ -65,6 +68,7 @@ class App extends Component {
     this.crypto_algo = null;
     this.crypto_iv = null;
     this.fetchDuration = null;
+    this.prefetchDuration = null;
     this.decryptDuration = null;
   }
 
@@ -77,61 +81,64 @@ class App extends Component {
       spinning = false;
       errorBox = <div className="error-box">{this.state.errorMessage}</div>;
     }
-    var e2ee = this.crypto_algo ? true : false;
+    var e2ee = this.crypto_iv ? true : false;
 
     return (
-      <div className="App">
-        <div className="promodomain">
-          cmaz.io
+      <Suspense fallback="loading">
+        <div className="App">
+          <div className="promodomain">
+            cmaz.io
+          </div>
+          <TopBar 
+            helpAction={this.toggleHelp}
+            clear={this.clear}
+            openInNewTab={this.openInNewTab}
+            openAsDownload={this.openAsDownload}
+            openAsDownloadZip={this.openAsDownloadZip}
+            resourceUrl={this.state.resourceUrl}
+            resourceData_b64={this.state.resourceData_b64}
+            resourceWebpageUrl={this.state.resourceWebpageUrl}
+            textMessage={this.state.textMessage}
+            errorMessage={this.state.errorMessage}
+            spinning={spinning}
+            showHelp={this.state.showHelp}
+            zippable={this.isZippable()}
+          />
+          <MobileBanner />
+          {errorBox}
+          <MainZone 
+            qrKey={this.state.qrKey}
+            qrSize={this.state.qrSize}
+            qrAnimClass={this.state.qrAnimClass}
+            thumb={this.state.thumb}
+            resourceType={this.state.resourceType}
+            resourceUrl={this.state.resourceUrl}
+            resourceData_b64={this.state.resourceData_b64}
+            resourceWebpageUrl={this.state.resourceWebpageUrl}
+            resourceFilename={this.state.resourceFilename}
+            resourceResized={this.state.resourceResized}
+            resourceWidth={this.state.resourceWidth}
+            resourceHeight={this.state.resourceHeight}
+            textMessage={this.state.textMessage}
+            youtubeID={this.state.youtubeID}
+            showHelp={this.state.showHelp}
+            closeHelpAction={this.toggleHelp}
+            multi={this.state.multi}
+            multiItems={this.state.multiItems}
+            zipProgressRatio={this.state.zipProgressRatio}
+            spinning={spinning}
+            clear={this.clear}
+            embiggen={this.embiggen}
+            openAsDownload={this.openAsDownload}
+            e2ee={e2ee}
+          />
         </div>
-        <TopBar 
-          helpAction={this.toggleHelp}
-          clear={this.clear}
-          openInNewTab={this.openInNewTab}
-          openAsDownload={this.openAsDownload}
-          openAsDownloadZip={this.openAsDownloadZip}
-          resourceUrl={this.state.resourceUrl}
-          resourceData_b64={this.state.resourceData_b64}
-          resourceWebpageUrl={this.state.resourceWebpageUrl}
-          textMessage={this.state.textMessage}
-          errorMessage={this.state.errorMessage}
-          spinning={spinning}
-          showHelp={this.state.showHelp}
-          zippable={this.isZippable()}
-        />
-        <MobileBanner />
-        {errorBox}
-        <MainZone 
-          qrKey={this.state.qrKey}
-          qrSize={this.state.qrSize}
-          thumb={this.state.thumb}
-          resourceType={this.state.resourceType}
-          resourceUrl={this.state.resourceUrl}
-          resourceData_b64={this.state.resourceData_b64}
-          resourceWebpageUrl={this.state.resourceWebpageUrl}
-          resourceFilename={this.state.resourceFilename}
-          resourceResized={this.state.resourceResized}
-          resourceWidth={this.state.resourceWidth}
-          resourceHeight={this.state.resourceHeight}
-          textMessage={this.state.textMessage}
-          youtubeID={this.state.youtubeID}
-          showHelp={this.state.showHelp}
-          closeHelpAction={this.toggleHelp}
-          multi={this.state.multi}
-          multiItems={this.state.multiItems}
-          zipProgressRatio={this.state.zipProgressRatio}
-          spinning={spinning}
-          clear={this.clear}
-          embiggen={this.embiggen}
-          openAsDownload={this.openAsDownload}
-          e2ee={e2ee}
-        />
-      </div>
+      </Suspense>
     );
   }
 
   initQR() {
-    // Closes any prexisting connection,
+    // Closes any preexisting connection,
     // then chooses a fresh random key,
     // then connects to pusher channel.
 
@@ -140,8 +147,14 @@ class App extends Component {
     if(this.pusher)
       this.pusher.disconnect();
 
+    this.symCryptoKey = "";
+    this.qrKey = "";
+    if(!window.navigator.onLine) {
+      return;
+    }
     this.symCryptoKey = genRandomKey();
     this.qrKey = CM_CLIENT_PREFIX + this.symCryptoKey;
+
     let that = this;
     sha256(this.symCryptoKey).then(function(chanKey) {
       console.debug("Derived " + that.symCryptoKey + " => " + chanKey);
@@ -166,6 +179,11 @@ class App extends Component {
     this.channel.bind('maze-scan', function(data) {
       console.debug('maze-scan');
       data.event = 'maze-scan';
+      cb(data);
+    });
+    this.channel.bind('maze-pre-cast', function(data) {
+      console.debug('maze-pre-cast');
+      data.event = 'maze-pre-cast';
       cb(data);
     });
     this.channel.bind('maze-cast', function(data) {
@@ -201,10 +219,72 @@ class App extends Component {
       }
     });
 
+    // Suddenly losing internet
+    window.addEventListener("offline", function(event) {
+      console.log("Lost connectivity :(");
+      that.expireQR();
+    });
+
+    // Suddenly recovering internet
+    window.addEventListener("online", function(event) {
+      if( that.state.qrKey==="reload" ) {
+        console.debug( "Welcome back online, new QR" );
+        that.clear();
+      }
+    });
+
+    window.addEventListener("keydown", that._keydownHandler, true);
+
     // Warning: this does NOT update this.state.
   }
 
+  _keydownHandler(event){
+    //console.log(event);
+    if(event.code == "Escape") {
+      // Esc => reset, display a fresh new QR
+      this.clear();
+      return;
+    }
+
+    if(event.key == "h") {
+      // H => Help
+      this.toggleHelp();
+      return;
+    }
+
+    if(event.key == "o") {
+      // O => Open in new tab
+      this.openInNewTab();
+    }
+
+    if(event.key == "d") {
+      // D => Download
+      let hasResource = (this.state.resourceUrl || this.state.resourceData_b64) ? true : false;
+      if(!hasResource) {
+        console.log("No resource to download yet");
+        return false;
+      }
+      if ( this.isZippable() ) {
+        this.openAsDownloadZip();
+      }else{
+        this.openAsDownload();
+      }
+    }
+
+    if(event.key == "?") {
+      // ? => Show all keyboard shortcuts
+      window.alert(`Keyboard shortcuts:
+
+    Esc : Clear & start new action
+    d   : Download resource
+    o   : Open resource in a new tab
+    h   : Show help
+    ?   : Show keyboard shortcuts`);
+    }
+  };
+
   handleScanNotif(data) {
+    //console.log("Pusher maze-scan data: " + JSON.stringify(data));
     if(this.state.textMessage) {
       console.log("Ignoring scan notif because single text message has already arrived");
       return;
@@ -227,13 +307,14 @@ class App extends Component {
       return;
     }
 
-    this.crypto_algo = data.crypto_algo;
+    this.crypto_algo = data.crypto_algo || this.crypto_algo;
     if (encryption) {
       this.crypto_iv = data.crypto_iv;
       console.debug("Found encryption ", this.crypto_algo);
       let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
       let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
       console.debug("Decrypted scan notif ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
+      console.debug("Decrypted thumb " + (data.multiIndex || ""));
       data.message = "data:image/jpeg;base64," + data_b64;
       // This thumb is always implicitly JPEG.
       // TODO: consider PNG, or other?
@@ -258,7 +339,7 @@ class App extends Component {
     if (data.message
         && data.message.startsWith('data:image/')) {
       console.debug('Received thumbnail');
-      window.setTimeout( this.unblurryThumb.bind(this, 0, 1000), 100 ); // TODO what's the proper way??
+      window.setTimeout( this.unblurryThumb.bind(this, 0, 1000), 20 ); // TODO what's the proper way??
       this.setState(prevState => ({
         actionID: actionID,
         scanNotif: true,
@@ -295,9 +376,9 @@ class App extends Component {
     }
 
     if (data.message && data.message.startsWith('data:image/')) {
+      console.debug(`Received thumbnail of resource ${index}/${data.multiCount}`);
       item.thumb = data.message;
-      // TODO index arg to unblurryThumb is not what we want!!
-      window.setTimeout( this.unblurryThumb.bind(this, index, 1000), 100 ); // TODO what's the proper way??
+      window.setTimeout( this.unblurryThumb.bind(this, index, 1000), 20 ); // TODO what's the proper way??
     }
     item.resourceType = data.contentType;
   
@@ -316,6 +397,11 @@ class App extends Component {
         multiItems: items
       }
     });
+  }
+
+  handlePreCast(data) {
+    console.debug("Gentle wind of encrypted data");
+    preDownload(this, data);
   }
 
   handleCast(data) {
@@ -346,7 +432,7 @@ class App extends Component {
       console.debug("Got single message after " + (this.singleCastTime-this.qrDisplayTime) + "ms");
 
     let mobileKey = "";
-    this.crypto_algo = data.crypto_algo;
+    this.crypto_algo = data.crypto_algo || this.crypto_algo;
     if (data.crypto_iv) {
       this.crypto_iv = data.crypto_iv;
       console.debug("Got a crypto IV");
@@ -388,7 +474,7 @@ class App extends Component {
         this.setState(prevState => ({
           thumb: thumb_b64
         }));
-        window.setTimeout( this.unblurryThumb.bind(this, 0, 200), 100 ); // TODO what's the proper way??
+        window.setTimeout( this.unblurryThumb.bind(this, 0, 150), 10 ); // TODO what's the proper way??
       }
 
       // Decoding the resource will require a different key P, emitted by Mobile source.
@@ -403,26 +489,46 @@ class App extends Component {
           || data.message.includes(":8080/f/") ){
         // Fetch encrypted file
         let url = data.message;
-        let xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.responseType = "arraybuffer";
-        let app = this;
-        let tip = new Date().getTime();
-        xhr.onload = function() {
-          let top = new Date().getTime();
-          app.fetchDuration = (top -tip);
-          console.debug("Fetched encrypted resource in " + app.fetchDuration + "ms");
-          let arrayBuffer = xhr.response;
-          if (arrayBuffer) {
-            app.handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey);
-          }else{
-            console.warn("ahem, where is my arrayBuffer?");
+        if(preDownloaded[url]) {
+          if( preDownloaded[url]==="PREFETCHING" ) {
+            // issues/526
+            // The resource is already being downloaded by prefetching.
+            // Better wait for completion, instead of downloading again!
+            console.debug("joining prefetch still downloading");
+            let that = this;
+            preDownloaded[url] = function(lateArrayBuffer){ 
+              that.handleFetchedEncryptedResourceSingle(lateArrayBuffer, mobileKey);
+            };
+          } else {
+            let prefetchedResource = preDownloaded[url];
+            console.debug(`Resource already prefetched (${prefetchedResource.byteLength} bytes): ${url}`);
+            let arrayBuffer = prefetchedResource;
+            // This will kick in just after a short thumbnail unblur
+            window.setTimeout( this.handleFetchedEncryptedResourceSingle.bind(this, arrayBuffer, mobileKey), 165 ); 
           }
-        };
-        xhr.onerror = function() {
-          console.warn("Failed to fetch resource :(");
-        };
-        xhr.send();
+        } else {
+          let xhr = new XMLHttpRequest();
+          xhr.open('GET', url);
+          xhr.responseType = "arraybuffer";
+          let app = this;
+          let tip = new Date().getTime();
+          xhr.onload = function() {
+            let top = new Date().getTime();
+            app.fetchDuration = (top -tip);
+            console.debug("Fetched encrypted resource in " + app.fetchDuration + "ms");
+            let arrayBuffer = xhr.response;
+            if (arrayBuffer) {
+              app.handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey);
+            }else{
+              console.warn("ahem, where is my arrayBuffer?");
+            }
+          };
+          xhr.onerror = function() {
+            console.warn("Failed to fetch resource :(");
+          };
+          xhr.send();
+          // Stop here (see fetch handlers above)
+        }
         this.setState(prevState => ({
           actionID: actionID,
           resourceType: data.contentType,
@@ -431,7 +537,6 @@ class App extends Component {
           resourceWidth: data.contentWidth,
           resourceHeight: data.contentHeight
         }));
-        // Stop here (see fetch handlers above)
         return
       }
     }
@@ -575,7 +680,7 @@ class App extends Component {
     var index = data.multiIndex;
 
     let mobileKey = "";
-    this.crypto_algo = data.crypto_algo;
+    this.crypto_algo = data.crypto_algo || this.crypto_algo;
     if (data.crypto_iv) {
       this.crypto_iv = data.crypto_iv;
       console.debug("Got a crypto IV");
@@ -605,24 +710,44 @@ class App extends Component {
         console.debug("Decrypted mobile secret: " + mobileKey);
       }
       if(data.message.startsWith("https://storage.googleapis.com")){
-        // Fetch encrypted file
         let url = data.message;
-        let xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.responseType = "arraybuffer";
-        let app = this;
-        xhr.onload = function() {
-          let arrayBuffer = xhr.response;
-          if (arrayBuffer) {
-            app.handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey);
-          }else{
-            console.warn("ahem, where is my arrayBuffer?");
+        if( preDownloaded[url]==="PREFETCHING" ) {
+          // issues/526
+          // The resource is already being downloaded by prefetching.
+          // Better wait for completion, instead of downloading again!
+          console.debug(`joining prefetch ${index} still downloading`);
+          let that = this;
+          preDownloaded[url] = function(lateArrayBuffer){ that.handleFetchedEncryptedResourceMulti(index, lateArrayBuffer, mobileKey, null); };
+        } else {
+          // Fetch encrypted file
+          let prefetchedResource = preDownloaded[url];
+          if(prefetchedResource) {
+            console.debug(`Resource already prefetched (${prefetchedResource.byteLength} bytes): ${url}`);
+            let arrayBuffer = prefetchedResource;
+            // This will kick in just after a short thumbnail unblur
+            window.setTimeout( this.handleFetchedEncryptedResourceMulti.bind(this, index, arrayBuffer, mobileKey, null), 165 ); 
+          } else {
+            let xhr = new XMLHttpRequest();
+            xhr.open('GET', url);
+            xhr.responseType = "arraybuffer";
+            let app = this;
+            let tip = performance.now();
+            xhr.onload = function() {
+              let arrayBuffer = xhr.response;
+              if (arrayBuffer) {
+                let top = performance.now();
+                let fetchDuration = Math.round(top -tip);
+                app.handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration);
+              } else {
+                console.warn("ahem, where is my arrayBuffer?");
+              }
+            };
+            xhr.onerror = function() {
+              console.warn(`Failed to fetch resource ${index} :(`);
+            };
+            xhr.send();
           }
-        };
-        xhr.onerror = function() {
-          console.warn("Failed to fetch resource :(");
-        };
-        xhr.send();
+        }
       }
     }
 
@@ -634,8 +759,9 @@ class App extends Component {
         let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
         data.thumb = "data:image/jpeg;base64," + data_b64; // This thumb is always implicitly JPEG.
         // TODO: consider PNG, or other?
+        console.debug("  decrypted thumb " + index);
       }
-      // TODO unblurry anim 0.4s?
+      window.setTimeout( this.unblurryThumb.bind(this, index, 200), 20 ); // TODO what's the proper way??
     }
 
     this.setState(prevState => {
@@ -651,6 +777,7 @@ class App extends Component {
       items[index].resourceResized = data.resized;
       items[index].resourceWidth = data.contentWidth;
       items[index].resourceHeight = data.contentHeight;
+      items[index].thumb = data.thumb || items[index].thumb;
       return {
         actionID: actionID,
         multi: true,
@@ -666,12 +793,17 @@ class App extends Component {
   }
 
   handlePusherData(data) {
+    //console.log("Pusher data: " + JSON.stringify(data));
     switch(data.event) {
       case 'maze-scan':
         this.handleScanNotif(data);
         break;
+        case 'maze-pre-cast':
+          // console.debug('message = ' + data.message);
+          this.handlePreCast(data);
+          break;
       case 'maze-cast':
-        console.debug('message = ' + data.message);
+        // console.debug('message = ' + data.message);
         this.handleCast(data);
         break;
       case 'maze-error':
@@ -703,13 +835,18 @@ class App extends Component {
     this.teardown();
   }
 
-  handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey) {
+  handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration) {
+    //console.debug(`handleFetchedEncryptedResourceMulti(${index}, arrayBuffer ${arrayBuffer.byteLength} bytes, ${mobileKey}, ${fetchDuration})`)
     // Decrypt it
+    let tip = performance.now();
     var words = CryptoJS.lib.WordArray.create(arrayBuffer);
     let decryptedWords = DecryptWords(this.crypto_algo, words, this.crypto_iv, mobileKey);
     // Display/generate it to user
     let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
+    let top = performance.now();
     console.debug("Decrypted ciphertext " + index + " into base64 message of size " + data_b64.length);
+    let ttd = Math.round(top-tip);
+    let ttpf = this.state.preDownloadedTtpf[index];
 
     this.setState(prevState => {
       //console.debug("Setting base64 data of item " + index);
@@ -720,6 +857,9 @@ class App extends Component {
         multiItems: items
       }
     });
+
+    let ttf = fetchDuration;
+    partialAckBackend(this.chanKey, this.state.actionID, index, this.state.multiItems.length, ttpf, ttf, ttd);
 
     if(this.multiFinished(true)) {
       this.multipleAllCastTime = new Date();
@@ -741,9 +881,12 @@ class App extends Component {
 
   embiggen() {
     this.setState(prevState => ({
-      qrSize: 2 + (prevState.qrSize%6)
+      qrSize: 2 + (prevState.qrSize%6),
+      qrAnimClass: "qr-resize-" + prevState.qrSize + "-to-" + (2 + (prevState.qrSize%6))
     }));
-    localStorage.setItem('qrSize', 2 + (this.state.qrSize%6) );
+    let newSize = 2 + (this.state.qrSize%6);
+    localStorage.setItem('qrSize', newSize );
+    using(`embiggen/${newSize}`);
   }
 
   openInNewTab() {
@@ -755,9 +898,12 @@ class App extends Component {
       window.open(this.state.resourceWebpageUrl, '_blank');
       return;
     }
+    console.log("No resource to open in new tab, yet");
   }
 
   openAsDownload() {
+    using("download/single");
+
     if(this.state.resourceUrl) {
       // From https://stackoverflow.com/a/37521282
       let link = document.createElement('a');
@@ -809,12 +955,13 @@ class App extends Component {
   }
 
   openAsDownloadZip() {
-    if( !this.state.multiItems || this.state.multiItems.lenght===0 ) {
+    if( !this.state.multiItems || this.state.multiItems.length===0 ) {
       console.warn("No resources to generate a ZIP...");
       return;
     }
 
     if(this.state.multiItems[0].resourceData_b64) {
+      using(`download/zip/${this.state.multiItems.length}`);
       // E2EE: make zip from in-memory decrypted data
       MakeZipFromE2EE(this.state.multiItems, this.setZipProgress);
       return;
@@ -837,6 +984,11 @@ class App extends Component {
   }
 
   toggleHelp() {
+    if(!this.state.showHelp) {
+      // User is accessing the Help box
+      using("help");
+    }
+
     this.setState(prevState => ({
       showHelp: !prevState.showHelp
     }));
@@ -844,6 +996,11 @@ class App extends Component {
 
   clear() {
     this.initQR();
+    if(!window.navigator.onLine) {
+      // Offline? Then no QR.
+      console.log("Not online, no QR.");
+      return;
+    }
     this.setState(prevState => ({
       chanKey: this.chanKey,
       symCryptoKey: this.symCryptoKey,
@@ -860,10 +1017,13 @@ class App extends Component {
       showHelp: false,
       multi: false,
       multiItems: [],
+      preDownloadedTtpf: {},
       zipProgressRatio: null
     }));
+    this.crypto_algo = null;
     this.crypto_iv = null;
     this.fetchDuration = null;
+    this.prefetchDuration = null;
     this.decryptDuration = null;
   }
 
@@ -891,8 +1051,8 @@ class App extends Component {
   }
 
   unblurryThumb(index, durationMs) {
-    console.debug("Animating .resource-thumb [" + index + "]"); 
-    let th = document.getElementsByClassName("resource-thumb")[index];
+    console.debug(`Animating #thumb-${index} for ${durationMs}ms`); 
+    let th = document.getElementById(`thumb-${index}`);
     if(!th)
       return;
     th.style.filter = "blur(30px) contrast(110%)";
@@ -928,119 +1088,16 @@ class App extends Component {
       if( this.multipleAllCastTime )
         qrToCastDuration = this.multipleAllCastTime - this.qrDisplayTime;
     }
-    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.fetchDuration, this.decryptDuration);
+    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.prefetchDuration, this.fetchDuration, this.decryptDuration);
     this.quitPusherChannel();
   }
-}
-
-function youtubeVideoID(url) {
-  // From https://stackoverflow.com/a/10315969/871134
-  var p = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
-  return (url.match(p)) ? RegExp.$1 : false;
-}
-
-class MainZone extends Component {
-  render() {
-    if (this.props.showHelp)
-      return (
-        <div className="main">
-          <Help closeAction={this.props.closeHelpAction} />
-        </div>
-      );
-
-    var thumb = this.props.thumb;
-    var resourceType = this.props.resourceType;
-    var resourceUrl = this.props.resourceUrl;
-    var resourceData_b64 = this.props.resourceData_b64;
-    var resourceWebpageUrl = this.props.resourceWebpageUrl;
-    var textMessage = this.props.textMessage;
-    var youtubeID = this.props.youtubeID;
-    var resourceFilename = this.props.resourceFilename;
-    var resourceResized = this.props.resourceResized;
-    var resourceWidth = this.props.resourceWidth;
-    var resourceHeight = this.props.resourceHeight;
-    var multi = this.props.multi;
-    var multiItems = this.props.multiItems;
-    var spinning = this.props.spinning;
-    var openAsDownload = this.props.openAsDownload;
-    var e2ee = this.props.e2ee;
-
-    if (!thumb && !resourceUrl && !resourceData_b64 && !resourceWebpageUrl && !textMessage && !multi && !spinning)
-      return (
-        <div className="main">
-          <QrZone 
-            qrKey={this.props.qrKey} 
-            qrSize={this.props.qrSize}
-            clear={this.props.clear}
-            embiggen={this.props.embiggen}
-          />
-        </div>
-      );
-    
-    if(multi)
-      return (
-        <div className="main">
-          <ZipProgress ratio={this.props.zipProgressRatio} />
-          <InboxMulti
-            items={multiItems}
-            spinning={spinning}
-          />
-        </div>
-      );
-
-    return (
-      <div className="main">
-        <Inbox 
-          thumb={thumb}
-          resourceType={resourceType}
-          resourceUrl={resourceUrl}
-          resourceData_b64={resourceData_b64}
-          resourceWebpageUrl={resourceWebpageUrl}
-          textMessage={textMessage}
-          resourceFilename={resourceFilename}
-          resourceResized={resourceResized}
-          resourceWidth={resourceWidth}
-          resourceHeight={resourceHeight}
-          youtubeID={youtubeID}
-          spinning={spinning}
-          openAsDownload={openAsDownload}
-          e2ee={e2ee}
-        />
-      </div>
-    );
+  
+  componentDidMount() {
+    // Preload image for the Help box
+    // See https://stackoverflow.com/a/50227675/871134
+    window.setTimeout( ()=> { new Image().src = schema; }, 400);
   }
 }
 
-class Inbox extends Component {
-  render() {
-    return (
-      <div id="inbox">
-        <Item {...this.props} />
-      </div>
-    )
-  }
-}
-
-class InboxMulti extends Component {
-  render() {
-      var items = this.props.items;
-      var subBoxes = [];
-      for (var i=0; i < items.length; i++) {
-        subBoxes.push(
-          <div className="multi-item" key={i}>
-            <Item multiIndex={i}
-                {...items[i]} 
-                spinning={this.props.spinning} />
-          </div>
-        )
-      }
-
-      return (
-        <div id="inbox-multi">
-          {subBoxes}
-        </div>
-      );
-  }
-}
 
 export default App;

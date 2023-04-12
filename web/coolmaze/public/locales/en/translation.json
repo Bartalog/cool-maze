@@ -1,0 +1,68 @@
+{
+    "topbar": {
+      "tooltips": {
+        "whatIsThis": "What is this all about",
+        "openInNewTab": "Open in new tab",
+        "save": "Save",
+        "saveAsZIP": "Save all in ZIP",
+        "clear": "Clear"
+      }
+    },
+
+    "help": {
+        "qrOnlyWithCoolMaze": "This QR-code works only with the mobile app Cool Maze!",
+        "intro": "You can share a document from your mobile device to a computer or video projector",
+        "steps": {
+            "1": "Install <strong>Cool Maze</strong> on your mobile",
+            "2": "Open <strong>coolmaze.io</strong> in your computer browser",
+            "3": {
+                "text": "On mobile resource (photo, video, URL, PDF), select",
+                "shareVia": "Share via"
+            },
+            "4": "Scan the QR-code"
+        },
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "thatsIt": "That's it. No login, no passwords, no ads.",
+        "needInternet": "The two devices (source and target) must have internet connection.",
+        "privacy": {
+          "text": "<strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the ",
+          "termsTitle": "Privacy terms",
+          "inEnglish": ""
+        },
+        "timeout": "The resource is available only for a few minutes after transfer, so you may want to explicitly save it on your computer.",
+        "reportBug": "Report a bug",
+        "hotmaze": {
+            "text": "But I want to send from computer to mobile instead! Then use"
+        }
+    },
+
+    "qrZone": {
+        "clickToEnlarge": "Click to enlarge",
+        "reload": "Reload",
+        "pleaseReload": "Please reload"
+    },
+
+    "item": {
+        "beingReceivedPlaceholder": "...  Freshly sent resource  ...",
+        "wasDownscaled": {
+            "text": "This picture was downscaled",
+            "to": "to"
+        },
+        "e2ee": {
+            "text": "This transfer is",
+            "e2ee": "end-to-end encrypted",
+            "tooltip": "Data sent with Cool Maze for Android is encrypted in such a way that the Cool Maze service provider can't read it.",
+            "shortText": "E2EE"
+        }
+    },
+
+    "zip": {
+        "makingZIP": "Making ZIP …",
+        "zipFilenamePrefix": "resources-from-mobile_"
+    },
+
+    "mobileBanner": {
+        "coolMazeForAndroid": "Cool Maze for Android",
+        "coolMazeForIOS": "Cool Maze for iOS"
+    }
+  }

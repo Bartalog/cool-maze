@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { withTranslation, Trans } from 'react-i18next';
+
 import schema from './img/schema.png';
 import googlePlay from './img/get-it-on-google-play.png';
 import appStore from './img/download-on-the-app-store.png';
@@ -7,20 +9,20 @@ import FaExclamationTriangle from 'react-icons/lib/fa/exclamation-triangle';
 import FaShareAlt from 'react-icons/lib/fa/share-alt';
 import picto128 from './img/coolmaze_128.png';
 
-export default class Help extends Component {
+class Help extends Component {
     render() {
+      const { t } = this.props;
       return (
         <div id="help">
-          <div><span id="question-mark" onClick={this.props.closeAction}> </span></div>
           <div id="help-contents">
             <div id="help-close" onClick={this.props.closeAction}><FaClose /></div>
-            <p className="warning-specific-QR"><FaExclamationTriangle/> This QR-code works only with mobile app Cool Maze!</p>
+            <p className="warning-specific-QR"><FaExclamationTriangle/> {t('help.qrOnlyWithCoolMaze')}</p>
             <img src={schema} width="296" height="400" className="help-schema right" alt="Illustration: Mobile-to-Desktop action" />
-            <p>You can share a document from your mobile device to a computer or video projector</p>
+            <p>{t('help.intro')}</p>
             <span>
-              <ol class="steps">
+              <ol className="steps">
                 <li>
-                  Install <strong>Cool Maze</strong> on your mobile
+                  <Trans i18nKey="help.steps.1" />
                   <div className="stores">
                     <a href="https://play.google.com/store/apps/details?id=com.bartalog.coolmaze" target="_blank" rel="noopener noreferrer">
                       <img src={googlePlay} alt="Get it on Google Play"/>
@@ -30,21 +32,29 @@ export default class Help extends Component {
                     </a>
                   </div>
                 </li>
-                <li>Open <strong>coolmaze.io</strong> in your computer browser</li>
-                <li>On mobile resource (photo, video, URL, PDF), select <span className="rounded"><strong><FaShareAlt /></strong></span><i>Share via</i> &gt; <span className="rounded"><img src={picto128} className="mini-picto" alt="" /> <strong>Cool Maze</strong></span></li>
-                <li>Scan the QR-code</li>
+                <li><Trans i18nKey="help.steps.2" /></li>
+                <li>{t('help.steps.3.text')} <span className="rounded"><strong><FaShareAlt /></strong></span>&nbsp;<i>{t('help.steps.3.shareVia')}</i> &gt; <span className="rounded"><img src={picto128} className="mini-picto" alt="" /> <strong>Cool Maze</strong></span></li>
+                <li>{t('help.steps.4')}</li>
               </ol>
             </span>
-            <p>That's it. No login, no passwords, no ads.</p>
-            <p className="dim">The two devices (source and target) must have internet connection.</p>
-            <p className="dim"><strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the <a href="terms">Privacy terms</a>.</p>
-            <p className="dim">Resource is available only for a few minutes after transfer, so you may want to explicitly save it on your computer.</p>
+            <iframe 
+              width={560} height={315} 
+              src={t('help.demoVideoURL')}>
+            </iframe>
+            
+            <p>{t('help.thatsIt')}</p>
+            <p className="dim">{t('help.needInternet')}</p>
+            <p className="dim"><Trans i18nKey="help.privacy.text" /> <a href="terms" target="_blank">{t('help.privacy.termsTitle')}</a> {t('help.privacy.inEnglish')}.</p>
+            <p className="dim">{t('help.timeout')}</p>
+            <p className="dim"><a href="https://github.com/Bartalog/cool-maze/labels/bug" target="_blank">{t('help.reportBug')}</a>.</p>
   
             <div className="link-to-dual dim">
-              But I want to send from computer to mobile instead! Use <a href="https://hotmaze.io/">Hot Maze</a>.
+              {t('help.hotmaze.text')} <a href="https://hotmaze.io/">Hot Maze</a>.
             </div>
           </div>
         </div>
       )
     }
   }
+
+  export default withTranslation()(Help);

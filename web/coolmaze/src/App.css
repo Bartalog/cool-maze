@@ -37,12 +37,147 @@ input[readonly]
 #qr-zone {
   /*clear: both;*/
 }
+
+
+@keyframes kf-resize-1-to-2 {
+  0% {
+    width: 125px;
+    height: 125px;
+  }
+  80% {
+    width: 300px;
+    height: 300px;
+  }
+  100% {
+    width: 250px;
+    height: 250px;
+  }
+}
+
+
+@keyframes kf-resize-2-to-4 {
+  0% {
+    width: 250px;
+    height: 250px;
+  }
+  80% {
+    width: 550px;
+    height: 550px;
+  }
+  100% {
+    width: 500px;
+    height: 500px;
+  }
+}
+
+
+@keyframes kf-resize-4-to-6 {
+  0% {
+    width: 500px;
+    height: 500px;
+  }
+  80% {
+    width: 800px;
+    height: 800px;
+  }
+  100% {
+    width: 750px;
+    height: 750px;
+  }
+}
+
+
+@keyframes kf-resize-6-to-2 {
+  0% {
+    width: 750px;
+    height: 750px;
+  }
+  80% {
+    width: 220px;
+    height: 220px;
+  }
+  100% {
+    width: 250px;
+    height: 250px;
+  }
+}
+
+@keyframes kf-resize-1-to-4 {
+  0% {
+    width: 125px;
+    height: 125px;
+  }
+  80% {
+    width: 550px;
+    height: 550px;
+  }
+  100% {
+    width: 500px;
+    height: 500px;
+  }
+}
+
+@keyframes kf-resize-1-to-6 {
+  0% {
+    width: 125px;
+    height: 125px;
+  }
+  80% {
+    width: 800px;
+    height: 800px;
+  }
+  100% {
+    width: 750px;
+    height: 750px;
+  }
+}
+
 #qrcode {
   border: 0.5rem solid white;
   border-radius: 1rem;
   background-color: white;
   text-align: center;
 }
+
+#qrcode.qr-resize-1-to-2 > canvas {
+  animation: kf-resize-1-to-2 0.2s ease-in;
+}
+#qrcode.qr-resize-2-to-4 > canvas {
+  animation: kf-resize-2-to-4 0.2s ease-in;
+}
+#qrcode.qr-resize-4-to-6 > canvas {
+  animation: kf-resize-4-to-6 0.2s ease-in;
+}
+#qrcode.qr-resize-6-to-2 > canvas {
+  animation: kf-resize-6-to-2 0.2s ease-in;
+}
+#qrcode.qr-resize-1-to-4 > canvas {
+  animation: kf-resize-1-to-4 0.2s ease-in;
+}
+#qrcode.qr-resize-1-to-6 > canvas {
+  animation: kf-resize-1-to-6 0.2s ease-in;
+}
+
+#qrcode:hover {
+  animation: shake 0.2s;
+  animation-iteration-count: 2;
+}
+@keyframes shake {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-1deg) scale(0.96);
+  }
+  75% {
+    transform: rotate(2deg) scale(1.04);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+
 #qrcode img {
   /*float: left;*/
   margin: auto;
@@ -105,15 +240,9 @@ input[readonly]
   background-color: white;
   border: 8px solid black;
   padding: 8px;
+  padding-top: 32px;
   text-align: left;
   border-radius: 15px;
-}
-#question-mark {
-  font-weight: bolder;
-  font-size: 2em;
-  cursor: pointer;
-  padding: 10px 8px 8px 10px;
-  margin: -2px 0 0 -2px;
 }
 #help-contents {
   width: 100%;
@@ -134,7 +263,7 @@ input[readonly]
 }
 #help-close {
   float: right;
-  margin-top: -2em;
+  margin-top: -1.2em;
   font-weight: bolder;
   font-size: 2em;
   cursor: pointer;
@@ -166,12 +295,14 @@ input[readonly]
   border-radius: 6px;
 }
 #help .warning-specific-QR {
-  margin-left: 50%;
+  margin: 0;
+  margin-left: 30%;
   color: #D77;
   font-weight: bold;
 }
 .link-to-dual {
   display: inline-block;
+  width: 100%;
   margin-top: 50px;
   border-top: dotted #777;
   padding-top: 2px;
@@ -246,6 +377,7 @@ table.topbar {
   height: 48px;
   background-color: transparent;
   border: none;
+  cursor: pointer;
 }
 
 .topbar button:hover {
@@ -375,14 +507,21 @@ img.help-schema {
     ??
   */
   object-fit: contain;
+  /* object-fit: cover; */
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
 }
 
 .fit-up-height {
-  min-height: 100%;
+  display: block;
+  height: 100%;
   width: auto;
 }
 
 .fit-up-width {
+  display: block;
   min-width: 100%;
   height: auto;
 }
@@ -425,6 +564,7 @@ img.help-schema {
   border: 8px solid black;
   border-radius: 15px;
   padding: 10px;
+  background-color: white;
 }
 
 .file-item button {
@@ -718,6 +858,14 @@ progress.complete {
   #help-contents .dim {
     color: #AAC;
   }
+
+  #help-contents .dim a:link{
+    color: #B99;
+  }
+  #help-contents .dim a:visited{
+    color: #A88;
+  }
+
   #help .warning-specific-QR {
     color: #F70;
   }

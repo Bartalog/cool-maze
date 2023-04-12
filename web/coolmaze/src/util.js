@@ -1,5 +1,5 @@
 
-export default function base64toBlob(base64Data, contentType) {
+export const base64toBlob = function(base64Data, contentType) {
     // From https://stackoverflow.com/a/20151856/871134
     contentType = contentType || '';
     var sliceSize = 1024;
@@ -20,3 +20,36 @@ export default function base64toBlob(base64Data, contentType) {
     }
     return new Blob(byteArrays, { type: contentType });
 }
+
+export const youtubeVideoID = function(url) {
+    // From https://stackoverflow.com/a/10315969/871134
+    var p = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
+    return (url.match(p)) ? RegExp.$1 : false;
+}
+
+
+export const isImageType = function(contentType) {
+    if(!contentType)
+      return false;
+    if(contentType.startsWith('image/'))
+      return true;
+    return false;
+}
+  
+export const isVideoType = function(contentType) {
+      if(!contentType)
+        return false;
+      if(contentType.startsWith('video/'))
+        return true;
+      if(contentType === "application/ogg")
+        return true; // Note that it may be an audio file as well
+      return false;
+}
+    
+export const isAudioType = function(contentType) {
+    if(!contentType)
+      return false;
+    if(contentType.startsWith('audio/'))
+      return true;
+    return false;
+  }
