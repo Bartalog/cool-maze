@@ -5,8 +5,6 @@
 
 This repo contains (open source):
 - Web client for [Cool Maze](https://coolmaze.io/)
-- WebExtension client (experimental)
-- Desktop client (experimental)
 
 This repo does not contain (closed source):
 - Cool Maze Backend services
