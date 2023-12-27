@@ -21,7 +21,7 @@
     "mime-types": "^2.1.28",
     "pako": "^1.0.11",
     "prop-types": "^15.7.2",
-    "pusher": "^2.2.2",
+    "pusher": "^5.2.0",
     "pusher-js": "^4.4.0",
     "qrcode.react": "^0.7.2",
     "qrcodejs": "^1.0.0",
