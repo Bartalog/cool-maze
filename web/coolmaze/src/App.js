@@ -1,5 +1,5 @@
 import React, { Component, Suspense } from 'react';
-import Pusher from 'pusher-js';
+import {InitPushComponent, ListenToChannel, PusherTechName} from './serverpush.js';
 import CryptoJS from 'crypto-js';
 
 import {genRandomKey} from './qrkey.js';
@@ -18,8 +18,10 @@ import './App.css';
 
 require('string.prototype.startswith');
 
-let coolMazePusherAppKey = 'e36002cfca53e4619c15';
 const CM_CLIENT_PREFIX = "a/";
+
+// No-op function
+const noop = () => {};
 
 class App extends Component {
   constructor(props) {
@@ -28,7 +30,8 @@ class App extends Component {
     this.toggleHelp = this.toggleHelp.bind(this);
     this.handleScanNotif = this.handleScanNotif.bind(this);
     this.handleCast = this.handleCast.bind(this);
-    this.handlePusherData = this.handlePusherData.bind(this);
+    this.handlePushData = this.handlePushData.bind(this);
+    this.pushStopListening = noop;
     this.openInNewTab = this.openInNewTab.bind(this);
     this.openAsDownload = this.openAsDownload.bind(this);
     this.openAsDownloadZip = this.openAsDownloadZip.bind(this);
@@ -39,12 +42,16 @@ class App extends Component {
 
     this.initQR();
 
+    let qrSize = parseInt(localStorage.getItem("qrSize"));
+    if( ![2, 4, 6].includes(qrSize) )
+      qrSize = 2; // default size
+
     this.state = {
       chanKey: this.chanKey,
       symCryptoKey: this.symCryptoKey,
       qrKey: this.qrKey,
-      qrSize: localStorage.getItem("qrSize") || 2,
-      qrAnimClass: "qr-resize-1-to-" + (localStorage.getItem("qrSize") || 2),
+      qrSize: qrSize,
+      qrAnimClass: "qr-resize-1-to-" + qrSize,
       actionID: null,
       scanNotif: false,
       thumb: null,
@@ -74,14 +81,15 @@ class App extends Component {
 
   render() {
     var spinning = this.state.scanNotif;
-    if(this.state.multi)
-      spinning = !this.multiFinished(false); // ??????? TODO determine encryption
+    var e2ee = this.crypto_iv ? true : false;
+    if(this.state.multi) {
+      spinning = !this.multiFinished(e2ee);
+    }
     var errorBox;
     if(this.state.errorMessage) {
       spinning = false;
       errorBox = <div className="error-box">{this.state.errorMessage}</div>;
     }
-    var e2ee = this.crypto_iv ? true : false;
 
     return (
       <Suspense fallback="loading">
@@ -140,12 +148,11 @@ class App extends Component {
   initQR() {
     // Closes any preexisting connection,
     // then chooses a fresh random key,
-    // then connects to pusher channel.
+    // then connects to push channel.
 
     window.clearTimeout(this.qrtimeout);
 
-    if(this.pusher)
-      this.pusher.disconnect();
+    this.pushStopListening();
 
     this.symCryptoKey = "";
     this.qrKey = "";
@@ -164,38 +171,15 @@ class App extends Component {
 
   initQRwith(chanKey) {
     this.chanKey = chanKey;
-    this.pusher = new Pusher(coolMazePusherAppKey, {
-      encrypted: true
-    });
+    InitPushComponent();
     console.debug("Listening to [" + this.chanKey + "]");
-    this.channel = this.pusher.subscribe(this.chanKey);
     this.qrDisplayTime = new Date();
     this.singleNotifTime = null;
     this.singleCastTime = null;
     this.multipleAllCastTime = null;
 
-    var cb = this.handlePusherData;
-    // TODO refactor this into 1 generic bind to cb?
-    this.channel.bind('maze-scan', function(data) {
-      console.debug('maze-scan');
-      data.event = 'maze-scan';
-      cb(data);
-    });
-    this.channel.bind('maze-pre-cast', function(data) {
-      console.debug('maze-pre-cast');
-      data.event = 'maze-pre-cast';
-      cb(data);
-    });
-    this.channel.bind('maze-cast', function(data) {
-      console.debug('maze-cast');
-      data.event = 'maze-cast';
-      cb(data);
-    });
-    this.channel.bind('maze-error', function(data) {
-      console.debug('maze-error');
-      data.event = 'maze-error';
-      cb(data);
-    });
+    this.pushStopListening = ListenToChannel(this.chanKey, this.handlePushData);
+
     wakeUpBackend(this.chanKey);
 
     var that = this;
@@ -222,12 +206,14 @@ class App extends Component {
     // Suddenly losing internet
     window.addEventListener("offline", function(event) {
       console.log("Lost connectivity :(");
-      that.expireQR();
+      if(!that.hasResource())
+        that.expireQR();
     });
 
     // Suddenly recovering internet
     window.addEventListener("online", function(event) {
-      if( that.state.qrKey==="reload" ) {
+      console.debug( "Connectivity is back :)" );
+      if( that.state.qrKey==="reload" && !that.hasResource() ) {
         console.debug( "Welcome back online, new QR" );
         that.clear();
       }
@@ -238,11 +224,23 @@ class App extends Component {
     // Warning: this does NOT update this.state.
   }
 
+  hasResource() {
+    return (this.state.resourceUrl || this.state.resourceData_b64) ? true : false;
+  }
+
   _keydownHandler(event){
     //console.log(event);
     if(event.code == "Escape") {
-      // Esc => reset, display a fresh new QR
-      this.clear();
+      // Esc can mean "quit" for 2 different things:
+      // If a lightbox is displayed fullscreen, just quit the lightbox.
+      // Otherwise, reset the app and display a fresh new QR.
+      let lightbox = document.querySelector("img.lightbox");
+      if( lightbox ) {
+        lightbox.classList.remove('lightbox');
+      }else {
+        // Fresh new QR
+        this.clear();
+      }
       return;
     }
 
@@ -257,10 +255,60 @@ class App extends Component {
       this.openInNewTab();
     }
 
+
+    if(event.key == "f") {
+      // F => Display received picture in Fullscreen
+      let existingLightbox = document.querySelector("img.lightbox");
+      if( existingLightbox ) {
+        // When an element is already displayed in a fullscreen lightbox, just close it
+        existingLightbox.classList.remove('lightbox');
+        return;
+      }
+      let firstItem = document.getElementById("item-0");
+      if(!firstItem) {
+        console.log("No picture to show fullscreen");
+        return;
+      }
+      let fullscreen = firstItem.classList.toggle("lightbox");
+      if(fullscreen) {
+        let suffix = this.state.multi ? "/0" : "";
+        using("item/lightbox" + suffix);
+      }
+    }
+
+    if(event.key == "ArrowLeft") {
+      let existingLightbox = document.querySelector("img.lightbox");
+      if( !existingLightbox )
+        return;
+      let id = existingLightbox.id; // "item-3"
+      let i = parseInt(id.slice(5), 10); // -> 3
+      if( i <= 0 )
+        return; // Do not wrap around
+      let j = i-1;
+      let newLightbox = document.getElementById(`item-${j}`);
+      existingLightbox.classList.remove('lightbox');
+      newLightbox.classList.add('lightbox');
+      using(`lightbox/previous/${j}`);
+    }
+
+    if(event.key == "ArrowRight") {
+      let existingLightbox = document.querySelector("img.lightbox");
+      if( !existingLightbox )
+        return;
+      let id = existingLightbox.id; // "item-3"
+      let i = parseInt(id.slice(5), 10); // -> 3
+      let j = i+1;
+      let newLightbox = document.getElementById(`item-${j}`);
+      if( !newLightbox )
+        return; // Do not wrap around
+      existingLightbox.classList.remove('lightbox');
+      newLightbox.classList.add('lightbox');
+      using(`lightbox/next/${j}`);
+    }
+
     if(event.key == "d") {
       // D => Download
-      let hasResource = (this.state.resourceUrl || this.state.resourceData_b64) ? true : false;
-      if(!hasResource) {
+      if(!this.hasResource()) {
         console.log("No resource to download yet");
         return false;
       }
@@ -271,39 +319,46 @@ class App extends Component {
       }
     }
 
+    if(event.key == "+")
+      this.embiggenOnly();
+
+    if(event.key == "-")
+      this.ensmallenOnly();
+
     if(event.key == "?") {
       // ? => Show all keyboard shortcuts
       window.alert(`Keyboard shortcuts:
 
     Esc : Clear & start new action
-    d   : Download resource
-    o   : Open resource in a new tab
-    h   : Show help
-    ?   : Show keyboard shortcuts`);
+    f : Fullscreen picture
+    d : Download resource
+    o : Open resource in a new tab
+    h : Show help
+    + : Bigger QR code
+    ? : Show keyboard shortcuts`);
     }
   };
 
   handleScanNotif(data) {
-    //console.log("Pusher maze-scan data: " + JSON.stringify(data));
     if(this.state.textMessage) {
-      console.log("Ignoring scan notif because single text message has already arrived");
+      console.debug("Ignoring scan notif because single text message has already arrived");
       return;
     }
 
     if(this.state.resourceData_b64) {
-      console.log("Ignoring scan notif because single encrypted resource has already arrived");
+      console.debug("Ignoring scan notif because single encrypted resource has already arrived");
       return;
     }
 
     if(this.state.resourceUrl) {
-      //console.log("Ignoring scan notif because single resource URL has already arrived");
+      //console.debug("Ignoring scan notif because single resource URL has already arrived");
       //return;
       // Actually a thumbnail could be useful, if the encrypted picture is not fully downloaded yet...
     }
 
     let encryption = data.crypto_iv ? true : false;
     if(this.state.multi && this.multiFinished(encryption)) {
-      console.log("Ignoring scan notif " + data.multiIndex + " because all the resources have already arrived");
+      console.debug("Ignoring scan notif " + data.multiIndex + " because all the resources have already arrived");
       return;
     }
 
@@ -425,7 +480,7 @@ class App extends Component {
     // #380
     // A "single message cast" is sufficient to close channel right now.
     // We're not expecting any separate thumb or anything else after this.
-    this.quitPusherChannel();
+    this.pushStopListening();
 
     this.singleCastTime = new Date();
     if(this.qrDisplayTime)
@@ -663,12 +718,6 @@ class App extends Component {
       scanNotif: false
     }));
     this.teardown();
-
-    // TODO look at content-type advertised in pusher message
-    // TODO handle some other resource types:
-    // - video
-    // - generic file
-    // - multiple resources at once
   }
 
   handleCastMulti(data) {
@@ -681,7 +730,8 @@ class App extends Component {
 
     let mobileKey = "";
     this.crypto_algo = data.crypto_algo || this.crypto_algo;
-    if (data.crypto_iv) {
+    let encryption = data.crypto_iv ? true : false;
+    if (encryption) {
       this.crypto_iv = data.crypto_iv;
       console.debug("Got a crypto IV");
       // See handleCastSingle for definition of K, P, M, IV
@@ -699,7 +749,7 @@ class App extends Component {
           data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
           console.debug("  Decrypted filename: " + data.filename);
         } catch(error) {
-          console.log("  Could not decrypt filename \"" + data.filename + "\" — maybe it wasn't encrypted?");
+          console.warn("  Could not decrypt filename \"" + data.filename + "\" — maybe it wasn't encrypted?");
         }
       }
 
@@ -754,7 +804,7 @@ class App extends Component {
     if(data.thumb) {
       console.debug("  cast " + index + " has an attached thumb");
       // Display thumb smoothly until full resource is fetched.
-      if (data.crypto_iv) {
+      if (encryption) {
         let decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
         let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
         data.thumb = "data:image/jpeg;base64," + data_b64; // This thumb is always implicitly JPEG.
@@ -785,15 +835,19 @@ class App extends Component {
       }
     });
 
-    let encryption = data.crypto_iv ? true : false;
+    // This is never supposed to be called, because we don't do clear text multiple sharing.
+    // So multiFinished is returning false (at least one resourceData_b64 is missing at this point).
+    // TODO either unlock multiple clear text sharing from iOS, or remove this dead code.
+    // Also: the "setState(..." callback above may or may not have already executed.
     if(this.multiFinished(encryption)) {
       this.multipleAllCastTime = new Date();
       this.teardown();
     }
+
   }
 
-  handlePusherData(data) {
-    //console.log("Pusher data: " + JSON.stringify(data));
+  handlePushData(data) {
+    //console.log("Push data: " + JSON.stringify(data));
     switch(data.event) {
       case 'maze-scan':
         this.handleScanNotif(data);
@@ -813,7 +867,7 @@ class App extends Component {
         }));
         break;
       default:
-        console.warn('Weird pusher event...');
+        console.warn('Unexpected push event type', data.event);
         console.warn(data);
     }
   }
@@ -848,6 +902,12 @@ class App extends Component {
     let ttd = Math.round(top-tip);
     let ttpf = this.state.preDownloadedTtpf[index];
 
+    // let isMultiFinished = this.multiFinished(true);
+    // No, at this point the state has not been updated yet (see below) and we're can't rely
+    // on its future state after the callback may or may not have been called async.
+    // Instead, let's compute if "with this extra item, we're reaching the count"
+    let isMultiFinished = ((this.multiFinishedCount(true) + 1) == this.state.multiItems.length);
+
     this.setState(prevState => {
       //console.debug("Setting base64 data of item " + index);
       let items = prevState.multiItems;
@@ -861,17 +921,15 @@ class App extends Component {
     let ttf = fetchDuration;
     partialAckBackend(this.chanKey, this.state.actionID, index, this.state.multiItems.length, ttpf, ttf, ttd);
 
-    if(this.multiFinished(true)) {
+    if(isMultiFinished) {
       this.multipleAllCastTime = new Date();
       this.teardown();
     }
   }
 
   expireQR() {
-    if( this.pusher.connection.state !== 'connected' )
-      return;
     console.debug("Closing idle channel, hiding QR-code");
-    this.pusher.disconnect();
+    this.pushStopListening();
     this.setState(prevState => ({
       // magic value :(
       qrKey: "reload",
@@ -880,13 +938,33 @@ class App extends Component {
   }
 
   embiggen() {
-    this.setState(prevState => ({
-      qrSize: 2 + (prevState.qrSize%6),
-      qrAnimClass: "qr-resize-" + prevState.qrSize + "-to-" + (2 + (prevState.qrSize%6))
-    }));
     let newSize = 2 + (this.state.qrSize%6);
+    this.setState(prevState => ({
+      qrSize: newSize,
+      qrAnimClass: "qr-resize-" + prevState.qrSize + "-to-" + newSize,
+    }));
     localStorage.setItem('qrSize', newSize );
     using(`embiggen/${newSize}`);
+  }
+
+  embiggenOnly() {
+    // Like embiggen(), but stops at max size (do not wrap)
+    if(this.state.qrSize >= 6)
+      return;
+    this.embiggen();
+  }
+
+  ensmallenOnly() {
+    // Reduce QR code size, and stop at min size (do not wrap)
+    if(this.state.qrSize <= 2)
+      return;
+    let newSize = this.state.qrSize - 2;
+    this.setState(prevState => ({
+      qrSize: newSize,
+      qrAnimClass: "qr-resize-" + prevState.qrSize + "-to-" + newSize,
+    }));
+    localStorage.setItem('qrSize', newSize );
+    using(`ensmallen/${newSize}`);
   }
 
   openInNewTab() {
@@ -1027,8 +1105,8 @@ class App extends Component {
     this.decryptDuration = null;
   }
 
-  multiFinished(encryption) {
-    var n = this.state.multiItems.length;
+  multiFinishedCount(encryption) {
+    let n = this.state.multiItems.length;
     var m = 0;
 
     if(encryption) {
@@ -1037,17 +1115,22 @@ class App extends Component {
       for(let i=0; i<n; i++)
         if(this.state.multiItems[i].resourceData_b64)
           m++;
-      let allFinished = (m===n);
-      return allFinished;
+      return m;
     }else{
       // We are "finished" as soon as all resource URLs are known
       // TODO: and downloaded?
       for(let i=0; i<n; i++)
         if(this.state.multiItems[i].resourceUrl)
           m++;
-      let allFinished = (m===n);
-      return allFinished;
+      return m;
     }
+  }
+
+  multiFinished(encryption) {
+    let n = this.state.multiItems.length;
+    let m = this.multiFinishedCount(encryption);
+    let allFinished = (m===n);
+    return allFinished;
   }
 
   unblurryThumb(index, durationMs) {
@@ -1067,18 +1150,8 @@ class App extends Component {
     // TODO what's the proper way without window.setTimeout??
   }
 
-  quitPusherChannel() {
-    if( !this.pusher  )
-      return;
-    if( this.pusher.connection.state !== "connected" ) {
-      console.debug("Not closing channel because Pusher state: " + this.pusher.connection.state);
-      return;
-    }
-    console.debug("Closing channel");
-    this.pusher.disconnect();
-  }
-
   teardown() {
+    console.debug("Tearing down");
     var qrToNotifDuration, qrToCastDuration;
     if ( this.qrDisplayTime ) {
       if( this.singleNotifTime )
@@ -1089,7 +1162,7 @@ class App extends Component {
         qrToCastDuration = this.multipleAllCastTime - this.qrDisplayTime;
     }
     ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.prefetchDuration, this.fetchDuration, this.decryptDuration);
-    this.quitPusherChannel();
+    this.pushStopListening();
   }
   
   componentDidMount() {

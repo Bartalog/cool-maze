@@ -27,7 +27,7 @@ class InboxMulti extends Component {
   
         return [
           e2eeLock,
-          <div id="inbox-multi">
+          <div id="inbox-multi" key="inbox-multi">
             {subBoxes}
           </div>
         ];

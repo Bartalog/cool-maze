@@ -5,7 +5,9 @@ import Linkify from 'react-linkify';
 import ResourceIcon from './resourceicon.js';
 import MdAspectRatio from 'react-icons/lib/md/aspect-ratio';
 import MdLockOutline from 'react-icons/lib/md/lock-outline';
+import MdContentCopy from 'react-icons/lib/md/content-copy';
 import {base64toBlob, isImageType, isAudioType, isVideoType} from './util.js';
+import {using} from './backend.js';
 
 require('string.prototype.startswith');
 
@@ -45,8 +47,9 @@ class Item extends Component {
     render_Data_b64() {
       const { t } = this.props;
 
+      let count = this.props.multiCount || 1;
       let e2eeLock;
-      if(this.props.e2ee && (this.props.multiCount || 1) <=1)
+      if(this.props.e2ee && count<=1)
           e2eeLock = <div className="e2ee-message item-extra-info" key="e2ee-message"><MdLockOutline/>{t('item.e2ee.text')} <span title={t('item.e2ee.tooltip')} className="hint">{t('item.e2ee.e2ee')}</span>.</div>;
 
       let index = this.props.multiIndex || 0;
@@ -64,6 +67,13 @@ class Item extends Component {
         document.body.appendChild(dummy);
         dummy.click();
         document.body.removeChild(dummy);
+      }
+      function toggleItemFullscreen( e ) {
+        let fullscreen = e.target.classList.toggle("lightbox");
+        if(fullscreen) {
+          let suffix = count <= 1 ? "" : `/${index}`;
+          using("item/lightbox" + suffix);
+        }
       }
       console.debug("Item " + index + " type " + type);
 
@@ -83,8 +93,9 @@ class Item extends Component {
             src={bigdataURI} 
             alt={filename || t('item.beingReceivedPlaceholder')}
             className="resource-picture fit-down" 
-            onClick={dl}
-            key="image" />,
+            onClick={toggleItemFullscreen}
+            key="image"
+            id={`item-${index}`} />,
             downscaledWarning,
             e2eeLock];
       }
@@ -93,7 +104,7 @@ class Item extends Component {
         console.debug("  Item " + index + " displayed as video");
         let bigdataURI = "data:video/mp4;base64," + data; // TODO any video, not just MP4!
         return [
-          <video src={bigdataURI} controls autoPlay className="resource-video fit-down" key="video">
+          <video src={bigdataURI} controls autoPlay className="resource-video fit-down" key="video" id={`item-${index}`}>
             Video <a href={this.props.resourceUrl} target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "here"}</a>
           </video>,
           e2eeLock
@@ -102,7 +113,7 @@ class Item extends Component {
 
       console.debug("  Item " + index + " displayed as downloadable file");
       return [
-        <div id="inbox-file" key="file">
+        <div className="inbox-file" key="file" id={`item-${index}`}>
           <div className="file-item">
             <button onClick={dl} >
               <ResourceIcon resourceType={type} resourceFilename={filename} /><br/>
@@ -115,11 +126,12 @@ class Item extends Component {
     }
 
     render_unencrypted_resource() {
-      const { t } = this.props;
+        const { t } = this.props;
+        let index = this.props.multiIndex || 0;
 
         if (isVideoType(this.props.resourceType)) {
           return (
-            <video src={this.props.resourceUrl} controls autoPlay className="resource-video fit-down">
+            <video src={this.props.resourceUrl} controls autoPlay className="resource-video fit-down" id={`item-${index}`}>
               Video <a href={this.props.resourceUrl} target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "here"}</a>
             </video>
           );
@@ -132,7 +144,7 @@ class Item extends Component {
               {this.props.resourceFilename}
             </div>
             <div>
-              <audio src={this.props.resourceUrl} controls autoPlay>
+              <audio src={this.props.resourceUrl} controls autoPlay id={`item-${index}`}>
                 Audio file <a href={this.props.resourceUrl} target="_blank" rel="noopener noreferrer">here</a>
               </audio>
             </div>
@@ -144,7 +156,7 @@ class Item extends Component {
             && this.props.resourceType 
             && !isImageType(this.props.resourceType) ){
           return (
-            <div id="inbox-file">
+            <div className="inbox-file" id={`item-${index}`}>
               <div className="file-item">
                 <a href={this.props.resourceUrl}
                   target="_blank" rel="noopener noreferrer"><ResourceIcon resourceType={this.props.resourceType} resourceFilename={this.props.resourceFilename} /></a> <br/>
@@ -160,6 +172,12 @@ class Item extends Component {
         var filename = this.props.resourceFilename;
         var open = function(){
           window.open(bigPictureUrl, '_blank');
+        }
+        function toggleItemFullscreen( e ) {
+          let fullscreen = e.target.classList.toggle("lightbox");
+          if(fullscreen) {
+            using("item/lightbox");
+          }
         }
 
         let downscaledWarning;
@@ -177,8 +195,9 @@ class Item extends Component {
                 alt={filename || t('item.beingReceivedPlaceholder')}
                 tooltip={filename}
                 className="resource-picture fit-down" 
-                onClick={open}
-                key="image" />,
+                onClick={toggleItemFullscreen}
+                key="image" 
+                id={`item-${index}`} />,
               downscaledWarning
             ];
         else if (thumbUrl)
@@ -186,7 +205,8 @@ class Item extends Component {
               <img 
                 src={thumbUrl} 
                 alt='Downloading...' 
-                className="resource-thumb fit-up-width" />
+                className="resource-thumb fit-up-width" 
+                id={`thumb-${index}`} />
             );
         else
             return t('item.beingReceivedPlaceholder');
@@ -204,14 +224,16 @@ class Item extends Component {
     }
 
     render_text() {
+      let index = this.props.multiIndex || 0;
       return (
-        <div id="inbox-text">
+        <div className="inbox-text" id={`item-${index}`}>
           <h3>Received text message</h3>
-          <h5 className="selected-color-invert"
-              onMouseEnter={selectReceivedText}
-              onClick={selectReceivedText}>
-            Select <span className="big-caret">ꕯ</span>
-          </h5>
+          <div>
+            <button id="copy-to-clipboard" onClick={copyTextToClipboard}>
+              <MdContentCopy />
+              <span className="checked"></span>
+            </button>
+          </div>
           <Linkify>
             <div id="text-message">
               {this.props.textMessage}
@@ -222,8 +244,9 @@ class Item extends Component {
     }
 
     render_external_webpage_url() {
+      let index = this.props.multiIndex || 0;
       return (
-        <div id="inbox-external-url">
+        <div className="inbox-external-url" id={`item-${index}`}>
           <h3>Received URL</h3>
           <div className="external-webpage">
             <a href={this.props.resourceWebpageUrl} target="_blank" rel="noopener noreferrer">{this.props.resourceWebpageUrl}</a>
@@ -241,12 +264,13 @@ class Item extends Component {
     }
 
     render_youtuber_player() {
+      let index = this.props.multiIndex || 0;
       var embedURL = "https://www.youtube.com/embed/" + this.props.youtubeID; 
       embedURL += "?autoplay=1";
       let linkToYT = "https://www.youtube.com/watch?v=" + this.props.youtubeID;
       return (
-        <div class="youtube-item">
-          <a href={linkToYT} target="_blank" rel="noopener noreferrer" class="external-link">Link to YouTube video</a>
+        <div className="youtube-item" id={`item-${index}`}>
+          <a href={linkToYT} target="_blank" rel="noopener noreferrer" className="external-link">Link to YouTube video</a>
           <iframe id="ytplayer" title="YouTube player" type="text/html" src={embedURL} width="100%" height="600" allowFullScreen />
         </div>
       )
@@ -258,6 +282,21 @@ function selectReceivedText(){
   window.getSelection().selectAllChildren(
     document.getElementById("text-message")
   );
+}
+
+function copyTextToClipboard() {
+  let text = document.getElementById("text-message").innerText;
+  navigator.clipboard.writeText(text).then(function() {
+      console.log('Copied text to the clipboard:');
+      console.log(text);
+      let check = document.querySelector('#copy-to-clipboard .checked');
+      // check.style.visibility = 'visible';
+      check.innerHTML += "✓";
+    }, function(err) {
+      console.error(err);
+      alert('Could not copy text to the clipboard :(');
+    });
+
 }
 
 export default withTranslation()(Item);

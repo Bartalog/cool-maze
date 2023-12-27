@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { withTranslation, Trans } from 'react-i18next';
+import {using} from './backend.js';
 
 // The JSZip dependency is super-expensive, though it is used only in niche cases.
 import JSZip from 'jszip';
@@ -99,6 +100,7 @@ function makeZipFromE2EE(items, setZipProgress){
     if(!window.confirm("Generate ZIP for " + n + " resources?"))
       return;
     console.debug("Generating partial ZIP: " + n + " files out of " + original_n);
+    using(`download/zip/partial/${n}/${original_n}`);
   }
 
   setZipProgress(0.10);
@@ -125,7 +127,10 @@ function makeZipFromE2EE(items, setZipProgress){
       let now = new Date().toISOString().replace(/T/, "_").replace(/[-:Z]/g, "").slice(0,15); // e.g. "20190909_130830"
       let zipFilename = "resources-from-mobile_" + now + ".zip";
       FileSaver.saveAs(content, zipFilename);
-  });
+      using(`download/zip/${n}/success`);
+    }).catch( err => {
+      using(`download/zip/${n}/failed`);
+    });
 }
 
 function extractFilename(contentDisposition) {

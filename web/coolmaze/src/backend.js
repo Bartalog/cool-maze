@@ -1,5 +1,6 @@
 import {genRandomTransientClientName} from './qrkey.js';
 import Cookies from 'js-cookie';
+import {PusherTechName} from './serverpush.js';
 
 let mainDomain = "https://coolmaze.io";
 let backend = "https://cool-maze.uc.r.appspot.com";
@@ -7,6 +8,7 @@ let backend = "https://cool-maze.uc.r.appspot.com";
 // let backend = "http://localhost:8080";
 // let backend = "http://192.168.1.16:8080";
 // let backend = "https://dev-dot-cool-maze.uc.r.appspot.com";
+// let backend = "https://push-via-firestore-dot-cool-maze.appspot.com";
 
 // Google App Engine sometimes causes "cold start" problems
 // (a few hundred ms delay for a Go backend), which we want
@@ -30,6 +32,7 @@ function wakeUp(chanID){
     var wakeup = new XMLHttpRequest();
     var wuEndpoint = mainDomain + "/wakeup";
     var wuParam = "qrKey=" + chanID;
+    wuParam += `&push=${PusherTechName}`;
     //wuParam += `&ctn=${transient}`; // For local dev only, as cookies are difficult between localhost:3000 and localhost:8080
     wakeup.open("POST", wuEndpoint, true);
     wakeup.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -69,6 +72,7 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDurat
         // dark mode!
         params += "&dark=1";
     }
+    params += `&push=${PusherTechName}`;
     //params += `&ctn=${transient}`; // For local dev only, as cookies are difficult between localhost:3000 and localhost:8080
     ack.open("POST", endpoint, true);
     ack.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -86,12 +90,12 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDurat
 function partialAck(qrKey, actionID, multiIndex, multiCount, prefetchDuration, fetchDuration, decryptDuration) {
     var ack = new XMLHttpRequest();
     var endpoint = backend + "/partial-ack";
-    // TODO #531 ttf
     var params = `qrKey=${qrKey}`
                     + `&actionid=${actionID}`
                     + `&multiIndex=${multiIndex}`
                     + `&multiCount=${multiCount}`
-                    + `&ttd=${decryptDuration}`;
+                    + `&ttd=${decryptDuration}`
+                    + `&push=${PusherTechName}`;
     if(prefetchDuration)
         params += `&ttpf=${prefetchDuration}`;
     if(fetchDuration)
