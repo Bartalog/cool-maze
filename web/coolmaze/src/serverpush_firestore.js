@@ -29,7 +29,7 @@ function firestoreListenToCollection(channelName, handler) {
             console.debug("Received Firestore data:");
             // console.log("Document", change.doc.id);
             let data = change.doc.data();
-            console.debug(data);
+            console.debug(data); // warning: this is logging full thumbnail data
             // Run the callback with the message payload!
             handler(data);
           }

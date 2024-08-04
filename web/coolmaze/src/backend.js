@@ -42,7 +42,7 @@ function wakeUp(chanID){
 // Tell the server that the resource was sucessfully received by client.
 // Same acknowledgement for Single and Multi.
 // We don't need to wait for the response.
-function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDuration, fetchDuration, decryptDuration) {
+function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDuration, fetchDuration, decryptDuration, singleFilenameIsUnknown) {
 
     // issues/514
     // Generate and register a transient client name, to get a chance to receive
@@ -73,6 +73,11 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDurat
         params += "&dark=1";
     }
     params += `&push=${PusherTechName}`;
+    if(singleFilenameIsUnknown) {
+        // If the original filename could not be determined, inform the backend
+        // (even if the root cause of the problem is in the mobile app)
+        params += `&filenameUnknown=1`;
+    }
     //params += `&ctn=${transient}`; // For local dev only, as cookies are difficult between localhost:3000 and localhost:8080
     ack.open("POST", endpoint, true);
     ack.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -87,7 +92,7 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDurat
 // Tell the server that 1 resource was sucessfully received by client,
 // in a multi share action.
 // We don't need to wait for the response.
-function partialAck(qrKey, actionID, multiIndex, multiCount, prefetchDuration, fetchDuration, decryptDuration) {
+function partialAck(qrKey, actionID, multiIndex, multiCount, prefetchDuration, fetchDuration, decryptDuration, filenameIsUnknown) {
     var ack = new XMLHttpRequest();
     var endpoint = backend + "/partial-ack";
     var params = `qrKey=${qrKey}`
@@ -100,6 +105,11 @@ function partialAck(qrKey, actionID, multiIndex, multiCount, prefetchDuration, f
         params += `&ttpf=${prefetchDuration}`;
     if(fetchDuration)
         params += `&ttf=${fetchDuration}`;
+    if(filenameIsUnknown) {
+        // If the original filename could not be determined, inform the backend
+        // (even if the root cause of the problem is in the mobile app)
+        params += `&filenameUnknown=1`;
+    }
     ack.open("POST", endpoint, true);
     ack.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     ack.send( params );

@@ -59,9 +59,10 @@ function makeZip(resourceURLs, setZipProgress){
         var j=0;
         while(filenamesSet.has(name)) {
           j++;
-          name = j + "_" + cdName;
+          name = numberFilename(cdName, j);
         }
         filenamesSet.add(name);
+        // TODO when "filename is unknown" (or a placeholder), try to guess a correct file extension, from mime type?
 
         filename[i] = name;
         // console.debug(filename[i]);
@@ -77,7 +78,21 @@ function makeZip(resourceURLs, setZipProgress){
   
     for(var i=0; i<n; i++)
       addToZip(i);
-  
+}
+
+// "photo.jpg", 2 => "photo_2.jpg"
+// "resource", 2 => resource_2
+function numberFilename(f, k) {
+  if (!f) {
+    return `${k}`;
+  }
+  let pos = f.lastIndexOf('.');
+  if (pos == -1) {
+    return f + "_" + k;
+  }
+  let name = f.slice(0, pos);
+  let extension = f.slice(pos+1);
+  return `${name}_${k}.${extension}`;
 }
 
 function makeZipFromE2EE(items, setZipProgress){
@@ -110,13 +125,18 @@ function makeZipFromE2EE(items, setZipProgress){
   var filenamesSet= new Set();
   for(var j=0; j<n; j++) {
     // Make sure all filenames in ZIP are unique
-    let filename = items[j].resourceFilename;
+    let filenameOriginal = items[j].resourceFilename;
+    if (!filenameOriginal) {
+      filenameOriginal = "shared-resource";
+    }
+    let filename = filenameOriginal;
     let k=0;
     while(filenamesSet.has(filename)) {
       k++;
-      filename = k + "_" + items[j].resourceFilename;
+      filename = numberFilename(filenameOriginal, k);
     }
     filenamesSet.add(filename);
+    // TODO when "filename is unknown" (or a placeholder), try to guess a correct file extension, from mime type?
 
     zip.file(filename, items[j].resourceData_b64, {base64: true});
     let ratio = 0.10 + 0.9*((1+j)/n);

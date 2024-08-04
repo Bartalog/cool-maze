@@ -51,7 +51,7 @@
         "e2ee": {
             "text": "Diese Sendung wurde",
             "e2ee": "von Ende-zu-Ende verschlüsselt",
-            "tooltip": "Die von der Cool Maze Android App gesendeten Daten sind so verschlüsselt, dass der Cool Maze Anbieter diese nicht lesen kann.",
+            "tooltip": "Die von der Cool Maze App gesendeten Daten sind so verschlüsselt, dass der Cool Maze Anbieter diese nicht lesen kann.",
             "shortText": "Von Ende-zu-Ende verschlüsselt"
         }
     },

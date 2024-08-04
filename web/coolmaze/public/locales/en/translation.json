@@ -45,13 +45,13 @@
     "item": {
         "beingReceivedPlaceholder": "...  Freshly sent resource  ...",
         "wasDownscaled": {
-            "text": "This picture was downscaled",
+            "text": "This picture was resized",
             "to": "to"
         },
         "e2ee": {
             "text": "This transfer is",
             "e2ee": "end-to-end encrypted",
-            "tooltip": "Data sent with Cool Maze for Android is encrypted in such a way that the Cool Maze service provider can't read it.",
+            "tooltip": "Data sent with Cool Maze is encrypted in such a way that the Cool Maze service provider can't read it.",
             "shortText": "E2EE"
         }
     },

@@ -48,9 +48,9 @@ class Help extends Component {
             <p className="dim">{t('help.timeout')}</p>
             <p className="dim"><a href="https://github.com/Bartalog/cool-maze/labels/bug" target="_blank">{t('help.reportBug')}</a>.</p>
   
-            <div className="link-to-dual dim">
+            {<div className="link-to-dual dim">
               {t('help.hotmaze.text')} <a href="https://hotmaze.io/">Hot Maze</a>.
-            </div>
+            </div>}
           </div>
         </div>
       )

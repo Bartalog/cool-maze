@@ -189,7 +189,7 @@ class App extends Component {
 
     // Current tab suddenly visible again => Refresh idle QR
     document.addEventListener("visibilitychange", function() {
-      if( that.state.qrKey==="reload" && document.visibilityState === "visible") {
+      if( that.state.qrKey==="reload" && document.visibilityState === "visible" && !that.hasAnyResource() ) {
         console.debug( "Welcome back (visible), new QR" );
         that.clear();
       }
@@ -197,7 +197,7 @@ class App extends Component {
 
     // Browser window suddenly gets focus again => Refresh idle QR
     window.addEventListener("focus", function(event) {
-      if( that.state.qrKey==="reload" ) {
+      if( that.state.qrKey==="reload" && !that.hasAnyResource() ) {
         console.debug( "Welcome back (focus), new QR" );
         that.clear();
       }
@@ -206,14 +206,14 @@ class App extends Component {
     // Suddenly losing internet
     window.addEventListener("offline", function(event) {
       console.log("Lost connectivity :(");
-      if(!that.hasResource())
+      if(!that.hasAnyResource())
         that.expireQR();
     });
 
     // Suddenly recovering internet
     window.addEventListener("online", function(event) {
       console.debug( "Connectivity is back :)" );
-      if( that.state.qrKey==="reload" && !that.hasResource() ) {
+      if( that.state.qrKey==="reload" && !that.hasAnyResource() ) {
         console.debug( "Welcome back online, new QR" );
         that.clear();
       }
@@ -224,8 +224,20 @@ class App extends Component {
     // Warning: this does NOT update this.state.
   }
 
+  // Has single resource already arrived?
   hasResource() {
     return (this.state.resourceUrl || this.state.resourceData_b64) ? true : false;
+  }
+
+  // Same as hasResource, but also checks for multiple resources
+  hasAnyResource() {
+    if( this.state.resourceUrl )
+      return true;
+    if( this.state.resourceData_b64 )
+      return true;
+    if( this.state.multiItems.length > 0 )
+      return true;
+    return false;
   }
 
   _keydownHandler(event){
@@ -308,7 +320,7 @@ class App extends Component {
 
     if(event.key == "d") {
       // D => Download
-      if(!this.hasResource()) {
+      if(!this.hasAnyResource()) {
         console.log("No resource to download yet");
         return false;
       }
@@ -602,13 +614,13 @@ class App extends Component {
       // an explicit content-type. But we want to display directly the picture, not the URL.
       console.debug("Receiving sample photo");
       this.setState(prevState => ({
-        actionID: actionID,
-        resourceType: "image/jpeg",
-        resourceUrl: data.message,
-        textMessage: null,
-        scanNotif: false
-      }));
-      this.teardown();
+          actionID: actionID,
+          resourceType: "image/jpeg",
+          resourceUrl: data.message,
+          textMessage: null,
+          scanNotif: false
+        }),
+        this.teardown);
       return;
     }
 
@@ -616,14 +628,14 @@ class App extends Component {
     if ( ytID ) {
       console.debug("Receiving a youtube URL");
       this.setState(prevState => ({
-        actionID: actionID,
-        resourceType: "youtube",
-        resourceUrl: data.message,
-        textMessage: null,
-        scanNotif: false,
-        youtubeID: ytID,
-      }));
-      this.teardown();
+          actionID: actionID,
+          resourceType: "youtube",
+          resourceUrl: data.message,
+          textMessage: null,
+          scanNotif: false,
+          youtubeID: ytID,
+        }),
+        this.teardown);
       return;
     }
 
@@ -632,18 +644,19 @@ class App extends Component {
          || data.message.startsWith("https://cool-maze.uc.r.appspot.com/f/") ) {
       // This resource is a file uploaded from mobile app
       console.debug("Receiving shared file resource");
-      this.setState(prevState => ({
-        actionID: actionID,
-        resourceType: data.contentType,
-        resourceUrl: data.message,
-        resourceFilename: data.filename,
-        resourceResized: data.resized,
-        resourceWidth: data.contentWidth,
-        resourceHeight: data.contentHeight,
-        textMessage: null,
-        scanNotif: false
-      }));
-      this.teardown(); // TODO no ack until resource has been downloaded (& decrypted?)
+        this.setState(prevState => ({
+          actionID: actionID,
+          resourceType: data.contentType,
+          resourceUrl: data.message,
+          resourceFilename: data.filename,
+          resourceResized: data.resized,
+          resourceWidth: data.contentWidth,
+          resourceHeight: data.contentHeight,
+          textMessage: null,
+          scanNotif: false
+        }),
+        this.teardown  // TODO no ack until resource has been downloaded (& decrypted?)
+      );
       return;
     }
 
@@ -655,14 +668,14 @@ class App extends Component {
 
       // Direct redirect?  (this is abrupt)
       this.setState(prevState => ({
-        actionID: actionID,
-        infoMessage: "Redirecting to " + url + " ...",
-        resourceUrl: null,
-        thumb: null,
-        textMessage: "Redirecting to " + url + " ...",
-        scanNotif: false
-      }));
-      this.teardown();
+          actionID: actionID,
+          infoMessage: "Redirecting to " + url + " ...",
+          resourceUrl: null,
+          thumb: null,
+          textMessage: "Redirecting to " + url + " ...",
+          scanNotif: false
+        }),
+        this.teardown);
       console.debug("Redirect to " + url + " in 500ms...");
       window.setTimeout(function(){
         window.location = url;
@@ -692,14 +705,15 @@ class App extends Component {
 
       // Direct redirect  (this is abrupt)
       this.setState(prevState => ({
-        actionID: actionID,
-        infoMessage: "Redirecting to " + urlEnd + " ...",
-        resourceUrl: null,
-        thumb: null,
-        textMessage: data.message,
-        scanNotif: false
-      }));
-      this.teardown();
+          actionID: actionID,
+          infoMessage: "Redirecting to " + urlEnd + " ...",
+          resourceUrl: null,
+          thumb: null,
+          textMessage: data.message,
+          scanNotif: false
+        }),
+        this.teardown);
+      
       console.debug("Redirect to " + urlEnd + " in 500ms...");
       window.setTimeout(function(){
         window.location = urlEnd;
@@ -711,13 +725,13 @@ class App extends Component {
 
     console.debug("Receiving shared text message");
     this.setState(prevState => ({
-      actionID: actionID,
-      resourceType: data.contentType,
-      textMessage: data.message,
-      resourceUrl: null,
-      scanNotif: false
-    }));
-    this.teardown();
+        actionID: actionID,
+        resourceType: data.contentType,
+        textMessage: data.message,
+        resourceUrl: null,
+        scanNotif: false
+      }),
+      this.teardown);
   }
 
   handleCastMulti(data) {
@@ -814,6 +828,8 @@ class App extends Component {
       window.setTimeout( this.unblurryThumb.bind(this, index, 200), 20 ); // TODO what's the proper way??
     }
 
+    let that = this;
+
     this.setState(prevState => {
       let items = prevState.multiItems;
       if (!items || items.length!==parseInt(data.multiCount,10)) {
@@ -833,17 +849,15 @@ class App extends Component {
         multi: true,
         multiItems: items
       }
+    }, function() {
+      // This is never supposed to be called, because we don't do clear text multiple sharing.
+      // So multiFinished is returning false (at least one resourceData_b64 is missing at this point).
+      // TODO either unlock multiple clear text sharing from iOS, or remove this dead code.
+      if(that.multiFinished(encryption)) {
+        that.multipleAllCastTime = new Date();
+        that.teardown();
+      }
     });
-
-    // This is never supposed to be called, because we don't do clear text multiple sharing.
-    // So multiFinished is returning false (at least one resourceData_b64 is missing at this point).
-    // TODO either unlock multiple clear text sharing from iOS, or remove this dead code.
-    // Also: the "setState(..." callback above may or may not have already executed.
-    if(this.multiFinished(encryption)) {
-      this.multipleAllCastTime = new Date();
-      this.teardown();
-    }
-
   }
 
   handlePushData(data) {
@@ -883,10 +897,10 @@ class App extends Component {
     this.decryptDuration = (top -tip);
     console.debug("Decrypted ciphertext into base64 message of size " + data_b64.length + " in " + this.decryptDuration + "ms");
     this.setState(prevState => ({
-      resourceData_b64: data_b64,
-      scanNotif: false
-    }));
-    this.teardown();
+        resourceData_b64: data_b64,
+        scanNotif: false
+      }),
+      this.teardown);
   }
 
   handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration) {
@@ -908,26 +922,48 @@ class App extends Component {
     // Instead, let's compute if "with this extra item, we're reaching the count"
     let isMultiFinished = ((this.multiFinishedCount(true) + 1) == this.state.multiItems.length);
 
+    let that = this;
+
     this.setState(prevState => {
-      //console.debug("Setting base64 data of item " + index);
-      let items = prevState.multiItems;
-      items[index].resourceData_b64 = data_b64;
-      return {
-        multi: true,
-        multiItems: items
-      }
-    });
+        //console.debug("Setting base64 data of item " + index);
+        let items = prevState.multiItems;
+        items[index].resourceData_b64 = data_b64;
+        return {
+          multi: true,
+          multiItems: items
+        }
+      }, function() {
+        let ttf = fetchDuration;
+        let filenameIsUnknown = that.isUnknown(that.state.multiItems[index].resourceFilename);
+        partialAckBackend(that.chanKey, that.state.actionID, index, that.state.multiItems.length, ttpf, ttf, ttd, filenameIsUnknown);
+    
+        if(isMultiFinished) {
+          that.multipleAllCastTime = new Date();
+          that.teardown();
+        }
+      });
 
-    let ttf = fetchDuration;
-    partialAckBackend(this.chanKey, this.state.actionID, index, this.state.multiItems.length, ttpf, ttf, ttd);
+  }
 
-    if(isMultiFinished) {
-      this.multipleAllCastTime = new Date();
-      this.teardown();
-    }
+  isUnknown(filename) {
+    // A "filename unknown" is when the original resource filename is not known, probably
+    // because the mobile source device could not could not determine it.
+    // It may be falsy (false, undefined, null, empty string) or a placeholder ("coolmaze-shared-content")
+    if(!filename)
+      return true;
+    if(filename.startsWith("coolmaze-shared-content"))
+      return true;
+    if(filename.startsWith("shared-image"))
+      return true;
+    return false;
   }
 
   expireQR() {
+    if( this.hasAnyResource() ) {
+      // Don't mess with state if the resource is already there!
+      // At this point, push unsubscribe should have been already done.
+      return;
+    }
     console.debug("Closing idle channel, hiding QR-code");
     this.pushStopListening();
     this.setState(prevState => ({
@@ -1024,12 +1060,12 @@ class App extends Component {
     // have at least 1 available resource.
     if(!this.state.multi)
       return false;
-    var hasResource = false;
+    var hasResourceFromMulti = false;
     this.state.multiItems.forEach(function(item){
       if(item.resourceUrl)
-        hasResource = true;
+        hasResourceFromMulti = true;
     });
-    return hasResource;
+    return hasResourceFromMulti;
   }
 
   openAsDownloadZip() {
@@ -1161,8 +1197,22 @@ class App extends Component {
       if( this.multipleAllCastTime )
         qrToCastDuration = this.multipleAllCastTime - this.qrDisplayTime;
     }
-    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.prefetchDuration, this.fetchDuration, this.decryptDuration);
+
+    let isSample = (this.state.resourceUrl || "").startsWith("https://storage.googleapis.com/cool-maze.appspot.com/sample");
+
+    // Report "filename unknown" when...
+    let singleFilenameIsUnknown =
+      this.hasResource()       // we do have a resource (not a mere text or URL)
+      && (!this.state.multi)   // which is not a multiple share action (reported elsewhere in /partial-ack)
+      && (!isSample)           // which is not the sample share (a resource without a provided filename)
+      && this.isUnknown(this.state.resourceFilename); // where we have no filename, or just a placeholder filename
+
+    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.prefetchDuration, this.fetchDuration, this.decryptDuration, singleFilenameIsUnknown);
     this.pushStopListening();
+
+    this.setState(prevState => ({
+      qrKey: "",
+    }));
   }
   
   componentDidMount() {

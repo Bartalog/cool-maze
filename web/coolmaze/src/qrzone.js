@@ -37,8 +37,8 @@ class QrZone extends Component {
       // TODO https for cmaz
       //var qrText = 'https://cmaz.io/#' + this.props.qrKey;
       var qrText = 'cmaz.io/#' + this.props.qrKey;
-      // On zoom: just the qrKey, easier to scan from afar
-      if (this.props.qrSize > 2)
+      // On biggest zoom: just the qrKey, fewer chars, possibly easier to scan from afar
+      if (this.props.qrSize > 4)
         qrText = this.props.qrKey;
       console.debug("qrText="+qrText);
   

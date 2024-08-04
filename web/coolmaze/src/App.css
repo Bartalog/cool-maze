@@ -242,6 +242,7 @@ input[readonly]
   padding-top: 2px;
   margin-bottom: 6px;
   border-width: 3px;
+  cursor: pointer;
 }
 
 .please-reload button:hover {
@@ -564,6 +565,13 @@ img.help-schema {
   display: block;
   min-width: 100%;
   height: auto;
+}
+
+.download-item {
+  border: none;
+  background-color: transparent;
+  color: #777;
+  cursor: pointer;
 }
 
 .lightbox {

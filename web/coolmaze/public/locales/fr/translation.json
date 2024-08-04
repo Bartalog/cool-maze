@@ -51,7 +51,7 @@
         "e2ee": {
             "text": "Ce partage est",
             "e2ee": "chiffré de bout en bout",
-            "tooltip": "Les données envoyées par l'appli Cool Maze (Android) sont chiffrées de façon à ce que le fournisseur de service de Cool Maze ne puisse pas les lire.",
+            "tooltip": "Les données envoyées par l'appli Cool Maze sont chiffrées de façon à ce que le fournisseur de service de Cool Maze ne puisse pas les lire.",
             "shortText": "Chiffré de bout en bout"
         }
     },

@@ -1,0 +1,68 @@
+{
+    "topbar": {
+      "tooltips": {
+        "whatIsThis": "O que é isso",
+        "openInNewTab": "Open in new tab",
+        "save": "Salvar",
+        "saveAsZIP": "Salvar tudo em ZIP",
+        "clear": "Recomeçar"
+      }
+    },
+
+    "help": {
+        "qrOnlyWithCoolMaze": "Este QR-code funciona somente através da aplicação Cool Maze!",
+        "intro": "Você pode compartilhar um documento do seu smartphone a um computador ou video projetor",
+        "steps": {
+            "1": "Instalar <strong>Cool Maze</strong> no seu smartphone",
+            "2": "Abrir <strong>coolmaze.io</strong> no navigador de internet pelo seu computador",
+            "3": {
+                "text": "No seu documento através do smartphone (foto, video, URL, PDF), selecionar",
+                "shareVia": "Compartihar com"
+            },
+            "4": "Escanear o QR-code"
+        },
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "thatsIt": "É isso. Sem login, sem senhas, sem publicidades.",
+        "needInternet": "Os dois aparelhos (emissor e receptor) devem ter conexão internet.",
+        "privacy": {
+          "text": "<strong>Seus dados são protegidos</strong>. Eles não serão disponiveis publicamente e não serão distribuidos a terceiros. Visualisar os  ",
+          "termsTitle": "Termos de privacidade",
+          "inEnglish": "(em inglês)"
+        },
+        "timeout": "O documento não está salvo no servidor, você deve salvá-lo explicitamente no computador.",
+        "reportBug": "Reportar um problema",
+        "hotmaze": {
+            "text": "Mas ao invés disso eu quero enviar do meu computador para o celular! Então use"
+        }
+    },
+
+    "qrZone": {
+        "clickToEnlarge": "Clicar para expandir",
+        "reload": "Atualizar",
+        "pleaseReload": "Por favor atualizar"
+    },
+
+    "item": {
+        "beingReceivedPlaceholder": "...  Recebimento do documento em andamento  ...",
+        "wasDownscaled": {
+            "text": "Esta imagem foi redimensionada",
+            "to": "em"
+        },
+        "e2ee": {
+            "text": "Esta transferência foi",
+            "e2ee": "criptografada de ponta-a-ponta",
+            "tooltip": "Os dados enviados pelo Cool Maze são criptografados de forma que o provedor de serviço do Cool Maze não pode visualisá-lo.",
+            "shortText": "E2EE"
+        }
+    },
+
+    "zip": {
+        "makingZIP": "ZIP em preparação …",
+        "zipFilenamePrefix": "documento-do-celular_"
+    },
+
+    "mobileBanner": {
+        "coolMazeForAndroid": "Cool Maze para Android",
+        "coolMazeForIOS": "Cool Maze para iOS"
+    }
+  }

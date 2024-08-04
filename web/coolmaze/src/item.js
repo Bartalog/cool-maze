@@ -6,6 +6,7 @@ import ResourceIcon from './resourceicon.js';
 import MdAspectRatio from 'react-icons/lib/md/aspect-ratio';
 import MdLockOutline from 'react-icons/lib/md/lock-outline';
 import MdContentCopy from 'react-icons/lib/md/content-copy';
+import FaDownload from 'react-icons/lib/fa/download';
 import {base64toBlob, isImageType, isAudioType, isVideoType} from './util.js';
 import {using} from './backend.js';
 
@@ -58,16 +59,25 @@ class Item extends Component {
       let filename = this.props.resourceFilename;
       function dl() {
         // Works for any single resource, even from a multi-share.
+        using(`download/item/${index}`);
         let dummy = document.createElement('a');
         let blob = base64toBlob(data, type);
         let objURL = URL.createObjectURL(blob);
         dummy.setAttribute('href', objURL);
-        dummy.setAttribute('download', filename);
+        dummy.setAttribute('download', filename || `resource${index}.${type}`);
         dummy.style.display = 'none';
         document.body.appendChild(dummy);
         dummy.click();
         document.body.removeChild(dummy);
+        // using(`download/item/${index}/success`); ??
       }
+      let downloadButton = 
+        <div>
+          <button onClick={dl} title={t('topbar.tooltips.save')} key="download-item" className="download-item">
+            <FaDownload />
+          </button>
+        </div>;
+
       function toggleItemFullscreen( e ) {
         let fullscreen = e.target.classList.toggle("lightbox");
         if(fullscreen) {
@@ -92,10 +102,12 @@ class Item extends Component {
         return [<img 
             src={bigdataURI} 
             alt={filename || t('item.beingReceivedPlaceholder')}
+            title={filename}
             className="resource-picture fit-down" 
             onClick={toggleItemFullscreen}
             key="image"
             id={`item-${index}`} />,
+            downloadButton,
             downscaledWarning,
             e2eeLock];
       }
@@ -107,6 +119,7 @@ class Item extends Component {
           <video src={bigdataURI} controls autoPlay className="resource-video fit-down" key="video" id={`item-${index}`}>
             Video <a href={this.props.resourceUrl} target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "here"}</a>
           </video>,
+          downloadButton,
           e2eeLock
         ];
       }
@@ -193,7 +206,7 @@ class Item extends Component {
               <img 
                 src={bigPictureUrl} 
                 alt={filename || t('item.beingReceivedPlaceholder')}
-                tooltip={filename}
+                title={filename}
                 className="resource-picture fit-down" 
                 onClick={toggleItemFullscreen}
                 key="image" 
