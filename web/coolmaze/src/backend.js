@@ -42,7 +42,7 @@ function wakeUp(chanID){
 // Tell the server that the resource was sucessfully received by client.
 // Same acknowledgement for Single and Multi.
 // We don't need to wait for the response.
-function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDuration, fetchDuration, decryptDuration, singleFilenameIsUnknown) {
+function ack(qrKey, actionID, durations, singleFilenameIsUnknown) {
 
     // issues/514
     // Generate and register a transient client name, to get a chance to receive
@@ -58,16 +58,20 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDurat
     var ack = new XMLHttpRequest();
     var endpoint = mainDomain + "/ack";
     var params = "qrKey=" + qrKey + "&actionid=" + actionID;
-    if(qrToNotifDuration)
-        params += "&qrttnotif=" + qrToNotifDuration;
-    if(qrToCastDuration)
-        params += "&qrttcast=" + qrToCastDuration;
-    if(decryptDuration)
-        params += "&ttd=" + decryptDuration;
-    if(prefetchDuration)
-        params += "&ttpf=" + prefetchDuration;
-    if(fetchDuration)
-        params += "&ttf=" + fetchDuration;
+
+    if(durations["qrToNotif"])
+        params += "&qrttnotif=" + durations["qrToNotif"];
+    if(durations["qrToCast"])
+        params += "&qrttcast=" + durations["qrToCast"];
+    if(durations["decrypt"])
+        params += "&ttd=" + durations["decrypt"];
+    if(durations["prefetch"])
+        params += "&ttpf=" + durations["prefetch"];
+    if(durations["fetch"])
+        params += "&ttf=" + durations["fetch"];
+    if(durations["webrtcSDPExchange"])
+        params += "&ttrtcx=" + durations["webrtcSDPExchange"];
+
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         // dark mode!
         params += "&dark=1";
@@ -92,19 +96,21 @@ function ack(qrKey, actionID, qrToNotifDuration, qrToCastDuration, prefetchDurat
 // Tell the server that 1 resource was sucessfully received by client,
 // in a multi share action.
 // We don't need to wait for the response.
-function partialAck(qrKey, actionID, multiIndex, multiCount, prefetchDuration, fetchDuration, decryptDuration, filenameIsUnknown) {
+function partialAck(qrKey, actionID, multiIndex, multiCount, durations, filenameIsUnknown) {
     var ack = new XMLHttpRequest();
     var endpoint = backend + "/partial-ack";
     var params = `qrKey=${qrKey}`
                     + `&actionid=${actionID}`
                     + `&multiIndex=${multiIndex}`
                     + `&multiCount=${multiCount}`
-                    + `&ttd=${decryptDuration}`
                     + `&push=${PusherTechName}`;
-    if(prefetchDuration)
-        params += `&ttpf=${prefetchDuration}`;
-    if(fetchDuration)
-        params += `&ttf=${fetchDuration}`;
+
+    if(durations["prefetch"])
+        params += "&ttpf=" + durations["prefetch"];
+    if(durations["fetch"])
+        params += "&ttf=" + durations["fetch"];
+    if(durations["decrypt"])
+        params += "&ttd=" + durations["decrypt"];
     if(filenameIsUnknown) {
         // If the original filename could not be determined, inform the backend
         // (even if the root cause of the problem is in the mobile app)

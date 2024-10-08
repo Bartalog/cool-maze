@@ -13,6 +13,7 @@ import {Decrypt, DecryptWords} from './e2ee.js';
 import {base64toBlob, youtubeVideoID} from './util.js';
 import {preDownload, preDownloaded} from './precast.js';
 import schema from './img/schema.png';
+import {StartWebRTC} from './webrtc.js';
 
 import './App.css';
 
@@ -31,6 +32,9 @@ class App extends Component {
     this.handleScanNotif = this.handleScanNotif.bind(this);
     this.handleCast = this.handleCast.bind(this);
     this.handlePushData = this.handlePushData.bind(this);
+    this.handleBinary = this.handleBinary.bind(this);
+    this.handleBinaryMultiple = this.handleBinaryMultiple.bind(this);
+    this.handleBinaryProgress = this.handleBinaryProgress.bind(this);
     this.pushStopListening = noop;
     this.openInNewTab = this.openInNewTab.bind(this);
     this.openAsDownload = this.openAsDownload.bind(this);
@@ -77,6 +81,7 @@ class App extends Component {
     this.fetchDuration = null;
     this.prefetchDuration = null;
     this.decryptDuration = null;
+    this.webrtcSDPExchangeDuration = null;
   }
 
   render() {
@@ -139,6 +144,7 @@ class App extends Component {
             embiggen={this.embiggen}
             openAsDownload={this.openAsDownload}
             e2ee={e2ee}
+            resourceDownloadProgress={this.state.resourceDownloadProgress}
           />
         </div>
       </Suspense>
@@ -860,19 +866,128 @@ class App extends Component {
     });
   }
 
+
+  handleStream(data) {
+    // This will initiate a WebRTC connection.
+    // The mobile device is the "caller" and the browser target is the "callee"
+    let actionID = data.actionID || this.state.actionID;
+    this.setState(prevState => ({
+      actionID: actionID,
+    }));
+
+    // TODO: adjust the semantic, when WebRTC will accept multiple share
+    this.singleNotifTime = new Date();
+
+    StartWebRTC(this.chanKey, data, this.handleBinaryProgress, this.handleBinary);
+  }
+
+  handleBinaryProgress(resources) {
+    // Data being received via WebRTC.
+    // WebRTC is natively, transparently E2EE, and the data received is
+    // now cleartext. No need to decipher with keys.
+
+    // Compute a summary of the resources currently being downloaded:
+    // Filename, Type, Size, % finished.
+    let progress = [];
+    for (const r of resources) {
+      let item = {
+        filename: r.Filename,
+        contentType: r.ContentType,
+        size: r.Size,
+        ratioDownloaded: 0.0,
+      };
+      if(r.bytesReceived && r.Size)
+        item.ratioDownloaded = (r.bytesReceived / r.Size);
+      progress.push(item);
+    }
+    this.setState(prevState => ({
+      resourceDownloadProgress: progress,
+    }));
+  }
+
+  handleBinary(resources, downloadDuration, webrtcSDPExchangeDuration) {
+    // Data freshly received via WebRTC.
+    // WebRTC is natively, transparently E2EE, and the data received is
+    // now cleartext. No need to decipher with keys.
+
+    if(resources.length >= 2) {
+      this.handleBinaryMultiple(resources);
+      return;
+    }
+
+    this.fetchDuration = downloadDuration;
+    this.webrtcSDPExchangeDuration = webrtcSDPExchangeDuration;
+
+    // Handle single resource:
+    let resource = resources[0];
+
+    function _arrayBufferToBase64( buffer ) {
+      var binary = '';
+      var bytes = new Uint8Array( buffer );
+      var len = bytes.byteLength;
+      for (var i = 0; i < len; i++) {
+          binary += String.fromCharCode( bytes[ i ] );
+      }
+      return window.btoa( binary );
+    }
+
+    // b64 URI doesn't work when the resource is very large (e.g. 100MB)
+    // consider another field resourceData_arrayBuffer instead
+
+    this.setState(prevState => ({
+        resourceDownloadProgress: null,
+        resourceData_b64: _arrayBufferToBase64(resource.data),
+        resourceType: resource.ContentType,
+        resourceFilename: resource.Filename,
+      }),
+      this.teardown);
+  }
+
+  handleBinaryMultiple(resources) {
+    // TODO would be nicer to refactor this and
+    // have webrtc.js provide thumbs and resources, as they arrive,
+    // instead of all at once at the end.
+    this.setState(prevState => {
+      let items = prevState.multiItems;
+      if (!items || items.length!==parseInt(data.multiCount,10)) {
+        items = [];
+        for(var i=0;i<data.multiCount;i++)
+          items.push(Object());
+      }
+      items[index].resourceUrl = data.message;
+      items[index].resourceType = data.contentType;
+      items[index].resourceFilename = data.filename;
+      items[index].resourceResized = data.resized;
+      items[index].resourceWidth = data.contentWidth;
+      items[index].resourceHeight = data.contentHeight;
+      items[index].thumb = data.thumb || items[index].thumb;
+      return {
+        actionID: actionID,
+        multi: true,
+        multiItems: items
+      }
+    });
+  }
+
   handlePushData(data) {
     //console.log("Push data: " + JSON.stringify(data));
     switch(data.event) {
       case 'maze-scan':
         this.handleScanNotif(data);
         break;
-        case 'maze-pre-cast':
-          // console.debug('message = ' + data.message);
-          this.handlePreCast(data);
-          break;
+      case 'maze-pre-cast':
+        // console.debug('message = ' + data.message);
+        this.handlePreCast(data);
+        break;
       case 'maze-cast':
         // console.debug('message = ' + data.message);
         this.handleCast(data);
+        break;
+      case 'maze-pre-stream':
+        // NYI: #589
+        break;
+      case 'maze-stream':
+        this.handleStream(data);
         break;
       case 'maze-error':
         console.warn('Error message = ' + data.message);
@@ -935,7 +1050,12 @@ class App extends Component {
       }, function() {
         let ttf = fetchDuration;
         let filenameIsUnknown = that.isUnknown(that.state.multiItems[index].resourceFilename);
-        partialAckBackend(that.chanKey, that.state.actionID, index, that.state.multiItems.length, ttpf, ttf, ttd, filenameIsUnknown);
+        let durations = {
+          "prefetch": ttpf,
+          "fetch": ttf,
+          "decrypt": ttd,
+        };
+        partialAckBackend(that.chanKey, that.state.actionID, index, that.state.multiItems.length, durations, filenameIsUnknown);
     
         if(isMultiFinished) {
           that.multipleAllCastTime = new Date();
@@ -1123,6 +1243,7 @@ class App extends Component {
       scanNotif: false,
       thumb: null,
       resourceUrl: null,
+      resourceDownloadProgress: null,
       resourceData_b64: null,
       resourceWebpageUrl: null,
       textMessage: null,
@@ -1139,6 +1260,7 @@ class App extends Component {
     this.fetchDuration = null;
     this.prefetchDuration = null;
     this.decryptDuration = null;
+    this.webrtcSDPExchangeDuration = null;
   }
 
   multiFinishedCount(encryption) {
@@ -1207,7 +1329,15 @@ class App extends Component {
       && (!isSample)           // which is not the sample share (a resource without a provided filename)
       && this.isUnknown(this.state.resourceFilename); // where we have no filename, or just a placeholder filename
 
-    ackBackend(this.chanKey, this.state.actionID, qrToNotifDuration, qrToCastDuration, this.prefetchDuration, this.fetchDuration, this.decryptDuration, singleFilenameIsUnknown);
+    let durations = {
+      "qrToNotif": qrToNotifDuration,
+      "qrToCast": qrToCastDuration,
+      "prefetch": this.prefetchDuration,
+      "fetch": this.fetchDuration,
+      "decrypt": this.decryptDuration,
+      "webrtcSDPExchange": this.webrtcSDPExchangeDuration,
+    };
+    ackBackend(this.chanKey, this.state.actionID, durations, singleFilenameIsUnknown);
     this.pushStopListening();
 
     this.setState(prevState => ({

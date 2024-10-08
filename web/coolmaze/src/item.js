@@ -40,6 +40,9 @@ class Item extends Component {
   
       if(this.props.spinning)
         return this.render_spinning();
+
+      if(this.props.resourceDownloadProgress)
+        return this.render_download_progress();
   
       console.debug("NO RENDER for item " + (this.props.multiIndex || 0));
       return null;
@@ -287,6 +290,29 @@ class Item extends Component {
           <iframe id="ytplayer" title="YouTube player" type="text/html" src={embedURL} width="100%" height="600" allowFullScreen />
         </div>
       )
+    }
+
+    render_download_progress() {
+      //      Receiving 20240825_123844.mp4
+      //      [========..................]
+      const { t } = this.props;
+      var boxes = [];
+      for (const item of this.props.resourceDownloadProgress) {
+        let p = Math.floor( item.ratioDownloaded * 100 );
+        var clazz = "resource-download";
+        if(p >= 99){
+          clazz += " complete";
+          // Note: the custom green color does not seem to be take into account,
+          // unless we also specify "background-color: white;"
+        }
+        boxes.push(
+          <div className="resource-download-progress">
+            <p>{t('webRTC.receiving')} {item.filename || t('webRTC.data')}</p>
+            <progress value={p} min="0" max="100" className={clazz}>0%</progress>
+          </div>
+        )
+      }
+      return boxes;
     }
 }
 

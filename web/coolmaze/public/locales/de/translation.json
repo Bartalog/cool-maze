@@ -64,5 +64,10 @@
     "mobileBanner": {
         "coolMazeForAndroid": "Cool Maze für Android",
         "coolMazeForIOS": "Cool Maze für iOS"
+    },
+
+    "webRTC": {
+        "receiving": "Herunterladen",
+        "data": "Datei"
     }
   }

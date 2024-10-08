@@ -3,12 +3,8 @@ import { withTranslation, Trans } from 'react-i18next';
 
 import arrow from './img/red_arrow.png';
 import picto128 from './img/coolmaze_128.png';
-
-// This lib generates simpler (21x21) code
-let QRCode = require('qrcode.react');
-
-// This lib supports logo
-// let QRCode = require('qrcode-react');
+import {QRCodeCanvas} from 'qrcode.react';
+// 'qrcode.react' also has {QRCodeSVG}, but smooth resize animation doesn't seem to work with QRCodeSVG
 
 // QrZone is for displaying a QR-code.
 class QrZone extends Component {
@@ -45,53 +41,16 @@ class QrZone extends Component {
       return (
         <div id="qr-zone">
           <div id="qrcode" title={t('qrZone.clickToEnlarge')} onClick={this.props.embiggen} className={this.props.qrAnimClass}> 
-            <QRCode value={qrText} size={125 * this.props.qrSize} logo={arrow} level="M" />
+            <QRCodeCanvas value={qrText} 
+              size={125 * this.props.qrSize} 
+              imageSettings={{src:arrow, width: 31* this.props.qrSize, height: 31* this.props.qrSize}}
+              level="M" />
           </div>
         </div>
       )
     }
   
-    componentDidMount() {
-      this.printLogoInQR();
-    }
-    
-    componentDidUpdate() {
-      this.printLogoInQR();
-    }
   
-    printLogoInQR() {
-      // Render the Cool Maze red arrow logo
-      // in the center of the QR-code canvas.
-      //
-      // Maybe this should be rewritten some day, in a React style.
-  
-      var parent = document.getElementById('qrcode');
-      if (!parent)
-        return;
-      var canvas = parent.querySelector('canvas');
-      if(!canvas)
-        return;
-  
-      var ctx = canvas.getContext('2d');
-  
-      var qrsize = 125 * this.props.qrSize;
-      // var logosize = 50;
-      var logosize = qrsize/4;
-      var image = new Image();
-      image.onload = function() {
-          var dwidth = logosize || qrsize * 0.2;
-          var dheight = logosize || image.height / image.width * dwidth;
-          var dx = (qrsize - dwidth) / 2;
-          var dy = (qrsize - dheight) / 2;
-          image.width = dwidth;
-          image.height = dheight;
-          ctx.drawImage(image, dx, dy, dwidth, dheight);
-      }
-      image.onerror = function(x, y) {
-          console.warn("Error on loading red arrow logo :(");
-      }
-      image.src = arrow;
-    }
 }
   
 export default withTranslation()(QrZone);

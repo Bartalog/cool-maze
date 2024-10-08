@@ -30,8 +30,9 @@ class MainZone extends Component {
       var spinning = this.props.spinning;
       var openAsDownload = this.props.openAsDownload;
       var e2ee = this.props.e2ee;
+      var resourceDownloadProgress = this.props.resourceDownloadProgress;
   
-      if (!thumb && !resourceUrl && !resourceData_b64 && !resourceWebpageUrl && !textMessage && !multi && !spinning)
+      if (!thumb && !resourceUrl && !resourceData_b64 && !resourceWebpageUrl && !textMessage && !multi && !spinning && !resourceDownloadProgress)
         return (
           <div className="main">
             <QrZone 
@@ -73,6 +74,7 @@ class MainZone extends Component {
             spinning={spinning}
             openAsDownload={openAsDownload}
             e2ee={e2ee}
+            resourceDownloadProgress={resourceDownloadProgress}
           />
         </div>
       );

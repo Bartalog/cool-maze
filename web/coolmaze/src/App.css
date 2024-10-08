@@ -447,12 +447,14 @@ table.topbar {
 
 .error-box {
   margin-top: 6px;
+  padding: 0.2em;
   background-color: red;
   color: white;
   font-weight: bold;
+  font-size: larger;
+  text-shadow: 1px 1px black;
   text-align: center;
   border-radius: 5px;
-
 }
 
 .main {
@@ -740,6 +742,19 @@ button:disabled{
   visibility: hidden;
 }
 
+.resource-download-progress {
+  margin-bottom: 1em;
+}
+
+.resource-download-progress p {
+  margin-top: 0.2em;
+  margin-bottom: 0.5em;
+}
+
+.resource-download-progress progress {
+  width: 14em;
+}
+
 
 #inbox-multi {
   height: 90%;
@@ -982,6 +997,12 @@ progress.complete {
   }
   .e2ee-message .hint {
     border-bottom-color: #444;
+  }
+
+  /* Thin white border */
+  .resource-picture {
+    border: 3px solid #DDD;;
+    border-radius: 5px;
   }
 
   /* White box, even in dark mode.*/

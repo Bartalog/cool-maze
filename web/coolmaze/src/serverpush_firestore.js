@@ -1,21 +1,9 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, onSnapshot } from "firebase/firestore";
+import { db } from './initfirebase.js';
+import { collection, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc } from "firebase/firestore";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAzaeJ9eRP9ikP8Phzf6QjuIh-4ZwVHX7E",
-  authDomain: "cool-maze-push.firebaseapp.com",
-  projectId: "cool-maze-push",
-  storageBucket: "cool-maze-push.appspot.com",
-  messagingSenderId: "471489957828",
-  appId: "1:471489957828:web:06d5543fef7c3b4ce11e91"
-};
-
-let app, db;
-
-function initFirebase() {
-  // Firestore needs Firebase init
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
+function initFirestore() {
+  // Nothing to do, Firebase is already initialized
 }
 
 function firestoreListenToCollection(channelName, handler) {
@@ -26,10 +14,11 @@ function firestoreListenToCollection(channelName, handler) {
     const unsubscribe = onSnapshot(m, (snapshot) => {
         snapshot.docChanges().forEach( (change) => {
           if (change.type === "added") {
+            let data = change.doc.data();
             console.debug("Received Firestore data:");
             // console.log("Document", change.doc.id);
-            let data = change.doc.data();
             console.debug(data); // warning: this is logging full thumbnail data
+            data["ref"] = change.doc.ref; // Explicit ref path is useful later e.g. for WebRTC
             // Run the callback with the message payload!
             handler(data);
           }
@@ -45,5 +34,5 @@ function firestoreListenToCollection(channelName, handler) {
     return unsubscribe2;
 }
 
-export const Init = initFirebase;
+export const Init = initFirestore;
 export const ListenToChannel = firestoreListenToCollection;
