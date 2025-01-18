@@ -23,7 +23,7 @@
         },
         "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
         "thatsIt": "É isso. Sem login, sem senhas, sem publicidades.",
-        "needInternet": "Os dois aparelhos (emissor e receptor) devem ter conexão internet.",
+        "needInternet": "Os dois aparelhos, emissor e receptor, devem ter conexão internet.",
         "privacy": {
           "text": "<strong>Seus dados são protegidos</strong>. Eles não serão disponiveis publicamente e não serão distribuidos a terceiros. Visualisar os  ",
           "termsTitle": "Termos de privacidade",

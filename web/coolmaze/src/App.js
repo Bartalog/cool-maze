@@ -350,7 +350,6 @@ class App extends Component {
     Esc : Clear & start new action
     f : Fullscreen picture
     d : Download resource
-    o : Open resource in a new tab
     h : Show help
     + : Bigger QR code
     ? : Show keyboard shortcuts`);

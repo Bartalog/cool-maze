@@ -1,0 +1,73 @@
+{
+    "topbar": {
+      "tooltips": {
+        "whatIsThis": "De qué se trata?",
+        "openInNewTab": "Open in new tab",
+        "save": "Guardar",
+        "saveAsZIP": "Guardar todo en una carpeta ZIP",
+        "clear": "Empezar otra vez"
+      }
+    },
+
+    "help": {
+        "qrOnlyWithCoolMaze": "Este código QR solo funciona con la applicación Cool Maze!",
+        "intro": "Puedes enviar un documento desde tu móvil a una computadora o proyector de video.",
+        "steps": {
+            "1": "Instala <strong>Cool Maze</strong> en tu móvil",
+            "2": "Abre <strong>coolmaze.io</strong> en tu computadora",
+            "3": {
+                "text": "En el móvil (foto, video, enlace, documento PDF), elige",
+                "shareVia": "Compartir via"
+            },
+            "4": "Escanea el código QR"
+        },
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "thatsIt": "Y así. No login, no contraseña, no anuncios.",
+        "needInternet": "Los dos dispositivos, el enviador y el destinatario, deben tener conexión a internet.",
+        "privacy": {
+          "text": "<strong>Tus datos permanecen privados</strong>. No están disponibles ni al publico ni a terceras compañías. Ve nuestros",
+          "termsTitle": "Terminos de privacidad",
+          "inEnglish": "(en inglés)"
+        },
+        "timeout": "El documento solo sera disponible por unos momentos después de la transmisión, te recomendamos guardarlo en tu computadora.",
+        "reportBug": "Reporta un error",
+        "hotmaze": {
+            "text": "Pero quiero mandarlo desde mi computadora a mi móvil! Entonces utiliza"
+        }
+    },
+
+    "qrZone": {
+        "clickToEnlarge": "Haz click para agrandar",
+        "reload": "Refrescar",
+        "pleaseReload": "Por favor refresca"
+    },
+
+    "item": {
+        "beingReceivedPlaceholder": "...  El documento acaba de ser enviado  ...",
+        "wasDownscaled": {
+            "text": "La foto redujo su tamaño",
+            "to": "a"
+        },
+        "e2ee": {
+            "text": "La transmisión está",
+            "e2ee": "encriptada de extramo a extremo",
+            "tooltip": "Los datos enviados con Cool Maze están encriptados de manera que el servidor proveedor de Cool Maze no puede leerlos.",
+            "shortText": "E2EE"
+        }
+    },
+
+    "zip": {
+        "makingZIP": "Creando carpeta ZIP …",
+        "zipFilenamePrefix": "documentos-del-movil_"
+    },
+
+    "mobileBanner": {
+        "coolMazeForAndroid": "Cool Maze para Android",
+        "coolMazeForIOS": "Cool Maze para iOS"
+    },
+
+    "webRTC": {
+        "receiving": "Reciviendo",
+        "data": "zeros y unos"
+    }
+  }

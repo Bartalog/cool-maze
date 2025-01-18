@@ -510,8 +510,7 @@ img.help-schema {
 }
 
 .resource-thumb {
-  /* border: dotted 8px; */
-  border: solid 4px black;
+  /* border: solid 4px black;  border not possible with fit-up, for now */
   cursor: progress;
   -webkit-filter: blur(3px);
   filter: blur(3px) contrast(110%);
@@ -545,16 +544,9 @@ img.help-schema {
 }
 
 .fit-up {
-  /* 
-    https://stackoverflow.com/a/29592937/871134
-    ??
-  */
   object-fit: contain;
-  /* object-fit: cover; */
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
 }
 
 .fit-up-height {
@@ -1000,8 +992,11 @@ progress.complete {
   }
 
   /* Thin white border */
+  .resource-thumb {
+    /* border: 3px solid #DDD; border not possible with fit-up, for now */
+  }
   .resource-picture {
-    border: 3px solid #DDD;;
+    border: 3px solid #DDD;
     border-radius: 5px;
   }
 

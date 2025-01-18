@@ -23,7 +23,7 @@
         },
         "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
         "thatsIt": "That's it. No login, no passwords, no ads.",
-        "needInternet": "The two devices (source and target) must have internet connection.",
+        "needInternet": "The two devices, source and target, must have internet connection.",
         "privacy": {
           "text": "<strong>Your data remains private</strong>. It is not publicly available and not disclosed to third parties. See the ",
           "termsTitle": "Privacy terms",

@@ -3,7 +3,7 @@
 // This secret key is shared between Target client and Mobile source, however if the
 // Mobile source implements E2EE, then the secret key must not leak to the server.
 function generateRandomKey() {
-  const SECRET_KEY_LENGTH = 14; // random chars for end-to-end crypto key
+  const SECRET_KEY_LENGTH = 21; // random chars for end-to-end crypto key
   let secretKey = randomString(SECRET_KEY_LENGTH);
   console.debug("Generated secret key [" + secretKey + "]");
 
@@ -17,8 +17,8 @@ function generateRandomTransientClientName() {
 }
 
 function randomString(L){
-  const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const M = chars.length; // 62
+  const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-.";
+  const M = chars.length; // 64
 
   let str = "";
   let crypto = window.crypto || window.msCrypto;

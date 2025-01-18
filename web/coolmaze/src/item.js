@@ -221,7 +221,7 @@ class Item extends Component {
               <img 
                 src={thumbUrl} 
                 alt='Downloading...' 
-                className="resource-thumb fit-up-width" 
+                className="resource-thumb fit-up" 
                 id={`thumb-${index}`} />
             );
         else
@@ -235,7 +235,7 @@ class Item extends Component {
       alt += "being received";
       let ith = `thumb-${this.props.multiIndex || 0}`;
       return (
-        <img src={this.props.thumb} className="resource-thumb fit-up-width very-blurry " id={ith} alt={alt} />
+        <img src={this.props.thumb} className="resource-thumb fit-up very-blurry " id={ith} alt={alt} />
       );
     }
 

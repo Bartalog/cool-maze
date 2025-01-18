@@ -44,7 +44,7 @@ class QrZone extends Component {
             <QRCodeCanvas value={qrText} 
               size={125 * this.props.qrSize} 
               imageSettings={{src:arrow, width: 31* this.props.qrSize, height: 31* this.props.qrSize}}
-              level="M" />
+              level="L" />
           </div>
         </div>
       )

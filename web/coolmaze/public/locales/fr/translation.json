@@ -23,7 +23,7 @@
         },
         "demoVideoURL": "https://www.youtube.com/embed/-RnA7L8qtjE",
         "thatsIt": "C'est tout. Pas de compte, pas de mot de passe, pas de pub.",
-        "needInternet": "Les deux appareils (source et cible) doivent avoir accès à internet.",
+        "needInternet": "Les deux appareils, source et cible, doivent avoir accès à internet.",
         "privacy": {
           "text": "<strong>Vos données restent privées</strong>. Elles ne sont pas disponibles publiquement et ne sont pas communiquées à des tiers. Voir la",
           "termsTitle": "Politique de confidentialité",

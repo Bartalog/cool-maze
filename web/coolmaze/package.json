@@ -15,7 +15,7 @@
     "qrcode.react": "^4.0.1",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
-    "react-i18next": "^11.14.3",
+    "react-i18next": "^15.0.2",
     "react-icons": "^2.2.7",
     "react-linkify": "^1.0.0-alpha",
     "string.prototype.startswith": "^1.0.1"
