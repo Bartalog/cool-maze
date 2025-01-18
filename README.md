@@ -15,3 +15,5 @@ This repo does not contain (open source):
 - The backend and frontend of the reverse use case [Hot Maze](https://hotmaze.io/), which have moved to [this repo](https://github.com/Deleplace/hot-maze).
 
 The [Issue tracker](https://github.com/Bartalog/cool-maze/issues) welcomes bugs of all components of Cool Maze.
+
+[Blog](https://blog.coolmaze.io).
