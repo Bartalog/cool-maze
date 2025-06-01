@@ -272,24 +272,22 @@ input[readonly]
 }
 
 #help {
-  float: left;
+  max-width: 54em;
   margin-left: 10px;
   margin-right: 10px;
   margin-bottom: 8px;
   background-color: white;
   border: 8px solid black;
   padding: 8px;
-  padding-top: 32px;
   text-align: left;
   border-radius: 15px;
 }
 #help-contents {
-  width: 100%;
-}
-#help-contents img.right {
-  float: right;
-  /* text-align: center; */
-  /* margin: 12px; */
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  padding: 0.6em;
 }
 #help-contents .dim {
   color: #777;
@@ -301,15 +299,17 @@ input[readonly]
   color: #70538b;
 }
 #help-close {
-  float: right;
-  margin-top: -1.2em;
+  flex: 100%;
+  text-align: right;
+  margin-top: -0.6em;
+  margin-right: -0.3em;
   font-weight: bolder;
   font-size: 2em;
   cursor: pointer;
 }
 #help ol.steps {
-  display: inline-block;
-  max-width: 45%;
+  flex: 20em;
+  max-width: 30em;
 }
 #help .steps li {
   background-color: #DED;
@@ -334,11 +334,32 @@ input[readonly]
   border-radius: 6px;
 }
 #help .warning-specific-QR {
+  flex: 100%;
   margin: 0;
-  margin-left: 30%;
+  margin-left: 2em;
   color: #D77;
   font-weight: bold;
 }
+#help .intro {
+  flex: 100%;
+}
+.tutorial-video {
+  flex: 100%;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  text-align: center;
+}
+.tutorial-video iframe {
+  width: 32em;
+  height: 24em;
+  max-width: 100%;
+}
+#help p {
+  flex: 100%;
+  margin-top: 0.5em;
+  margin-bottom: 0.2em;
+}
+
 .link-to-dual {
   display: inline-block;
   width: 100%;
@@ -468,8 +489,10 @@ table.topbar {
 }
 
 img.help-schema {
-  padding-left: 16px;
-  max-width: 50%;
+  padding-top: 1em;
+  flex: 6em;
+  display: block;
+  max-width: min(20em, 75%);
   height: auto;
 }
 
@@ -764,20 +787,20 @@ button:disabled{
   min-height: 100px;
 }
 
-.multi-item img{
+.multi-item img {
   width: 100%;
   border: 4px solid black;
   border-radius: 8px;
 }
 
-.multi-item img.thumb{
+.multi-item img.thumb {
   /* border: dotted 4px; */
   cursor: progress;
   -webkit-filter: blur(3px);
   filter: blur(3px) contrast(110%);
 }
 
-.multi-item img.resource{
+.multi-item img.resource {
   cursor: pointer;
   min-height: 100px;
 }
@@ -849,10 +872,6 @@ progress.complete {
     }
   }
 
-
-  #help ol.steps {
-    max-width: 80%;
-  }
 
   #help img.help-schema {
     padding-left: 8%;
@@ -968,6 +987,8 @@ progress.complete {
   #help {
 	  background-color: #025;
 	  color: #EEE;
+    border: 3px solid #ddd;
+    border-radius: 5px;
   }
   #help .steps li {
     background-color: #147;
@@ -995,7 +1016,9 @@ progress.complete {
   .resource-thumb {
     /* border: 3px solid #DDD; border not possible with fit-up, for now */
   }
-  .resource-picture {
+  .resource-picture,
+  .resource-video,
+  .multi-item img {
     border: 3px solid #DDD;
     border-radius: 5px;
   }

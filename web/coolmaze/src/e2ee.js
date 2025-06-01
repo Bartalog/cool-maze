@@ -7,6 +7,7 @@ import CryptoJS from 'crypto-js';
 // The result will be a "words" object.
 function decrypt(algo, cipherText_b64, iv_b64, passPhrase) {
   console.debug("Crypto algo [" + algo + "]");
+  console.debug("decrypt using IV [ " + iv_b64 + " ]");
   if(algo && algo !== "AES/CTR/NoPadding") {
     console.warn("Only AES/CTR/NoPadding is currently supported. Found algo " + algo);
   }
@@ -23,7 +24,7 @@ function decrypt(algo, cipherText_b64, iv_b64, passPhrase) {
   console.debug("aesKey.toString(): " + aesKey.toString());
 
   let cipherWords = CryptoJS.enc.Base64.parse(cipherText_b64);
-  console.debug(preview("cipherWords="+cipherWords, 160) + "(" + (""+cipherWords).length + " chars)");
+  console.debug(preview("cipherWords="+cipherWords, 160) + " (" + (""+cipherWords).length + " chars)");
   // let ivHex =     'a217f5a0fb926f7009a4c821d76e6788';
   // let ivWords = CryptoJS.enc.Hex.parse(ivHex);
   let ivWords = CryptoJS.enc.Base64.parse(iv_b64);
@@ -61,6 +62,7 @@ function preview(str, n) {
 
 function decryptWords(algo, cipherWords, iv_b64, passPhrase) {
   console.debug("Crypto algo [" + algo + "]");
+  console.debug("decryptWords using IV [ " + iv_b64 + " ]");
   if(algo && algo !== "AES/CTR/NoPadding") {
     console.warn("Only AES/CTR/NoPadding is currently supported. Found algo " + algo);
   }

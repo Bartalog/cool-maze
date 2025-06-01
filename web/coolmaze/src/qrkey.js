@@ -11,7 +11,7 @@ function generateRandomKey() {
 }
 
 function generateRandomTransientClientName() {
-  const LENGTH = 6; // Short name, as rare collisions are okay
+  const LENGTH = 3; // Short name, as rare collisions are okay
   let transientName = randomString(LENGTH);
   return transientName;
 }

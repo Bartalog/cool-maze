@@ -14,11 +14,13 @@ function TopBar(props) {
     var showHelpButton = true;
     var hasResource = (props.resourceUrl || props.resourceData_b64) ? true : false;
     var clearable = (props.textMessage || hasResource || props.resourceWebpageUrl || props.spinning || props.zippable) ? true : false;
-    var openableUrl; 
-    if(props.resourceUrl)
-      openableUrl = props.resourceUrl;
-    if(props.resourceWebpageUrl)
-      openableUrl = props.resourceWebpageUrl;
+    var openableUrl = false; 
+    // #615 "Open this URL in new tab" is obsolete, because in general with E2EE, shared resources are not available at
+    //      all in clear text at a given URL.
+    // if(props.resourceUrl)
+    //   openableUrl = props.resourceUrl;
+    // if(props.resourceWebpageUrl)
+    //   openableUrl = props.resourceWebpageUrl;
   
     if ( props.errorMessage ) {
       showHelpButton = false;

@@ -14,6 +14,8 @@ class MainZone extends Component {
           </div>
         );
   
+      var actionID= this.props.actionID;
+      var chanKey= this.props.chanKey;
       var thumb = this.props.thumb;
       var resourceType = this.props.resourceType;
       var resourceUrl = this.props.resourceUrl;
@@ -60,6 +62,8 @@ class MainZone extends Component {
       return (
         <div className="main">
           <Inbox 
+            actionID={actionID}
+            chanKey={chanKey}
             thumb={thumb}
             resourceType={resourceType}
             resourceUrl={resourceUrl}

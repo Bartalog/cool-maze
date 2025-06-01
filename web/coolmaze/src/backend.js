@@ -3,7 +3,15 @@ import Cookies from 'js-cookie';
 import {PusherTechName} from './serverpush.js';
 
 let mainDomain = "https://coolmaze.io";
-let backend = "https://cool-maze.uc.r.appspot.com";
+//let mainDomain = "https://dev-dot-cool-maze.uc.r.appspot.com";
+
+// The historical domain "appspot.com" is coupled to App Engine.
+// 2025-02: To prepare a migration to Cloud Run, we now use the subdomain "backend.coolmaze.io" for all the call to
+// the backend.
+let backend = "https://backend.coolmaze.io";
+// let backend = "https://backend-1012380534553.us-central1.run.app";
+// let backend = "https://coolmaze.io";
+//let backend = "https://cool-maze.uc.r.appspot.com";
 // let mainDomain = "http://localhost:8080";
 // let backend = "http://localhost:8080";
 // let backend = "http://192.168.1.16:8080";
@@ -30,10 +38,12 @@ function wakeUp(chanID){
     }
 
     var wakeup = new XMLHttpRequest();
-    var wuEndpoint = mainDomain + "/wakeup";
+    var wuEndpoint = backend + "/wakeup";
     var wuParam = "qrKey=" + chanID;
     wuParam += `&push=${PusherTechName}`;
-    //wuParam += `&ctn=${transient}`; // For local dev only, as cookies are difficult between localhost:3000 and localhost:8080
+    // 2025-03+ problem: subdomains coolmaze.io and backend.coolmaze.io don't play
+    // nicely together with cookie. Passing ctn as query param.
+    wuParam += `&ctn=${transient}`;
     wakeup.open("POST", wuEndpoint, true);
     wakeup.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     wakeup.send( wuParam );
@@ -42,7 +52,7 @@ function wakeUp(chanID){
 // Tell the server that the resource was sucessfully received by client.
 // Same acknowledgement for Single and Multi.
 // We don't need to wait for the response.
-function ack(qrKey, actionID, durations, singleFilenameIsUnknown) {
+function ack(qrKey, actionID, durations, singleFilenameIsUnknown, qrSize) {
 
     // issues/514
     // Generate and register a transient client name, to get a chance to receive
@@ -56,7 +66,7 @@ function ack(qrKey, actionID, durations, singleFilenameIsUnknown) {
     }
 
     var ack = new XMLHttpRequest();
-    var endpoint = mainDomain + "/ack";
+    var endpoint = backend + "/ack";
     var params = "qrKey=" + qrKey + "&actionid=" + actionID;
 
     if(durations["qrToNotif"])
@@ -82,7 +92,10 @@ function ack(qrKey, actionID, durations, singleFilenameIsUnknown) {
         // (even if the root cause of the problem is in the mobile app)
         params += `&filenameUnknown=1`;
     }
-    //params += `&ctn=${transient}`; // For local dev only, as cookies are difficult between localhost:3000 and localhost:8080
+    params += `&qrsize=` + qrSize;
+    // 2025-03+ problem: subdomains coolmaze.io and backend.coolmaze.io don't play
+    // nicely together with cookie. Passing ctn as query param.
+    params += `&ctn=${transient}`;
     ack.open("POST", endpoint, true);
     ack.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     ack.send( params );
@@ -126,8 +139,57 @@ function usingFeature(what) {
     fetch(`${backend}/using/web/${what}`, {method: "POST"});
 }
 
+function fence(actionid, chanID) {
+    if(!actionid) {
+        return;
+    }
+
+    // This request does not use the same backend hostname as the other requests.
+    // It uses functionality only available in App Engine, hence the explicit App Engine domain.
+    let fenceBackendHost = "https://cool-maze.appspot.com";
+
+    var fence = new XMLHttpRequest();
+    var fEndpoint = fenceBackendHost + "/fence";
+    var fParam = "actionid=" + actionid;
+    fParam += `&qrKey=${chanID}`;
+    fence.open("POST", fEndpoint, true);
+    fence.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    fence.send( fParam );
+}
+
+function warning(actionid, chanKey, message) {
+    // Call warning to signal a non-blocking error to the backend.
+    // actionID may be null if it has not been provided by the backend yet.
+    // chanKey must not contain any secret.
+    const data = new URLSearchParams();
+    data.append("actionid", actionid);
+    data.append("chan", chanKey);
+    data.append("message", message);
+    fetch(`${backend}/warning/web`, {
+        method: "POST",
+        body: data,
+    });
+}
+
+function error(actionid, chanKey, message) {
+    // Call error to signal a failure to the backend.
+    // actionID may be null if it has not been provided by the backend yet.
+    // chanKey must not contain any secret.
+    const data = new URLSearchParams();
+    data.append("actionid", actionid);
+    data.append("chan", chanKey);
+    data.append("message", message);
+    fetch(`${backend}/error/web`, {
+        method: "POST",
+        body: data,
+    });
+}
+
 export const wakeUpBackend = wakeUp;
 export const ackBackend = ack;
 export const partialAckBackend = partialAck;
+export const fenceBackend = fence;
 export const using = usingFeature;
 export const backendHost = backend;
+export const warningBackend = warning;
+export const errorBackend = error;

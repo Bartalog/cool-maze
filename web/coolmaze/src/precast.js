@@ -15,6 +15,9 @@ const preDownloadLocalCache = {};
 function preDownloadResource(app, data) {
     console.debug("preDownloadResource", data);
     if( !data.message.startsWith("https://storage.googleapis.com/cool-maze-transit/")
+        && !data.message.startsWith("https://coolmaze.io/f/")
+        && !data.message.startsWith(backendHost + "/f/")
+        && !data.message.startsWith("https://backend.coolmaze.io/f/")
         && !data.message.includes(".appspot.com/f/")
         && !data.message.includes(":8080/f/") ){
             log.debugf("Unexpected precast message", data.message);

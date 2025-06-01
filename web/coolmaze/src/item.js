@@ -8,7 +8,7 @@ import MdLockOutline from 'react-icons/lib/md/lock-outline';
 import MdContentCopy from 'react-icons/lib/md/content-copy';
 import FaDownload from 'react-icons/lib/fa/download';
 import {base64toBlob, isImageType, isAudioType, isVideoType} from './util.js';
-import {using} from './backend.js';
+import {using, warningBackend, errorBackend} from './backend.js';
 
 require('string.prototype.startswith');
 
@@ -16,11 +16,20 @@ require('string.prototype.startswith');
 // To be used in a single or multi inbox. 
 class Item extends Component {
     render() {
+
       if (this.props.resourceData_b64)
         return this.render_Data_b64();
       
-      if (this.props.resourceUrl && !this.props.e2ee)
+      if (this.props.resourceUrl && !this.props.e2ee) {
+        warningBackend(this.props.actionID, this.props.chanKey, "received unencrypted resource");
         return this.render_unencrypted_resource();
+        
+        // TODO: consider instead
+        //   errorBackend
+        //   fail now, do not proceed further.
+        // Also, consider "hoisting" this, out of the rendering logic, and make sure it is not called several times
+        // on each paint.
+      }
 
       if (this.props.resourceUrl && this.props.resourceUrl.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/sample"))
         return this.render_unencrypted_resource(); // The Android sample share message is encrypted, but the file is not

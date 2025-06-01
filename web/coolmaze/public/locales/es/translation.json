@@ -21,15 +21,16 @@
             },
             "4": "Escanea el código QR"
         },
-        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g?cc_load_policy=1",
         "thatsIt": "Y así. No login, no contraseña, no anuncios.",
         "needInternet": "Los dos dispositivos, el enviador y el destinatario, deben tener conexión a internet.",
         "privacy": {
           "text": "<strong>Tus datos permanecen privados</strong>. No están disponibles ni al publico ni a terceras compañías. Ve nuestros",
           "termsTitle": "Terminos de privacidad",
-          "inEnglish": "(en inglés)"
+          "inEnglish": " (en inglés)"
         },
-        "timeout": "El documento solo sera disponible por unos momentos después de la transmisión, te recomendamos guardarlo en tu computadora.",
+        "timeout": "El documento no permanecerá disponible después de la transmisión; le recomendamos que lo guarde en su computadora.",
+        "blog": "The Cool Maze blog",
         "reportBug": "Reporta un error",
         "hotmaze": {
             "text": "Pero quiero mandarlo desde mi computadora a mi móvil! Entonces utiliza"

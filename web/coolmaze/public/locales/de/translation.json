@@ -21,15 +21,16 @@
             },
             "4": "Scanne den QR-code"
         },
-        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g?cc_load_policy=1",
         "thatsIt": "Das ist Alles. Keine Registrierung, kein Passwort, keine Werbung.",
         "needInternet": "Die beiden Geräte (Sender und Empfänger) müssen mit dem Internet verbunden sein.",
         "privacy": {
           "text": "<strong>Deine Daten bleiben privat</strong>. Sie sind nicht öffentlich sichtbar. Sie werden nicht an Dritte weitergeleitet. Sieh die",
           "termsTitle": "Datenschutzerklärung",
-          "inEnglish": "(auf Englisch)"
+          "inEnglish": " (auf Englisch)"
         },
         "timeout": "Vergiss nicht das gesendete Dokument auf dem Computer zu speichern.",
+        "blog": "The Cool Maze blog",
         "reportBug": "Einen Fehler melden",
         "hotmaze": {
           "text": "Aber ich möchte lieber vom Computer auf das Handy senden! Dann benutze"

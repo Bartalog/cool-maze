@@ -21,6 +21,7 @@
     "string.prototype.startswith": "^1.0.1"
   },
   "devDependencies": {
+    "bread-compressor-cli": "^3.1.0",
     "react-scripts": "^5.0.1"
   },
   "scripts": {

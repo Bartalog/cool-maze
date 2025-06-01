@@ -21,7 +21,7 @@
             },
             "4": "Scan the QR-code"
         },
-        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g?cc_load_policy=1",
         "thatsIt": "That's it. No login, no passwords, no ads.",
         "needInternet": "The two devices, source and target, must have internet connection.",
         "privacy": {
@@ -29,7 +29,8 @@
           "termsTitle": "Privacy terms",
           "inEnglish": ""
         },
-        "timeout": "The resource is available only for a few minutes after transfer, so you may want to explicitly save it on your computer.",
+        "timeout": "The resource is discarded after transfer, so you may want to explicitly save it on your computer.",
+        "blog": "The Cool Maze blog",
         "reportBug": "Report a bug",
         "hotmaze": {
             "text": "But I want to send from computer to mobile instead! Then use"

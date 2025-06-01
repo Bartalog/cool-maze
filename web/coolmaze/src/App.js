@@ -2,9 +2,10 @@ import React, { Component, Suspense } from 'react';
 import {InitPushComponent, ListenToChannel, PusherTechName} from './serverpush.js';
 import CryptoJS from 'crypto-js';
 
+import {backendHost} from './backend.js';
 import {genRandomKey} from './qrkey.js';
 import sha256 from './derive.js';
-import {wakeUpBackend, ackBackend, partialAckBackend, using} from './backend.js';
+import {wakeUpBackend, ackBackend, partialAckBackend, fenceBackend, using} from './backend.js';
 import MobileBanner from './mobile-banner.js';
 import TopBar from './topbar.js';
 import MainZone from './mainzone.js';
@@ -77,7 +78,7 @@ class App extends Component {
       showHelp: false
     }
     this.crypto_algo = null;
-    this.crypto_iv = null;
+    this.crypto_iv = null; // TODO remove obsolete crypto_iv (soonish)
     this.fetchDuration = null;
     this.prefetchDuration = null;
     this.decryptDuration = null;
@@ -86,7 +87,7 @@ class App extends Component {
 
   render() {
     var spinning = this.state.scanNotif;
-    var e2ee = this.crypto_iv ? true : false;
+    var e2ee = (this.crypto_algo || this.crypto_iv) ? true : false;
     if(this.state.multi) {
       spinning = !this.multiFinished(e2ee);
     }
@@ -120,6 +121,8 @@ class App extends Component {
           <MobileBanner />
           {errorBox}
           <MainZone 
+            actionID={this.state.actionID}
+            chanKey={this.chanKey}
             qrKey={this.state.qrKey}
             qrSize={this.state.qrSize}
             qrAnimClass={this.state.qrAnimClass}
@@ -256,8 +259,19 @@ class App extends Component {
       if( lightbox ) {
         lightbox.classList.remove('lightbox');
       }else {
+        // issues/613: Debounce
+        let now = Date.now(); // ms since epoch
+        if( this.lastCleared ) {
+          let elapsed = now-this.lastCleared;
+          if(elapsed < 2000) {
+            console.debug("Debouncing Esc");
+            return;
+          }
+        }
+
         // Fresh new QR
         this.clear();
+        this.lastCleared = now;
       }
       return;
     }
@@ -267,12 +281,6 @@ class App extends Component {
       this.toggleHelp();
       return;
     }
-
-    if(event.key == "o") {
-      // O => Open in new tab
-      this.openInNewTab();
-    }
-
 
     if(event.key == "f") {
       // F => Display received picture in Fullscreen
@@ -373,23 +381,34 @@ class App extends Component {
       // Actually a thumbnail could be useful, if the encrypted picture is not fully downloaded yet...
     }
 
-    let encryption = data.crypto_iv ? true : false;
+    var encryption = (data.crypto_algo || data.crypto_iv) ? true : false;
     if(this.state.multi && this.multiFinished(encryption)) {
       console.debug("Ignoring scan notif " + data.multiIndex + " because all the resources have already arrived");
       return;
     }
 
     this.crypto_algo = data.crypto_algo || this.crypto_algo;
+    this.crypto_iv = data.crypto_iv || this.crypto_iv;  // TODO remove obsolete crypto_iv (soonish)
     if (encryption) {
-      this.crypto_iv = data.crypto_iv;
-      console.debug("Found encryption ", this.crypto_algo);
-      let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
-      let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
-      console.debug("Decrypted scan notif ciphertext of size " + data.message.length + " into base64 message of size " + data_b64.length);
-      console.debug("Decrypted thumb " + (data.multiIndex || ""));
-      data.message = "data:image/jpeg;base64," + data_b64;
-      // This thumb is always implicitly JPEG.
-      // TODO: consider PNG, or other?
+      console.debug("Encryption =", this.crypto_algo);
+      let i = 0;
+      if( data.multiIndex )
+        i = data.multiIndex;
+      if(data[`crypto_iv_thumb_${i}`])
+        console.debug(`using data.crypto_iv_thumb_${i}`);
+      else
+        console.debug("fallback using obsolete data.crypto_iv for thumb :(");
+      let iv = data[`crypto_iv_thumb_${i}`] || data.crypto_iv;
+      let thumbData = data.thumb || data.message;
+      if(thumbData) {
+        let decryptedWords = Decrypt(data.crypto_algo, thumbData, iv, this.symCryptoKey);
+        let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
+        console.debug("Decrypted scan notif ciphertext of size " + thumbData.length + " into base64 message of size " + data_b64.length);
+        console.debug("Decrypted thumb " + (data.multiIndex || ""));
+        data.thumb = "data:image/jpeg;base64," + data_b64;
+        // This thumb is always implicitly JPEG.
+        // TODO: consider PNG, or other?
+      }
     }
 
     if(data.multiCount && data.multiCount>1)
@@ -407,15 +426,17 @@ class App extends Component {
       console.debug("Got single notif after " + (this.singleNotifTime-this.qrDisplayTime) + "ms");
 
     let actionID = data.actionID || this.state.actionID;
+    fenceBackend(actionID, this.chanKey);
 
-    if (data.message
-        && data.message.startsWith('data:image/')) {
+
+    if (data.thumb
+        && data.thumb.startsWith('data:image/')) {
       console.debug('Received thumbnail');
       window.setTimeout( this.unblurryThumb.bind(this, 0, 1000), 20 ); // TODO what's the proper way??
       this.setState(prevState => ({
         actionID: actionID,
         scanNotif: true,
-        thumb: data.message,
+        thumb: data.thumb,
         resourceFilename: data.filename
       }));
       return;
@@ -436,6 +457,7 @@ class App extends Component {
     // Multiple resources
     //
     let actionID = data.actionID || this.state.actionID;
+    fenceBackend(actionID, this.chanKey);
 
     let index = data.multiIndex;
     let item = {};
@@ -447,9 +469,9 @@ class App extends Component {
       return;
     }
 
-    if (data.message && data.message.startsWith('data:image/')) {
+    if (data.thumb && data.thumb.startsWith('data:image/')) {
       console.debug(`Received thumbnail of resource ${index}/${data.multiCount}`);
-      item.thumb = data.message;
+      item.thumb = data.thumb;
       window.setTimeout( this.unblurryThumb.bind(this, index, 1000), 20 ); // TODO what's the proper way??
     }
     item.resourceType = data.contentType;
@@ -484,10 +506,12 @@ class App extends Component {
   }
 
   handleCastSingle(data) {
-    let actionID = data.actionID || this.state.actionID;
     //
     // Single
     //
+    
+    let actionID = data.actionID || this.state.actionID;
+    fenceBackend(actionID, this.chanKey);
 
     if (!data.message) {
       console.warn("Cast with no message");
@@ -505,9 +529,8 @@ class App extends Component {
 
     let mobileKey = "";
     this.crypto_algo = data.crypto_algo || this.crypto_algo;
-    if (data.crypto_iv) {
-      this.crypto_iv = data.crypto_iv;
-      console.debug("Got a crypto IV");
+    this.crypto_iv = data.crypto_iv || this.crypto_iv; // TODO remove obsolete crypto_iv (soonish)
+    if (data.crypto_algo || data.crypto_iv) {
       // Let K = the target browser's secret passphrase
       // Let P = the mobile source's secret passphrase
       // Let M = the short text message
@@ -523,14 +546,24 @@ class App extends Component {
       if( data.messageIsClearText || data.message.startsWith("http")) {
         console.debug("  No need to decrypt clear text message:", data.message);
       } else {
-        let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
+        if(data.crypto_iv_message_0)
+          console.debug("using data.crypto_iv_message_0");
+        else
+          console.debug("fallback using obsolete data.crypto_iv for message :(");
+        let iv = data.crypto_iv_message_0 || data.crypto_iv;
+        let decryptedWords = Decrypt(data.crypto_algo, data.message, iv, this.symCryptoKey);
         data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
         console.debug("  Decrypted message: ", data.message);
       }
 
       // Decoding the filename is straightforward
       if (data.filename){
-        let decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
+        if(data.crypto_iv_filename_0)
+          console.debug("using data.crypto_iv_filename_0");
+        else
+          console.debug("fallback using obsolete data.crypto_iv for filename :(");
+        let iv = data.crypto_iv_filename_0 || data.crypto_iv;
+        let decryptedWords = Decrypt(data.crypto_algo, data.filename, iv, this.symCryptoKey);
         data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
         console.debug("  Decrypted filename: " + data.filename);
       }
@@ -538,7 +571,12 @@ class App extends Component {
       // Decode thumbnail (if any). See #374.
       if (data.thumb){
         console.debug("  Got encrypted thumbnail, length " + data.thumb.length);
-        let decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
+        if(data.crypto_iv_thumb_0)
+          console.debug("using data.crypto_iv_thumb_0");
+        else
+          console.debug("fallback using obsolete data.crypto_iv for thumb :(");
+        let iv = data.crypto_iv_thumb_0 || data.crypto_iv;
+        let decryptedWords = Decrypt(data.crypto_algo, data.thumb, iv, this.symCryptoKey);
         let thumb_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
         thumb_b64 = "data:image/jpeg;base64," + thumb_b64;
         // This thumb is always implicitly JPEG.
@@ -551,16 +589,29 @@ class App extends Component {
 
       // Decoding the resource will require a different key P, emitted by Mobile source.
       if(data.mobile_secret_scrambled) {
-        let decryptedWords = Decrypt(data.crypto_algo, data.mobile_secret_scrambled, data.crypto_iv, this.symCryptoKey);
+        if(data.crypto_iv_mobile_secret_scrambled)
+          console.debug("using data.crypto_iv_mobile_secret_scrambled");
+        else
+          console.debug("fallback using obsolete data.crypto_iv for mobile_secret_scrambled :(");
+        let iv = data.crypto_iv_mobile_secret_scrambled || data.crypto_iv;
+        let decryptedWords = Decrypt(data.crypto_algo, data.mobile_secret_scrambled, iv, this.symCryptoKey);
         mobileKey = decryptedWords.toString(CryptoJS.enc.Utf8);
         console.debug("Decrypted mobile secret: " + mobileKey);
       }
       console.debug("Fetching encrypted resource");
       if( data.message.startsWith("https://storage.googleapis.com/cool-maze-transit/")
           || data.message.includes(".appspot.com/f/")
+          || data.message.startsWith("https://coolmaze.io/f/")
+          || data.message.startsWith(backendHost + "/f/")
+          || data.message.startsWith("https://backend.coolmaze.io/f/")
           || data.message.includes(":8080/f/") ){
         // Fetch encrypted file
         let url = data.message;
+        if(data.crypto_iv_contents_0)
+          console.debug("using data.crypto_iv_contents_0");
+        else
+          console.debug("fallback using obsolete data.crypto_iv for single contents :(");
+        let iv = data.crypto_iv_contents_0 || data.crypto_iv;
         if(preDownloaded[url]) {
           if( preDownloaded[url]==="PREFETCHING" ) {
             // issues/526
@@ -569,14 +620,14 @@ class App extends Component {
             console.debug("joining prefetch still downloading");
             let that = this;
             preDownloaded[url] = function(lateArrayBuffer){ 
-              that.handleFetchedEncryptedResourceSingle(lateArrayBuffer, mobileKey);
+              that.handleFetchedEncryptedResourceSingle(lateArrayBuffer, mobileKey, iv);
             };
           } else {
             let prefetchedResource = preDownloaded[url];
             console.debug(`Resource already prefetched (${prefetchedResource.byteLength} bytes): ${url}`);
             let arrayBuffer = prefetchedResource;
             // This will kick in just after a short thumbnail unblur
-            window.setTimeout( this.handleFetchedEncryptedResourceSingle.bind(this, arrayBuffer, mobileKey), 165 ); 
+            window.setTimeout( this.handleFetchedEncryptedResourceSingle.bind(this, arrayBuffer, mobileKey, iv), 165 ); 
           }
         } else {
           let xhr = new XMLHttpRequest();
@@ -590,7 +641,7 @@ class App extends Component {
             console.debug("Fetched encrypted resource in " + app.fetchDuration + "ms");
             let arrayBuffer = xhr.response;
             if (arrayBuffer) {
-              app.handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey);
+              app.handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey, iv);
             }else{
               console.warn("ahem, where is my arrayBuffer?");
             }
@@ -645,6 +696,9 @@ class App extends Component {
     }
 
     if ( data.message.startsWith("https://storage.googleapis.com/cool-maze-")
+         || data.message.startsWith("https://coolmaze.io/f/")
+         || data.message.startsWith(backendHost + "/f/")
+         || data.message.startsWith("https://backend.coolmaze.io/f/")
          || data.message.startsWith("https://cool-maze.appspot.com/f/")
          || data.message.startsWith("https://cool-maze.uc.r.appspot.com/f/") ) {
       // This resource is a file uploaded from mobile app
@@ -744,19 +798,20 @@ class App extends Component {
     // Multiple
     //
     let actionID = data.actionID || this.state.actionID;
+    fenceBackend(actionID, this.chanKey);
 
     var index = data.multiIndex;
 
     let mobileKey = "";
     this.crypto_algo = data.crypto_algo || this.crypto_algo;
-    let encryption = data.crypto_iv ? true : false;
+    this.crypto_iv = data.crypto_iv || this.crypto_iv;   // TODO remove obsolete crypto_iv (soonish)
+    var encryption = (data.crypto_algo || data.crypto_iv) ? true : false;
     if (encryption) {
-      this.crypto_iv = data.crypto_iv;
-      console.debug("Got a crypto IV");
       // See handleCastSingle for definition of K, P, M, IV
 
       // Decoding the message M is straightforward
-      let decryptedWords = Decrypt(data.crypto_algo, data.message, data.crypto_iv, this.symCryptoKey);
+      let messageIV = data[`crypto_iv_message_${index}`] || data.crypto_iv;
+      let decryptedWords = Decrypt(data.crypto_algo, data.message, messageIV, this.symCryptoKey);
       data.message = decryptedWords.toString(CryptoJS.enc.Utf8);
       console.debug("Decrypted message " + index + ":" + data.message);
 
@@ -764,7 +819,8 @@ class App extends Component {
       if (data.filename){
         // TODO make sure the filename *is* encrypted
         try {
-          decryptedWords = Decrypt(data.crypto_algo, data.filename, data.crypto_iv, this.symCryptoKey);
+          let filenameIV = data[`crypto_iv_filename_${index}`] || data.crypto_iv;
+          decryptedWords = Decrypt(data.crypto_algo, data.filename, filenameIV, this.symCryptoKey);
           data.filename = decryptedWords.toString(CryptoJS.enc.Utf8);
           console.debug("  Decrypted filename: " + data.filename);
         } catch(error) {
@@ -774,19 +830,21 @@ class App extends Component {
 
       // Decoding the resource will require a different key P, emitted by Mobile source.
       if(data.mobile_secret_scrambled) {
-        let decryptedWords = Decrypt(data.crypto_algo, data.mobile_secret_scrambled, data.crypto_iv, this.symCryptoKey);
+        let iv = data.crypto_iv_mobile_secret_scrambled || data.crypto_iv;
+        let decryptedWords = Decrypt(data.crypto_algo, data.mobile_secret_scrambled, iv, this.symCryptoKey);
         mobileKey = decryptedWords.toString(CryptoJS.enc.Utf8);
         console.debug("Decrypted mobile secret: " + mobileKey);
       }
       if(data.message.startsWith("https://storage.googleapis.com")){
         let url = data.message;
+        let contentsIV = data[`crypto_iv_contents_${index}`] || data.crypto_iv;
         if( preDownloaded[url]==="PREFETCHING" ) {
           // issues/526
           // The resource is already being downloaded by prefetching.
           // Better wait for completion, instead of downloading again!
           console.debug(`joining prefetch ${index} still downloading`);
           let that = this;
-          preDownloaded[url] = function(lateArrayBuffer){ that.handleFetchedEncryptedResourceMulti(index, lateArrayBuffer, mobileKey, null); };
+          preDownloaded[url] = function(lateArrayBuffer){ that.handleFetchedEncryptedResourceMulti(index, lateArrayBuffer, mobileKey, null, contentsIV); };
         } else {
           // Fetch encrypted file
           let prefetchedResource = preDownloaded[url];
@@ -794,7 +852,7 @@ class App extends Component {
             console.debug(`Resource already prefetched (${prefetchedResource.byteLength} bytes): ${url}`);
             let arrayBuffer = prefetchedResource;
             // This will kick in just after a short thumbnail unblur
-            window.setTimeout( this.handleFetchedEncryptedResourceMulti.bind(this, index, arrayBuffer, mobileKey, null), 165 ); 
+            window.setTimeout( this.handleFetchedEncryptedResourceMulti.bind(this, index, arrayBuffer, mobileKey, null, contentsIV), 165 );
           } else {
             let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
@@ -806,7 +864,7 @@ class App extends Component {
               if (arrayBuffer) {
                 let top = performance.now();
                 let fetchDuration = Math.round(top -tip);
-                app.handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration);
+                app.handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration, contentsIV);
               } else {
                 console.warn("ahem, where is my arrayBuffer?");
               }
@@ -824,7 +882,8 @@ class App extends Component {
       console.debug("  cast " + index + " has an attached thumb");
       // Display thumb smoothly until full resource is fetched.
       if (encryption) {
-        let decryptedWords = Decrypt(data.crypto_algo, data.thumb, data.crypto_iv, this.symCryptoKey);
+        let thumbIV = data[`crypto_iv_thumb_${index}`] || data.crypto_iv;
+        let decryptedWords = Decrypt(data.crypto_algo, data.thumb, thumbIV, this.symCryptoKey);
         let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
         data.thumb = "data:image/jpeg;base64," + data_b64; // This thumb is always implicitly JPEG.
         // TODO: consider PNG, or other?
@@ -870,6 +929,7 @@ class App extends Component {
     // This will initiate a WebRTC connection.
     // The mobile device is the "caller" and the browser target is the "callee"
     let actionID = data.actionID || this.state.actionID;
+    fenceBackend(actionID, this.chanKey);
     this.setState(prevState => ({
       actionID: actionID,
     }));
@@ -970,6 +1030,7 @@ class App extends Component {
 
   handlePushData(data) {
     //console.log("Push data: " + JSON.stringify(data));
+
     switch(data.event) {
       case 'maze-scan':
         this.handleScanNotif(data);
@@ -1000,11 +1061,11 @@ class App extends Component {
     }
   }
 
-  handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey) {
+  handleFetchedEncryptedResourceSingle(arrayBuffer, mobileKey, crypto_iv_contents_0) {
     let tip = new Date().getTime();
     // Decrypt it
     var words = CryptoJS.lib.WordArray.create(arrayBuffer);
-    let decryptedWords = DecryptWords(this.crypto_algo, words, this.crypto_iv, mobileKey);
+    let decryptedWords = DecryptWords(this.crypto_algo, words, crypto_iv_contents_0, mobileKey);
     // Display/generate it to user
     let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
     let top = new Date().getTime();
@@ -1017,12 +1078,13 @@ class App extends Component {
       this.teardown);
   }
 
-  handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration) {
-    //console.debug(`handleFetchedEncryptedResourceMulti(${index}, arrayBuffer ${arrayBuffer.byteLength} bytes, ${mobileKey}, ${fetchDuration})`)
+  handleFetchedEncryptedResourceMulti(index, arrayBuffer, mobileKey, fetchDuration, contentsIV) {
+    //console.debug(`handleFetchedEncryptedResourceMulti(${index}, arrayBuffer ${arrayBuffer.byteLength} bytes, ${mobileKey}, ${fetchDuration}, ${contentsIV})`)
     // Decrypt it
     let tip = performance.now();
     var words = CryptoJS.lib.WordArray.create(arrayBuffer);
-    let decryptedWords = DecryptWords(this.crypto_algo, words, this.crypto_iv, mobileKey);
+    let iv = contentsIV || this.crypto_iv; // TODO remove this.crypto_iv
+    let decryptedWords = DecryptWords(this.crypto_algo, words, iv, mobileKey);
     // Display/generate it to user
     let data_b64 = CryptoJS.enc.Base64.stringify(decryptedWords);
     let top = performance.now();
@@ -1255,7 +1317,7 @@ class App extends Component {
       zipProgressRatio: null
     }));
     this.crypto_algo = null;
-    this.crypto_iv = null;
+    this.crypto_iv = null;  // TODO remove obsolete crypto_iv (soonish)
     this.fetchDuration = null;
     this.prefetchDuration = null;
     this.decryptDuration = null;
@@ -1336,7 +1398,7 @@ class App extends Component {
       "decrypt": this.decryptDuration,
       "webrtcSDPExchange": this.webrtcSDPExchangeDuration,
     };
-    ackBackend(this.chanKey, this.state.actionID, durations, singleFilenameIsUnknown);
+    ackBackend(this.chanKey, this.state.actionID, durations, singleFilenameIsUnknown, this.state.qrSize);
     this.pushStopListening();
 
     this.setState(prevState => ({

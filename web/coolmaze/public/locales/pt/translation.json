@@ -21,15 +21,16 @@
             },
             "4": "Escanear o QR-code"
         },
-        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g",
+        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g?cc_load_policy=1",
         "thatsIt": "É isso. Sem login, sem senhas, sem publicidades.",
         "needInternet": "Os dois aparelhos, emissor e receptor, devem ter conexão internet.",
         "privacy": {
           "text": "<strong>Seus dados são protegidos</strong>. Eles não serão disponiveis publicamente e não serão distribuidos a terceiros. Visualisar os  ",
           "termsTitle": "Termos de privacidade",
-          "inEnglish": "(em inglês)"
+          "inEnglish": " (em inglês)"
         },
         "timeout": "O documento não está salvo no servidor, você deve salvá-lo explicitamente no computador.",
+        "blog": "The Cool Maze blog",
         "reportBug": "Reportar um problema",
         "hotmaze": {
             "text": "Mas ao invés disso eu quero enviar do meu computador para o celular! Então use"

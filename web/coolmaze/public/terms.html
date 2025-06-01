@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>Cool Maze - Privacy terms</title>
+  <link rel="SHORTCUT ICON" href="static/img/coolmaze_128.png" />
+  <style>
+  body {
+    font-family: monospace;
+  }
+  dl {
+    margin-top: 0.5em;
+    margin-bottom: 1.5em;
+  }
+  dt {
+    margin-left: 2em;
+  }
+  dd {
+    margin-bottom: 1em;
+  }
+  </style>
+</head>
+
+<body>
+  <h1>Cool Maze privacy terms</h1>
+
+  <p>
+    These terms apply since February, 2025.
+  </p>
+
+  <p>
+    These terms may evolve. In case this happens, the new terms will apply to data transferred after the new terms have been published. The new terms won't revoke protections granted to previously transferred data.
+  </p>
+
+  <p>
+    Cool Maze (the Service) is an online system to transfer data from a source device <b>A</b> to a target device <b>B</b>.
+  </p>
+
+  <p>
+    The User must be in control of the source device <b>A</b>, of the browser of the target device <b>B</b>, and of the data <b>D</b> to be transferred from <b>A</b> to <b>B</b>.
+  <p>
+
+  <p id="pricing">
+    The Service is provided free of charge for the User.
+  </p>
+
+  <p id="sla">
+    The Service is provided without any guarantee, except the best-effort policy to respect the privacy of the personal data of its Users.
+  </p>
+
+  <p id="condition">
+    The Service must be used via the official mobile apps <a href="https://play.google.com/store/apps/details?id=com.bartalog.coolmaze">Cool Maze for Android</a> and <a href="https://apps.apple.com/us/app/cool-maze/id1284597516">Cool Maze for iOS</a>, and the official web application <a href="https://coolmaze.io">coolmaze.io</a>.
+    It is not permitted to use the Service to share data from unauthorized sources or to unauthorized targets.
+  </p>
+
+  <p id="users-identity">
+    The Service doesn't use and doesn't store the identity of its Users.
+  </p>
+
+  <p>
+    The Service doesn't correlate its usage with Users' internet browsing data, nor with other apps usage.
+  </p>
+
+  <p>
+    The payload <b>D</b> transfered using a "Share via ... Cool Maze" action is personal data. Its contents is not known by the
+    Service, thanks to end-to-end encryption (E2EE).
+  </p>
+
+  <p id="servers">
+    The data <b>D</b> sent from <b>A</b> to <b>B</b> is routed in encrypted form through intermediary servers: the Brokers and the File server.
+  </p>
+
+  <p id="transport-encryption">
+    All data transfers are protected by the HTTPS protocol:
+    <ul>
+      <li>Web pages from Service to User web browser</li>
+      <li>Short text messages from User mobile device <b>A</b> to Brokers</li>
+      <li>Files from User mobile device <b>A</b> to File server</li>
+      <li>Short text messages and notifications from Brokers to target computer web browser <b>B</b></li>
+      <li>Files from File server to target computer web browser <b>B</b></li>
+    </ul>
+  </p>
+
+  <p id="transferred-data-is-private">
+    The transferred data <b>D</b> is kept private and is never made publicly available.
+  </p>
+
+  <p id="no-third-parties">
+    The transferred data <b>D</b> is not disclosed to third parties.
+  </p>
+
+  <p>
+    The transferred files are provided to the target <b>B</b> through short-lived URLs to encrypted resources. The User may save the decrypted transferred files to the storage of target device <b>B</b>.
+  </p>
+
+  <p id="cloud">
+    The Service uses cloud computing infrastructure providers. The facilities are Google Cloud Run, Google Cloud Storage, and Google Cloud Firestore.
+  </p>
+
+  <p id="android-e2ee">
+    Cool Maze for Android uses end-to-end encryption (E2EE) since its version 1.1.1909. This means that the service owner and the cloud infrastructure vendors can't read the data <b>D</b> transiting through the Service.
+  </p>
+
+  <p id="ios-e2ee">
+    Cool Maze for iOS uses end-to-end encryption (E2EE) since its version 1.2.1.
+  </p>
+
+  <p id="anonymous-stats">
+    Anonymous usage data is collected for analytics purpose. This data includes, and is not limited to:
+    <ul>
+      <li>country and city of usage,</li>
+      <li>size and type of transferred data <b>D</b>,</li>
+      <li>actions made by the same User,</li>
+      <li>software quality metrics, such as the timing performances of Service processings.</li>
+    </ul>
+  </p>
+
+  <div id="data-sent-necessary">
+    Data sent from the mobile to the server, necessary for proper message delivery:
+    <dl>
+      <dt>actionid</dt>
+      <dd>The unique ID of the current "Share" action</dd>
+
+      <dt>qrKey</dt>
+      <dd>The unique ID of the ephemeral communication channel of the current "Share" action</dd>
+
+      <dt>crypto</dt>
+      <dd>The encryption scheme used by the current "Share" action to achieve E2EE</dd>
+
+      <dt>cryptoderiv</dt>
+      <dd>The cryptographic key derivation function used by the current "Share" action to achieve E2EE</dd>
+
+      <dt>crypto_iv_*</dt>
+      <dd>Initialization vectors (IV) used for E2EE</dd>
+
+      <dt>mobilesecretscrambled</dt>
+      <dd>Cryptographic key</dd>
+
+      <dt>multiCount</dt>
+      <dd>Number of resources being shared by the current "Share" action</dd>
+
+      <dt>multiIndex</dt>
+      <dd>Index (zero-based) of the resource being shared</dd>
+
+      <dt>message</dt>
+      <dd>Text message being shared or URL to the resource being shared. This field is end-to-end encrypted (E2EE).</dd>
+
+      <dt>filename</dt>
+      <dd>Filename of the resource being shared. This field is end-to-end encrypted (E2EE).</dd>
+
+      <dt>thumb</dt>
+      <dd>Thumbnail of the resource being shared. This field is end-to-end encrypted (E2EE).</dd>
+
+      <dt>resized</dt>
+      <dd>Whether the shared resource was resized by the Cool Maze mobile app</dd>
+
+      <dt>width</dt>
+      <dd>The width of the shared resource (after optional resizing)</dd>
+
+      <dt>height</dt>
+      <dd>The height of the shared resource (after optional resizing)</dd>
+
+      <dt>bup</dt>
+      <dd>Number of resource bytes already sent, when the QR-code is scanned</dd>
+
+      <dt>gcsObjectName</dt>
+      <dd>File server path to the data being shared</dd>
+
+      <dt>user-agent</dt>
+      <dd>The Cool-Maze mobile app User Agent contains: App name, App version, App build number, plus 3 fields for service quality monitoring</dd>
+
+    </dl>
+
+    Data sent from the mobile to the server for service quality monitoring:
+    <dl id="data-sent-stats">
+      <dt>connection</dt>
+      <dd>Mobile connexion type: wifi, or mobile data</dd>
+
+      <dt>type</dt>
+      <dd>MIME type of the resource being shared</dd>
+
+      <dt>ext</dt>
+      <dd>File extension of the resource being shared</dd>
+
+      <dt>nth</dt>
+      <dd>Number of "Share" actions made by the current mobile app instance (since installation)</dd>
+
+      <dt>dark</dt>
+      <dd>Whether Cool Maze is displayed in Dark Mode</dd>
+
+      <dt>ttrz</dt>
+      <dd>Time to resize the resource on the mobile to reduce it, in milliseconds</dd>
+
+      <dt>ttmultrz</dt>
+      <dd>Time to resize all the resources of a multiple share action on the mobile, in milliseconds</dd>
+
+      <dt>origsize</dt>
+      <dd>Size of the original resource in bytes, before resizing</dd>
+
+      <dt>tte</dt>
+      <dd>Time to encrypt the resource on the mobile before uploading, in milliseconds</dd>
+
+      <dt>ttup</dt>
+      <dd>Time to upload the single resource from the mobile to the cloud File server, in milliseconds</dd>
+
+      <dt>ttmultup</dt>
+      <dd>Time to upload all the resources of a multiple share action from the mobile to the cloud File server, in milliseconds</dd>
+
+      <dt>ttscan</dt>
+      <dd>Time between the start of the "Share" action and the QR-code scan, in milliseconds</dd>
+
+      <dt>malg</dt>
+      <dd>Mobile display language</dd>
+
+      <dt>muloc</dt>
+      <dd>Mobile user locale</dd>
+
+      <dt>sample</dt>
+      <dd>When the sample picture is being shared</dd>
+
+      <dt>filenameUnknown</dt>
+      <dd>When the mobile app could not determine the original filename of the resource being shared</dd>
+
+      <dt>user-agent</dt>
+      <dd>The Cool-Maze mobile app User Agent contains: App installation ID, mobile OS, mobile model, plus 3 necessary App fields</dd>
+
+      <dt>sharer</dt>
+      <dd>The app that iniatiated the share intent</dd>
+
+      <dt>ttrtcx</dt>
+      <dd>Duration of WebRTC SDP exchange on the Mobile side, in milliseconds</dd>
+
+      <dt>qrsize</dt>
+      <dd>Display size of the QR code on scan: small, medium, or large</dd>
+    </dl>
+
+    Data sent from the target web browser to the server for service quality monitoring:
+    <dl>
+      <dt>ttf</dt>
+      <dd>Time to fetch (download) the resource from the cloud File server, in milliseconds</dd>
+
+      <dt>ttpf</dt>
+      <dd>Time to prefetch (download before scan) the encrypted resource from the cloud File server, in milliseconds</dd>
+
+      <dt>ttd</dt>
+      <dd>Time to decrypt the resource on the target web browser, in milliseconds</dd>
+
+      <dt>qrttnotif</dt>
+      <dd>Time between the generation of the QR-code and a scan notification for a single resource received by the web browser, in milliseconds</dd>
+
+      <dt>qrttcast</dt>
+      <dd>Time between the generation of the QR-code and a notification of (single or multiple) resource ready received by the web browser, in milliseconds</dd>
+
+      <dt>ctn</dt>
+      <dd>Short-lived cookie (36h) used for prefetch performance optimization</dd>
+
+      <dt>ttrtcx</dt>
+      <dd>Duration of WebRTC SDP exchange on the browser side, in milliseconds</dd>
+    </dl>
+  </div>
+
+  <h1 id="acknowlegements">Acknowlegements</h1>
+
+  <p>We thank 
+    <ul>
+      <li>the infrastructure provider <a href="https://cloud.google.com/">Google Cloud Platform</a>.</li>
+      <li><a href="https://github.com/">GitHub</a>.</li>
+      <li><a href="https://davidshimjs.github.io/qrcodejs/">qrcode.js</a>, <a href="https://github.com/zxing/zxing">ZXing</a>, <a href="http://loopj.com/android-async-http/">Android Asynchronous Http Client</a>.</li>
+    </ul>
+  <p>
+
+  <h1 id="copyright">Copyright</h1>
+  
+    <p>
+      ©2017-2025 Bartalog Software
+    </p>
+
+  <h1 id="contact">Contact</h1>
+
+  <p>
+    <a href="mailto:bartalogsoftware@gmail.com">bartalogsoftware@gmail.com</a>
+  </p>
+</body>
+</html>
