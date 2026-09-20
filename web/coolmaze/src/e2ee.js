@@ -1,99 +1,108 @@
-import CryptoJS from 'crypto-js';
-
-// End-to-en encryption.
+// End-to-end encryption.
 // The target client knows how to decrypt.
 
+import {warningBackend, errorBackend} from './backend.js';
+
+// Utility functions for conversion
+export function hexToBytes(hex) {
+    let bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+    }
+    return bytes;
+}
+
+export function base64ToBytes(base64) {
+    let binaryString = window.atob(base64);
+    let bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+}
+
+export function bytesToBase64(bytes) {
+    let binaryString = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binaryString += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binaryString);
+}
+
+export function bytesToUtf8(bytes) {
+    return new TextDecoder().decode(bytes);
+}
+
+// Derive a 128-bit key from passphrase using PBKDF2
+async function deriveKey(passPhrase, saltBytes, iterations) {
+    const encoder = new TextEncoder();
+    const passphraseBytes = encoder.encode(passPhrase);
+    
+    const keyMaterial = await window.crypto.subtle.importKey(
+        'raw',
+        passphraseBytes,
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits', 'deriveKey']
+    );
+
+    return await window.crypto.subtle.deriveKey(
+        {
+            name: 'PBKDF2',
+            salt: saltBytes,
+            iterations: iterations,
+            hash: 'SHA-1' // PBKDF2 uses SHA-1 by default
+        },
+        keyMaterial,
+        { name: 'AES-CTR', length: 128 },
+        false,
+        ['decrypt']
+    );
+}
+
 // The first and second args must be in base64.
-// The result will be a "words" object.
-function decrypt(algo, cipherText_b64, iv_b64, passPhrase) {
-  console.debug("Crypto algo [" + algo + "]");
-  console.debug("decrypt using IV [ " + iv_b64 + " ]");
+// The result will be a Uint8Array.
+async function decrypt(algo, cipherText_b64, iv_b64, passPhrase) {
+  // console.debug("Crypto algo [" + algo + "]");
+  // console.debug("decrypt using IV [ " + iv_b64 + " ], passPhrase [ " + passPhrase + " ]");
   if(algo && algo !== "AES/CTR/NoPadding") {
     console.warn("Only AES/CTR/NoPadding is currently supported. Found algo " + algo);
   }
-  console.debug("Deciphering " + cipherText_b64.length + " bytes of Base64 with iv_b64=" + iv_b64 + ", pass=" + passPhrase);
-  // This salt is a Cool-Maze-wide constant.
-  // Salt size is 32 bytes == (256 / 8)
-  let saltHex = '92d1615c585468f2d6a24cf5c56b53f922ce83f7e45d58a99b82b52fc2eb78e4';
-  let saltWords = CryptoJS.enc.Hex.parse(saltHex);
-  let iterations = 1000;
-  let aesKey = CryptoJS.PBKDF2(
-      passPhrase, 
-      saltWords, 
-      { keySize: 128/32, iterations: iterations });
-  console.debug("aesKey.toString(): " + aesKey.toString());
-
-  let cipherWords = CryptoJS.enc.Base64.parse(cipherText_b64);
-  console.debug(preview("cipherWords="+cipherWords, 160) + " (" + (""+cipherWords).length + " chars)");
-  // let ivHex =     'a217f5a0fb926f7009a4c821d76e6788';
-  // let ivWords = CryptoJS.enc.Hex.parse(ivHex);
-  let ivWords = CryptoJS.enc.Base64.parse(iv_b64);
-  console.debug("ivWords="+ivWords);
-  let decryptedWords = CryptoJS.AES.decrypt(
-    {
-      ciphertext: cipherWords,
-      salt: saltWords
-    },
-    aesKey, 
-    { 
-      iv: ivWords, 
-      padding: CryptoJS.pad.NoPadding,
-      mode: CryptoJS.mode.CTR
-    });
- //console.debug(decryptedWords);
- //console.debug("decryptedWords=" + decryptedWords);
- //let decrypted = hex2a(decryptedWords.toString());
- // console.debug("hex2a(decryptedWords)="+hex2a(decryptedWords.toString()));
- //let decrypted = decryptedWords.toString();
- //let decrypted = decryptedWords.toString(CryptoJS.enc.Utf8);
- //let decrypted = decryptedWords.toString(CryptoJS.enc.Latin1);
- //let decrypted = decryptedWords.toString(CryptoJS.enc.Utf16);
- //let decrypted = decryptedWords.toString(CryptoJS.enc.Hex);
- //let decrypted = CryptoJS.enc.Base64.stringify(decryptedWords);
- //console.debug("decrypted_ = " + decrypted);
- return decryptedWords;
+  // console.debug("Deciphering " + cipherText_b64.length + " bytes of Base64 with iv_b64=" + iv_b64 + ", pass=" + passPhrase);
+  
+  const cipherBytes = base64ToBytes(cipherText_b64);
+  return await decryptWords(algo, cipherBytes, iv_b64, passPhrase);
 }
 
-function preview(str, n) {
-  if(str.length < n)
-    return str;
-  return str.substring(0, n) + "…";
-}
-
-function decryptWords(algo, cipherWords, iv_b64, passPhrase) {
-  console.debug("Crypto algo [" + algo + "]");
-  console.debug("decryptWords using IV [ " + iv_b64 + " ]");
+async function decryptWords(algo, cipherBytes, iv_b64, passPhrase) {
+  // console.debug("Crypto algo [" + algo + "]");
+  // console.debug("decryptWords using IV [ " + iv_b64 + " ], passPhrase [ " + passPhrase + " ]");
   if(algo && algo !== "AES/CTR/NoPadding") {
     console.warn("Only AES/CTR/NoPadding is currently supported. Found algo " + algo);
   }
 
   // This salt is a Cool-Maze-wide constant.
   // Salt size is 32 bytes == (256 / 8)
-  let saltHex = '92d1615c585468f2d6a24cf5c56b53f922ce83f7e45d58a99b82b52fc2eb78e4';
-  let saltWords = CryptoJS.enc.Hex.parse(saltHex);
-  let iterations = 1000;
-  let aesKey = CryptoJS.PBKDF2(
-      passPhrase, 
-      saltWords, 
-      { keySize: 128/32, iterations: iterations });
-  console.debug("aesKey.toString(): " + aesKey.toString());
+  const saltHex = '92d1615c585468f2d6a24cf5c56b53f922ce83f7e45d58a99b82b52fc2eb78e4';
+  const saltBytes = hexToBytes(saltHex);
+  const iterations = 1000;
+  
+  const aesKey = await deriveKey(passPhrase, saltBytes, iterations);
+  const ivBytes = base64ToBytes(iv_b64);
 
-  // warning the following line is super-slow when cipherWords is large!
-  //console.debug(preview("cipherWords="+cipherWords, 100) + "(" + (""+cipherWords).length + " chars)");
-  let ivWords = CryptoJS.enc.Base64.parse(iv_b64);
-  console.debug("ivWords="+ivWords);
-  let decryptedWords = CryptoJS.AES.decrypt(
+  const decrypted = await window.crypto.subtle.decrypt(
     {
-      ciphertext: cipherWords,
-      salt: saltWords
+      name: "AES-CTR",
+      counter: ivBytes,
+      length: 128 // Full IV is the counter
     },
-    aesKey, 
-    { 
-      iv: ivWords, 
-      padding: CryptoJS.pad.NoPadding,
-      mode: CryptoJS.mode.CTR
-    });
- return decryptedWords;
+    aesKey,
+    cipherBytes
+  );
+
+  // If the input is incorrect, no error is thrown.
+  // Instead, the returned bytes are gibberish.
+  return new Uint8Array(decrypted);
 }
 
 export const Decrypt = decrypt;

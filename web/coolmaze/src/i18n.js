@@ -22,6 +22,15 @@ i18n
     debug: true,
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
+      defaultVariables: {
+        appName: process.env.REACT_APP_app_name,
+        appDomain: process.env.REACT_APP_app_domain,
+        backendDomain: process.env.REACT_APP_backend_domain,
+        blogUrl: process.env.REACT_APP_blog_url,
+        bugTrackerUrl: process.env.REACT_APP_bug_tracker_url,
+        youtube_demo_video_en_id: process.env.REACT_APP_youtube_demo_video_en_id,
+        youtube_demo_video_fr_id: process.env.REACT_APP_youtube_demo_video_fr_id
+      }
     },
     transSupportBasicHtmlNodes: true,
     react: { 

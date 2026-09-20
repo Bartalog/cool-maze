@@ -31,6 +31,7 @@ class MainZone extends Component {
       var multiItems = this.props.multiItems;
       var spinning = this.props.spinning;
       var openAsDownload = this.props.openAsDownload;
+      var onRotateResource = this.props.onRotateResource;
       var e2ee = this.props.e2ee;
       var resourceDownloadProgress = this.props.resourceDownloadProgress;
   
@@ -77,6 +78,7 @@ class MainZone extends Component {
             youtubeID={youtubeID}
             spinning={spinning}
             openAsDownload={openAsDownload}
+            onRotateResource={onRotateResource}
             e2ee={e2ee}
             resourceDownloadProgress={resourceDownloadProgress}
           />

@@ -1,15 +1,15 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, onSnapshot } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 
-
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAzaeJ9eRP9ikP8Phzf6QjuIh-4ZwVHX7E",
-  authDomain: "cool-maze-push.firebaseapp.com",
-  projectId: "cool-maze-push",
-  storageBucket: "cool-maze-push.appspot.com",
-  messagingSenderId: "471489957828",
-  appId: "1:471489957828:web:06d5543fef7c3b4ce11e91"
+  apiKey: "AIzaSyCtxd4KFpIQOsfWUQ3YRpxBxvx9Hf8tD-g",
+  authDomain: "cool-maze.firebaseapp.com",
+  projectId: "cool-maze",
+  storageBucket: "cool-maze.firebasestorage.app",
+  messagingSenderId: "1012380534553",
+  appId: "1:1012380534553:web:5cb3e9c7f9d1d01b786788"
 };
 
-export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app, "actions-eu");

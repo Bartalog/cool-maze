@@ -16,15 +16,25 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>Cool Maze - Send your document from mobile to computer</title>
+    <link rel="canonical" href="https://pushto.computer/" />
+    <title>%REACT_APP_app_name% — Send files from your mobile to your computer</title>
+    <!--
+      Best-effort attempt to resolve DNS to GCS early, possibly even a TCP connection
+      if scan happens in less than 10s.
+    -->
+    <link rel="preconnect" href="https://storage.googleapis.com" crossorigin>
   </head>
   <body>
     <script type="text/javascript">
+      // Redirect legacy domain to new home
+      if (location.hostname === "coolmaze.io" || location.hostname === "www.coolmaze.io") {
+        location.replace("https://pushto.computer" + location.pathname + location.search);
+      }
       // Cool Maze is unfortunately not compatible with IE
       if(/MSIE \d|Trident.*rv:/.test(navigator.userAgent)) {
-          document.write('<h1>Cool Maze</h1>');
+          document.write('<h1>%REACT_APP_app_name%</h1>');
           document.write('<div style="color: green;">Your browser seems to be Internet Explorer. '
-            + 'To share pictures with Cool Maze, please use either Edge, or Chrome, or Firefox.</div>');
+            + 'To share pictures with %REACT_APP_app_name%, please use either Edge, or Chrome, or Firefox.</div>');
       }
     </script>
     <div id="root"></div>

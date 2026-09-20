@@ -8,7 +8,7 @@ let mainDomain = "https://coolmaze.io";
 // The historical domain "appspot.com" is coupled to App Engine.
 // 2025-02: To prepare a migration to Cloud Run, we now use the subdomain "backend.coolmaze.io" for all the call to
 // the backend.
-let backend = "https://backend.coolmaze.io";
+let backend = "https://" + process.env.REACT_APP_backend_domain;
 // let backend = "https://backend-1012380534553.us-central1.run.app";
 // let backend = "https://coolmaze.io";
 //let backend = "https://cool-maze.uc.r.appspot.com";
@@ -24,7 +24,7 @@ let backend = "https://backend.coolmaze.io";
 // possible.
 // The request may be slow or fast, anyway we don't need to 
 // wait for the response.
-function wakeUp(chanID){
+function wakeUp(chanID, clientPrefix){
 
     // issues/514
     // Generate and register a transient client name, to get a chance to receive
@@ -37,22 +37,22 @@ function wakeUp(chanID){
         // Cookies.set('ctn', transient, { expires: 1.5, domain: 'localhost:8080' });  // For local dev
     }
 
-    var wakeup = new XMLHttpRequest();
-    var wuEndpoint = backend + "/wakeup";
-    var wuParam = "qrKey=" + chanID;
-    wuParam += `&push=${PusherTechName}`;
-    // 2025-03+ problem: subdomains coolmaze.io and backend.coolmaze.io don't play
-    // nicely together with cookie. Passing ctn as query param.
-    wuParam += `&ctn=${transient}`;
-    wakeup.open("POST", wuEndpoint, true);
-    wakeup.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    wakeup.send( wuParam );
+    const data = new URLSearchParams();
+    data.append("chanid", chanID);
+    data.append("push", PusherTechName);
+    if(clientPrefix)
+        data.append("client", clientPrefix);
+    data.append("ctn", transient);
+    fetch(`${backend}/wakeup`, {
+        method: "POST",
+        body: data,
+    });
 }
 
 // Tell the server that the resource was sucessfully received by client.
 // Same acknowledgement for Single and Multi.
 // We don't need to wait for the response.
-function ack(qrKey, actionID, durations, singleFilenameIsUnknown, qrSize) {
+function ack(chanID, actionID, durations, singleFilenameIsUnknown, qrSize, clientPrefix) {
 
     // issues/514
     // Generate and register a transient client name, to get a chance to receive
@@ -65,54 +65,48 @@ function ack(qrKey, actionID, durations, singleFilenameIsUnknown, qrSize) {
         //Cookies.set('ctn', transient, { expires: 1.5, domain: 'localhost:8080' });  // For local dev
     }
 
-    var ack = new XMLHttpRequest();
-    var endpoint = backend + "/ack";
-    var params = "qrKey=" + qrKey + "&actionid=" + actionID;
-
-    if(durations["qrToNotif"])
-        params += "&qrttnotif=" + durations["qrToNotif"];
-    if(durations["qrToCast"])
-        params += "&qrttcast=" + durations["qrToCast"];
-    if(durations["decrypt"])
-        params += "&ttd=" + durations["decrypt"];
-    if(durations["prefetch"])
-        params += "&ttpf=" + durations["prefetch"];
-    if(durations["fetch"])
-        params += "&ttf=" + durations["fetch"];
-    if(durations["webrtcSDPExchange"])
-        params += "&ttrtcx=" + durations["webrtcSDPExchange"];
-
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        // dark mode!
-        params += "&dark=1";
+    function append(params, key, value) {
+        // Add param only if not empty
+        if(value)
+            params.append(key, value);
     }
-    params += `&push=${PusherTechName}`;
-    if(singleFilenameIsUnknown) {
+
+    const data = new URLSearchParams();
+    append(data, "chanid", chanID);
+    append(data, "actionid", actionID);
+    append(data, "qrttnotif", durations["qrToNotif"]);
+    append(data, "qrttcast", durations["qrToCast"]);
+    append(data, "ttd", durations["decrypt"]);
+    append(data, "ttpf", durations["prefetch"]);
+    append(data, "ttf", durations["fetch"]);
+    append(data, "ttrtcx", durations["webrtcSDPExchange"]);
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        append(data, "dark", "1");
+    append(data, "push", PusherTechName);
+    if(singleFilenameIsUnknown){
         // If the original filename could not be determined, inform the backend
         // (even if the root cause of the problem is in the mobile app)
-        params += `&filenameUnknown=1`;
+        append(data, "filenameUnknown", "1");
     }
-    params += `&qrsize=` + qrSize;
-    // 2025-03+ problem: subdomains coolmaze.io and backend.coolmaze.io don't play
-    // nicely together with cookie. Passing ctn as query param.
-    params += `&ctn=${transient}`;
-    ack.open("POST", endpoint, true);
-    ack.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    ack.send( params );
-    console.debug("Acked actionID " + actionID);
+    append(data, "qrsize", qrSize);
+    append(data, "ctn", transient);
+    append(data, "client", clientPrefix);
+    fetch(`${backend}/ack`, {
+        method: "POST",
+        body: data,
+    });
 
-    // TODO send 2 acks:
-    // - 1 when resourceURL successfully received
-    // - 1 when resource successfully loaded
+
+    console.debug("Acked actionID " + actionID);
 }
 
 // Tell the server that 1 resource was sucessfully received by client,
 // in a multi share action.
 // We don't need to wait for the response.
-function partialAck(qrKey, actionID, multiIndex, multiCount, durations, filenameIsUnknown) {
+function partialAck(chanID, actionID, multiIndex, multiCount, durations, filenameIsUnknown) {
     var ack = new XMLHttpRequest();
     var endpoint = backend + "/partial-ack";
-    var params = `qrKey=${qrKey}`
+    var params = `chanid=${chanID}`
                     + `&actionid=${actionID}`
                     + `&multiIndex=${multiIndex}`
                     + `&multiCount=${multiCount}`
@@ -135,61 +129,96 @@ function partialAck(qrKey, actionID, multiIndex, multiCount, durations, filename
     console.debug(`Partial acked ${multiIndex}/${multiCount} for actionID ${actionID}`);
 }
 
+// Tell the server that 1 preview (thumb) was sucessfully received and decrypted by the.
+// We don't need to wait for the response.
+function previewAck(actionID, multiIndex, multiCount) {
+    const data = new URLSearchParams();
+    data.append("actionid", actionID);
+    data.append("multiIndex", multiIndex);
+    data.append("multiCount", multiCount);
+    fetch(`${backend}/preview-ack`, {
+        method: "POST",
+        body: data,
+    });
+}
+
 function usingFeature(what) {
     fetch(`${backend}/using/web/${what}`, {method: "POST"});
 }
 
-function fence(actionid, chanID) {
-    if(!actionid) {
-        return;
-    }
-
-    // This request does not use the same backend hostname as the other requests.
-    // It uses functionality only available in App Engine, hence the explicit App Engine domain.
-    let fenceBackendHost = "https://cool-maze.appspot.com";
-
-    var fence = new XMLHttpRequest();
-    var fEndpoint = fenceBackendHost + "/fence";
-    var fParam = "actionid=" + actionid;
-    fParam += `&qrKey=${chanID}`;
-    fence.open("POST", fEndpoint, true);
-    fence.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    fence.send( fParam );
+// Tell the backend that the desktop user closed the tab/window (or navigated away)
+// while a share was still in progress, so that the ongoing action can be interrupted
+// on the mobile side instead of letting the mobile wait until its own timeout.
+//
+// This is meant to be triggered from a `pagehide` handler. Two properties matter:
+//   - We use navigator.sendBeacon (falling back to fetch keepalive): a plain fetch
+//     issued during page teardown is frequently killed before it leaves the browser,
+//     whereas a beacon is queued and guaranteed the delivery attempt.
+//   - `pagehide` does NOT fire on tab switching or minimizing, only on real teardown
+//     (tab close, window close, navigation away, reload). So this never emits a
+//     spurious halt for a user who merely switched to another tab.
+// chanKey is the sha256-derived channel id, never the raw secret, so it is safe to send.
+function tabClosed(actionID, chanKey) {
+    cancelAction(actionID, chanKey, "tab closed");
 }
 
-function warning(actionid, chanKey, message) {
+function userCancel(actionID, chanKey) {
+    cancelAction(actionID, chanKey, "browser user canceled");
+}
+
+function cancelAction(actionID, chanKey, message) {
+    if(!actionID) {
+        // No share that the backend knows about yet: nothing to interrupt.
+        return;
+    }
+    const data = new URLSearchParams();
+    data.append("actionid", actionID);
+    data.append("chan", chanKey);
+    data.append("message", message);
+    const endpoint = `${backend}/target-cancel`;
+    if(navigator.sendBeacon) {
+        navigator.sendBeacon(endpoint, data);
+    } else {
+        // keepalive lets the request outlive the page even without sendBeacon.
+        fetch(endpoint, {method: "POST", body: data, keepalive: true});
+    }
+}
+
+function logMessage(actionID, chanKey, message, level) {
+    const data = new URLSearchParams({
+        "component": "frontend", // TODO version of the frontend?
+        "level": level,
+        "actionid": actionID,
+        "chan": chanKey,
+        "message": message
+    });
+    fetch(`${backend}/log`, {
+        method: "POST",
+        body: data,
+    });
+}
+
+function warning(actionID, chanKey, message) {
     // Call warning to signal a non-blocking error to the backend.
     // actionID may be null if it has not been provided by the backend yet.
     // chanKey must not contain any secret.
-    const data = new URLSearchParams();
-    data.append("actionid", actionid);
-    data.append("chan", chanKey);
-    data.append("message", message);
-    fetch(`${backend}/warning/web`, {
-        method: "POST",
-        body: data,
-    });
+    logMessage(actionID, chanKey, message, "warning");
 }
 
-function error(actionid, chanKey, message) {
+function error(actionID, chanKey, message) {
     // Call error to signal a failure to the backend.
     // actionID may be null if it has not been provided by the backend yet.
     // chanKey must not contain any secret.
-    const data = new URLSearchParams();
-    data.append("actionid", actionid);
-    data.append("chan", chanKey);
-    data.append("message", message);
-    fetch(`${backend}/error/web`, {
-        method: "POST",
-        body: data,
-    });
+    logMessage(actionID, chanKey, message, "error");
 }
 
 export const wakeUpBackend = wakeUp;
 export const ackBackend = ack;
 export const partialAckBackend = partialAck;
-export const fenceBackend = fence;
+export const previewAckBackend = previewAck;
 export const using = usingFeature;
+export const tabClosedBeacon = tabClosed;
+export const userCancelBeacon = userCancel;
 export const backendHost = backend;
 export const warningBackend = warning;
 export const errorBackend = error;

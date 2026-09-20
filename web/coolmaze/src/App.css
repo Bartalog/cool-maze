@@ -196,6 +196,27 @@ input[readonly]
   animation: kf-resize-6-to-4 0.2s ease-in;
 }
 
+#qrcode.qr-resize-1-to-2 > canvas,
+#qrcode.qr-resize-4-to-2 > canvas,
+#qrcode.qr-resize-6-to-2 > canvas {
+  min-width: 150px;
+  min-height: 150px;
+  max-height: calc(100vh - 94px);
+}
+#qrcode.qr-resize-1-to-4 > canvas,
+#qrcode.qr-resize-2-to-4 > canvas,
+#qrcode.qr-resize-6-to-4 > canvas {
+  min-width: 300px;
+  min-height: 300px;
+  max-height: calc(100vh - 94px);
+}
+#qrcode.qr-resize-1-to-6 > canvas,
+#qrcode.qr-resize-4-to-6 > canvas {
+  min-width: 450px;
+  min-height: 450px;
+  max-height: calc(100vh - 94px);
+}
+
 #qrcode:hover {
   animation: shake 0.2s;
   animation-iteration-count: 2;
@@ -322,6 +343,15 @@ input[readonly]
   color: #353;
   font-weight: bolder;
 }
+.open-website-in-computer strong {
+  border: 1px #444 solid;
+  border-radius: 0.5em;
+  padding: 0 0.6em 0 0.1em;
+  background-color: white;
+  color: #222;
+  white-space: nowrap;
+}
+
 .stores {
   margin-top: 6px;
 }
@@ -414,22 +444,47 @@ header {
   min-height: 52px;
 }
 
-table.topbar {
+.topbar {
+  display: flex;
+  align-items: flex-start;
   width: 100%;
 }
 
-.topbar td {
-  width: 20%;
-  vertical-align: top;
+/* Three equal-width zones so the center (Save) button stays horizontally
+   centered regardless of how many buttons the side zones hold. */
+.topbar-zone {
+  flex: 1 1 0;
+  display: flex;
+  min-width: 60px;
+}
+
+.topbar-left {
+  margin-left: 1rem;
+  justify-content: flex-start;
+}
+
+.topbar-center {
+  justify-content: center;
+  position: relative;
+}
+
+.topbar-right {
+  margin-right: 1rem;
+  justify-content: flex-end;
+}
+
+/* Loading spinner / error indicator sits to the right of the centered Save
+   button, absolutely positioned so it never pushes the button off-center. */
+.topbar-status {
+  position: absolute;
+  left: 100%;
+  display: flex;
+  align-items: flex-start;
 }
 
 .topbar img.spinning {
   margin-top: 6px;
   height: 36px;
-}
-
-.topbar td {
-  min-width: 60px;
 }
 
 .topbar button {
@@ -584,11 +639,18 @@ img.help-schema {
   height: auto;
 }
 
-.download-item {
+.download-item,
+.copy-item,
+.rotate-item {
   border: none;
   background-color: transparent;
   color: #777;
   cursor: pointer;
+}
+
+.copy-item.checked path {
+    stroke: currentColor;
+    stroke-width: 4px;
 }
 
 .lightbox {
@@ -598,7 +660,7 @@ img.help-schema {
   left: 0;
   width: 100vw  !important;
   height: 100vh !important;
-  margin: 0 !important;
+  margin: 0;
 
   background: linear-gradient(#558C, #005C);
 
@@ -617,7 +679,11 @@ img.help-schema {
 
   border: none;
   border-radius: 0;
-  cursor: zoom-out;
+  cursor: zoom-in;
+}
+
+.lightbox.zoomed {
+  cursor: move;
 }
 
 
@@ -719,6 +785,7 @@ img.help-schema {
   padding-right: 10px;
 
   white-space: pre-line;
+  word-break: break-all;
   font-size: 3em;
   font-family: "Arial Black", Gadget, sans-serif;
 }
@@ -772,18 +839,15 @@ button:disabled{
 
 
 #inbox-multi {
-  height: 90%;
   min-height: 50px;
-  width: 94%;
   padding-top: 16px;
-  margin-left: 2%;
+  columns: 280px;
+  column-gap: 20px;
 }
 
 .multi-item {
-  float: left;
-  margin-left: 30px;
-  margin-top: 12px;
-  width: 300px;
+  break-inside: avoid;
+  margin-bottom: 20px;
   min-height: 100px;
 }
 
@@ -873,13 +937,37 @@ progress.complete {
   }
 
 
-  #help img.help-schema {
-    padding-left: 8%;
-    padding-right: 8%;
-    width: 84%;
-    max-width: 84%;
+  img.help-schema {
+    display: none;
   }
 
+  #help {
+    max-width: calc(100vw - 20px);
+    overflow: hidden;
+  }
+
+  #help ol.steps {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: 1.5em;
+  }
+
+  #help .steps li {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .stores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stores img {
+    width: 140px;
+    margin-right: 0;
+  }
 
   #help .warning-specific-QR {
     margin-left: 0%;
@@ -1023,6 +1111,11 @@ progress.complete {
     border-radius: 5px;
   }
 
+  .resource-picture.lightbox {
+    border: none;
+    border-radius: 0;
+  }
+
   /* White box, even in dark mode.*/
   .inbox-text a {
     color: #44D;
@@ -1030,5 +1123,54 @@ progress.complete {
 
   .inbox-text a:visited{
     color: #66E;
+  }
+}
+
+.bug-notice {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7); /* Dark theme default */
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: left;
+  font-size: 1.0em;
+  z-index: 1000; /* Ensure it's on top */
+}
+
+.bug-notice summary {
+  font-size: 1.2em;
+}
+
+/* Minimalistic self-dismissing toast, e.g. "Copied to the clipboard". */
+#toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 1.2em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1001; /* Above the lightbox and the bug-notice */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+
+#toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-color-scheme: light) {
+  .bug-notice {
+    background-color: rgba(255, 255, 255, 0.7);
+    color: black;
   }
 }

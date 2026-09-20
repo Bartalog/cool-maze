@@ -1,28 +1,29 @@
 {
+    "tagline": "Sende dein Dokument vom Handy an den Computer",
+
     "topbar": {
       "tooltips": {
         "whatIsThis": "Was ist das…",
-        "openInNewTab": "In einem neuen Fenster öffnen",
         "save": "Speichern",
-        "saveAsZIP": "Alles  als ZIP speichern",
+        "saveAll": "Alles speichern",
         "clear": "Neustarten"
       }
     },
 
     "help": {
-        "qrOnlyWithCoolMaze": "Dieser QR-code funktionniert nur mit der Cool Maze Mobile App!",
+        "qrOnlyWithCoolMaze": "Dieser QR-code funktionniert nur mit der {{appName}} Mobile App!",
         "intro": "Sende ein Dokument von deinem Handy an einen Computer oder Beamer",
         "steps": {
-            "1": "Installiere <strong>Cool Maze</strong> auf deinem Handy",
-            "2": "Öffne <strong>coolmaze.io</strong> auf dem Computer",
+            "1": "Installiere <strong>{{appName}}</strong> auf deinem Handy",
+            "2": "Öffne <strong>🔒 {{appDomain}}</strong> auf dem Computer",
             "3": {
                 "text": "Betrachte das Dokument auf dem Handy (Foto, Video, URL, PDF), wähle",
                 "shareVia": "Senden über"
             },
             "4": "Scanne den QR-code"
         },
-        "demoVideoURL": "https://www.youtube.com/embed/poPqMiGm23g?cc_load_policy=1",
-        "thatsIt": "Das ist Alles. Keine Registrierung, kein Passwort, keine Werbung.",
+        "demoVideoURL": "https://www.youtube.com/embed/{{youtube_demo_video_en_id}}?cc_load_policy=1",
+        "thatsIt": "Das ist Alles. Keine Registrierung, kein Passwort.",
         "needInternet": "Die beiden Geräte (Sender und Empfänger) müssen mit dem Internet verbunden sein.",
         "privacy": {
           "text": "<strong>Deine Daten bleiben privat</strong>. Sie sind nicht öffentlich sichtbar. Sie werden nicht an Dritte weitergeleitet. Sieh die",
@@ -30,8 +31,13 @@
           "inEnglish": " (auf Englisch)"
         },
         "timeout": "Vergiss nicht das gesendete Dokument auf dem Computer zu speichern.",
-        "blog": "The Cool Maze blog",
-        "reportBug": "Einen Fehler melden",
+        "blog": "The {{appName}} blog",
+        "reportBug": {
+            "reportInThe": "Melden Sie ein Problem im",
+            "bugTracker": "Bugtracker",
+            "or": "oder",
+            "byEmail": "per E-Mail"
+        },
         "hotmaze": {
           "text": "Aber ich möchte lieber vom Computer auf das Handy senden! Dann benutze"
         }
@@ -45,6 +51,7 @@
 
     "item": {
         "beingReceivedPlaceholder": "...  Dokument wird empfangen  ...",
+        "copyToClipboard": "Kopieren",
         "wasDownscaled": {
             "text": "Dieses Bild wurde verkleinert",
             "to": "auf"
@@ -52,9 +59,12 @@
         "e2ee": {
             "text": "Diese Sendung wurde",
             "e2ee": "von Ende-zu-Ende verschlüsselt",
-            "tooltip": "Die von der Cool Maze App gesendeten Daten sind so verschlüsselt, dass der Cool Maze Anbieter diese nicht lesen kann.",
+            "tooltip": "Die von der {{appName}} App gesendeten Daten sind so verschlüsselt, dass der {{appName}} Anbieter diese nicht lesen kann.",
             "shortText": "Von Ende-zu-Ende verschlüsselt"
-        }
+        },
+        "rotateCCW": "90° gegen den Uhrzeigersinn drehen",
+        "redirectTo": "Weiterleitung zu",
+        "receivedTextMessage": "Text erhalten"
     },
 
     "zip": {
@@ -63,12 +73,35 @@
     },
 
     "mobileBanner": {
-        "coolMazeForAndroid": "Cool Maze für Android",
-        "coolMazeForIOS": "Cool Maze für iOS"
+        "coolMazeForAndroid": "{{appName}} für Android",
+        "coolMazeForIOS": "{{appName}} für iOS"
+    },
+
+    "keyboardShortcuts": {
+        "title": "Tastenkürzel:",
+        "esc": "Zurücksetzen & neue Aktion starten",
+        "fullscreen": "Bild im Vollbildmodus",
+        "download": "Dokument herunterladen",
+        "rotate": "Bild drehen",
+        "copy": "In die Zwischenablage kopieren",
+        "help": "Hilfe anzeigen",
+        "bigger": "QR-Code vergrößern",
+        "shortcuts": "Tastenkürzel anzeigen"
+    },
+
+    "toast": {
+        "copiedToClipboard": "In die Zwischenablage kopiert"
     },
 
     "webRTC": {
         "receiving": "Herunterladen",
-        "data": "Datei"
+        "data": "Datei",
+        "error": "Übertragung fehlgeschlagen: Die beiden Geräte konnten sich nicht direkt verbinden."
+    },
+
+    "bugNotice": {
+        "summary": "Cool Maze wird zu Push to Computer",
+        "explanation": "Erklärung",
+        "inTheBlog": "im Blog"
     }
   }

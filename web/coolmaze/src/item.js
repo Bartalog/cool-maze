@@ -6,15 +6,209 @@ import ResourceIcon from './resourceicon.js';
 import MdAspectRatio from 'react-icons/lib/md/aspect-ratio';
 import MdLockOutline from 'react-icons/lib/md/lock-outline';
 import MdContentCopy from 'react-icons/lib/md/content-copy';
+import MdRotate90DegreesCcw from 'react-icons/lib/md/rotate-90-degrees-ccw';
 import FaDownload from 'react-icons/lib/fa/download';
-import {base64toBlob, isImageType, isAudioType, isVideoType} from './util.js';
+import FaCopy from 'react-icons/lib/fa/copy';
+import {base64toBlob, isImageType, isAudioType, isVideoType, base64ByteSize, formatFileSize} from './util.js';
 import {using, warningBackend, errorBackend} from './backend.js';
+import {showCopiedToast} from './toast.js';
 
 require('string.prototype.startswith');
 
 // 1 received resource or message.
 // To be used in a single or multi inbox. 
 class Item extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            lightbox: false,
+            zoomed: false,
+            dragging: false,
+            dragged: false,
+            offsetX: 0,
+            offsetY: 0,
+            lastX: 0,
+            lastY: 0,
+            rotatedData_b64: null,
+            rotatedType: null,
+        };
+    }
+
+    toggleItemFullscreen = ( e ) => {
+        let count = this.props.multiCount || 1;
+        let index = this.props.multiIndex || 0;
+        let suffix = count <= 1 ? "" : `/${index}`;
+
+        // Case 1 item box => fullscreen
+        if( !this.state.lightbox ) {
+          this.setState({ lightbox: true, zoomed: false });
+          using("item/lightbox" + suffix);
+          return;
+        }
+        // Case 2 fullscreen => zoomed
+        if( !this.state.zoomed ) {
+          this.setState({ zoomed: true, offsetX: 0, offsetY: 0 });
+          using("item/zoomed" + suffix);
+          return;
+        }
+        // Case 3 back to item box
+        this.setState({ lightbox: false, zoomed: false });
+    }
+
+    handleMouseDown = (e) => {
+        if (!this.state.zoomed) return;
+        this.setState({
+            dragging: true,
+            dragged: false,
+            lastX: e.clientX,
+            lastY: e.clientY
+        });
+    }
+
+    handleMouseMove = (e) => {
+        if (!this.state.dragging) return;
+        const deltaX = e.clientX - this.state.lastX;
+        const deltaY = e.clientY - this.state.lastY;
+        
+        const { offsetX, offsetY } = this.applyBounds(e.target, this.state.offsetX + deltaX, this.state.offsetY + deltaY);
+
+        if (Math.abs(offsetX - this.state.offsetX) > 1 || Math.abs(offsetY - this.state.offsetY) > 1) {
+            this.setState({ dragged: true });
+        }
+
+        this.setState({
+            offsetX,
+            offsetY,
+            lastX: e.clientX,
+            lastY: e.clientY
+        });
+    }
+
+    handleMouseUp = (e) => {
+        this.setState({ dragging: false });
+    }
+
+    handleTouchStart = (e) => {
+        if (!this.state.zoomed) return;
+        const touch = e.touches[0];
+        this.setState({
+            dragging: true,
+            dragged: false,
+            lastX: touch.clientX,
+            lastY: touch.clientY
+        });
+    }
+
+    handleTouchMove = (e) => {
+        if (!this.state.dragging) return;
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - this.state.lastX;
+        const deltaY = touch.clientY - this.state.lastY;
+        
+        const { offsetX, offsetY } = this.applyBounds(e.target, this.state.offsetX + deltaX, this.state.offsetY + deltaY);
+
+        if (Math.abs(offsetX - this.state.offsetX) > 1 || Math.abs(offsetY - this.state.offsetY) > 1) {
+            this.setState({ dragged: true });
+        }
+
+        this.setState({
+            offsetX,
+            offsetY,
+            lastX: touch.clientX,
+            lastY: touch.clientY
+        });
+        if (e.cancelable) e.preventDefault();
+    }
+
+    applyBounds = (img, x, y) => {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const zoom = 2.4;
+
+        const imageAspectRatio = img.naturalWidth / img.naturalHeight;
+        const viewportAspectRatio = viewportWidth / viewportHeight;
+
+        let displayedWidth, displayedHeight;
+        if (imageAspectRatio > viewportAspectRatio) {
+            displayedWidth = viewportWidth;
+            displayedHeight = viewportWidth / imageAspectRatio;
+        } else {
+            displayedWidth = viewportHeight * imageAspectRatio;
+            displayedHeight = viewportHeight;
+        }
+
+        const zoomedWidth = displayedWidth * zoom;
+        const zoomedHeight = displayedHeight * zoom;
+
+        let resX = x;
+        let resY = y;
+
+        if (zoomedWidth > viewportWidth) {
+            const maxOffsetX = (zoomedWidth - viewportWidth) / 2;
+            resX = Math.max(-maxOffsetX, Math.min(maxOffsetX, x));
+        } else {
+            resX = 0;
+        }
+
+        if (zoomedHeight > viewportHeight) {
+            const maxOffsetY = (zoomedHeight - viewportHeight) / 2;
+            resY = Math.max(-maxOffsetY, Math.min(maxOffsetY, y));
+        } else {
+            resY = 0;
+        }
+
+        return { offsetX: resX, offsetY: resY };
+    }
+
+    handleImageClick = (e) => {
+        if (this.state.dragged) {
+            this.setState({ dragged: false });
+            return;
+        }
+        this.toggleItemFullscreen(e);
+    }
+
+    rotateImageCCW = async (base64Data, resourceType) => {
+        const img = new Image();
+        img.src = `data:${resourceType};base64,${base64Data}`;
+        // decode() rejects on a malformed or unsupported image — let it propagate.
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        // Swap width and height for 90° rotation
+        canvas.width = img.height;
+        canvas.height = img.width;
+        const ctx = canvas.getContext("2d");
+        ctx.translate(0, img.width);
+        ctx.rotate(-Math.PI / 2);
+        ctx.drawImage(img, 0, 0);
+        // Re-encode in the same format as the input to avoid format-switch bloat
+        // (e.g. JPEG → PNG would be ~12× heavier). JPEG needs an explicit quality
+        // argument; PNG is lossless and ignores it. Fall back to JPEG for any
+        // format that canvas cannot encode (e.g. GIF, HEIC).
+        const canEncode = resourceType === "image/png" || resourceType === "image/jpeg" || resourceType === "image/webp";
+        const outputType = canEncode ? resourceType : "image/jpeg";
+        const quality    = outputType === "image/jpeg" ? 0.85 : undefined;
+
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                // toBlob passes null on failure (tainted canvas, memory pressure, …)
+                if (!blob) {
+                    reject(new Error("canvas.toBlob returned null — cannot encode rotated image"));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
+                reader.onloadend = () => {
+                    if (reader.error) { reject(reader.error); return; }
+                    const b64 = reader.result && reader.result.split(',')[1];
+                    if (!b64) { reject(new Error("FileReader produced empty result")); return; }
+                    resolve({ data: b64, type: outputType });
+                };
+                reader.readAsDataURL(blob);
+            }, outputType, quality);
+        });
+    }
+
     render() {
 
       if (this.props.resourceData_b64)
@@ -31,7 +225,9 @@ class Item extends Component {
         // on each paint.
       }
 
-      if (this.props.resourceUrl && this.props.resourceUrl.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/sample"))
+      if (this.props.resourceUrl &&
+          (  this.props.resourceUrl.startsWith("https://storage.googleapis.com/cool-maze.appspot.com/sample")
+          || this.props.resourceUrl.startsWith("https://storage.googleapis.com/push-to-computer/sample/")))
         return this.render_unencrypted_resource(); // The Android sample share message is encrypted, but the file is not
   
       if (this.props.thumb){
@@ -66,8 +262,8 @@ class Item extends Component {
           e2eeLock = <div className="e2ee-message item-extra-info" key="e2ee-message"><MdLockOutline/>{t('item.e2ee.text')} <span title={t('item.e2ee.tooltip')} className="hint">{t('item.e2ee.e2ee')}</span>.</div>;
 
       let index = this.props.multiIndex || 0;
-      let type = this.props.resourceType;
-      let data = this.props.resourceData_b64;
+      let type = this.state.rotatedType || this.props.resourceType;
+      let data = this.state.rotatedData_b64 || this.props.resourceData_b64;
       let filename = this.props.resourceFilename;
       function dl() {
         // Works for any single resource, even from a multi-share.
@@ -84,24 +280,85 @@ class Item extends Component {
         // using(`download/item/${index}/success`); ??
       }
       let downloadButton = 
-        <div>
-          <button onClick={dl} title={t('topbar.tooltips.save')} key="download-item" className="download-item">
-            <FaDownload />
-          </button>
-        </div>;
+        <button onClick={dl} title={t('topbar.tooltips.save')} key="download-item" className="download-item">
+          <FaDownload />
+        </button>
 
-      function toggleItemFullscreen( e ) {
-        let fullscreen = e.target.classList.toggle("lightbox");
-        if(fullscreen) {
-          let suffix = count <= 1 ? "" : `/${index}`;
-          using("item/lightbox" + suffix);
+        async function copyBase64ImageToClipboard(resourceType, base64Data, button) {
+          let blob = base64toBlob(base64Data, resourceType);
+          // Chrome supports only image/png — so convert JPEG to PNG if needed
+          if (resourceType === "image/jpeg") {
+            const img = new Image();
+            img.src = `data:${resourceType};base64,${base64Data}`;
+            await img.decode();
+            // Draw JPEG on canvas and convert to PNG
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            blob = await new Promise(resolve => 
+              canvas.toBlob(resolve, "image/png")
+            );
+            resourceType = "image/png"; // update type
+          }
+          navigator.clipboard.write([
+            new ClipboardItem({ [resourceType]: blob })
+          ]).then(function() {
+              console.log('Copied resource to the clipboard in PNG format');
+              showCopiedToast();
+              if(button) {
+                button.classList.add("checked");
+                setTimeout(() => {
+                  button.classList.remove("checked");
+                }, 2000);
+              }
+            }, function(err) {
+              console.error('Could not copy resource to the clipboard:', err);
+              alert('Could not copy resource to the clipboard :(');
+            });
         }
+      function copy(e) {
+        using(`copy/item/${index}`);
+        let button = e.target;
+        while (button.tagName !== "BUTTON" && button.parentNode) {
+          button = button.parentNode;
+        }
+        if(button.tagName !== "BUTTON")
+          button = null;
+        copyBase64ImageToClipboard(type, data, button);
       }
+      let copyButton =
+        <button onClick={copy} title={t('item.copyToClipboard')} key="copy-item" className="copy-item">
+          <FaCopy />
+        </button>;
+
+      const rotateCCW = async () => {
+        using(`rotate-ccw/item/${index}`);
+        try {
+          const { data: newData, type: newType } = await this.rotateImageCCW(data, type);
+          // setState (and thus the visual update) is only reached when rotated data
+          // has been fully and successfully produced.
+          this.setState({ rotatedData_b64: newData, rotatedType: newType });
+          // Propagate to App state so the TopBar's Save button also saves the rotated image.
+          if (this.props.onRotateResource) {
+            this.props.onRotateResource(newData, newType);
+          }
+        } catch (err) {
+          console.error('Could not rotate image:', err);
+          alert('Could not rotate image :(');
+        }
+      };
+      let rotateButton =
+        <button onClick={rotateCCW} title={t('item.rotateCCW')} key="rotate-item" className="rotate-item">
+          <MdRotate90DegreesCcw />
+        </button>;
+
       console.debug("Item " + index + " type " + type);
 
       if (isImageType(type)) {
         console.debug("  Item " + index + " displayed as image");
-        let bigdataURI = "data:image/jpeg;base64," + data; // TODO any image, not just JPEG!
+        let bigdataURI = `data:${type};base64,` + data;
 
         let downscaledWarning;
         if( this.props.resized || (filename && filename.toLowerCase().indexOf("-resized.") !== -1)) {
@@ -110,16 +367,47 @@ class Item extends Component {
             downscaledDimensions = " " + t('item.wasDownscaled.to') + " " + this.props.resourceWidth + "x" + this.props.resourceHeight;
           downscaledWarning = <div className="downscaled item-extra-info" key="downscaled-message"><MdAspectRatio/>{t('item.wasDownscaled.text')}{downscaledDimensions}.</div>;
         }
+        let buttons =
+          <div>
+            {downloadButton}
+            {rotateButton}
+            {copyButton}
+          </div>;
 
-        return [<img 
-            src={bigdataURI} 
+        let classes = "resource-picture";
+        if (this.state.lightbox) classes += " lightbox";
+        if (this.state.zoomed) classes += " zoomed";
+        if (!this.state.zoomed) classes += " fit-down";
+
+        let style = {};
+        if (this.state.zoomed) {
+            style = { transform: `translate(${this.state.offsetX}px, ${this.state.offsetY}px) scale(2.4)` };
+        }
+
+        let sizeLabel = formatFileSize(base64ByteSize(this.props.resourceData_b64));
+        let title = filename;
+        if (filename && sizeLabel)
+          title += " — " + sizeLabel;
+
+        return [<img
+            src={bigdataURI}
             alt={filename || t('item.beingReceivedPlaceholder')}
-            title={filename}
-            className="resource-picture fit-down" 
-            onClick={toggleItemFullscreen}
+            title={title}
+            className={classes}
+            style={style}
+            onClick={this.handleImageClick}
+            onMouseDown={this.handleMouseDown}
+            onMouseMove={this.handleMouseMove}
+            onMouseUp={this.handleMouseUp}
+            onMouseLeave={this.handleMouseUp}
+            onTouchStart={this.handleTouchStart}
+            onTouchMove={this.handleTouchMove}
+            onTouchEnd={this.handleMouseUp}
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             key="image"
             id={`item-${index}`} />,
-            downloadButton,
+            buttons,
             downscaledWarning,
             e2eeLock];
       }
@@ -127,11 +415,15 @@ class Item extends Component {
       if (isVideoType(type)) {
         console.debug("  Item " + index + " displayed as video");
         let bigdataURI = "data:video/mp4;base64," + data; // TODO any video, not just MP4!
+        let buttons = 
+          <div>
+            {downloadButton}
+          </div>;
         return [
           <video src={bigdataURI} controls autoPlay className="resource-video fit-down" key="video" id={`item-${index}`}>
             Video <a href={this.props.resourceUrl} target="_blank" rel="noopener noreferrer">{this.props.resourceFilename || "here"}</a>
           </video>,
-          downloadButton,
+          buttons,
           e2eeLock
         ];
       }
@@ -195,15 +487,6 @@ class Item extends Component {
         var bigPictureUrl = this.props.resourceUrl;
         var thumbUrl = this.props.thumb;
         var filename = this.props.resourceFilename;
-        var open = function(){
-          window.open(bigPictureUrl, '_blank');
-        }
-        function toggleItemFullscreen( e ) {
-          let fullscreen = e.target.classList.toggle("lightbox");
-          if(fullscreen) {
-            using("item/lightbox");
-          }
-        }
 
         let downscaledWarning;
         if( this.props.resized || (filename && filename.toLowerCase().indexOf("-resized.") !== -1)) {
@@ -213,18 +496,44 @@ class Item extends Component {
           downscaledWarning = <div className="downscaled item-extra-info" key="warning"><MdAspectRatio/>{t('item.wasDownscaled.text')}{downscaledDimensions}.</div>;
         }
 
-        if (bigPictureUrl)
+        if (bigPictureUrl) {
+          let classes = "resource-picture";
+          if (this.state.lightbox) classes += " lightbox";
+          if (this.state.zoomed) classes += " zoomed";
+          if (!this.state.zoomed) classes += " fit-down";
+
+          let style = {};
+          if (this.state.zoomed) {
+              style = { transform: `translate(${this.state.offsetX}px, ${this.state.offsetY}px) scale(2.4)` };
+          }
+
+          let sizeLabel = formatFileSize(base64ByteSize(this.props.resourceData_b64));
+          let title = filename;
+          if (filename && sizeLabel)
+            title += " — " + sizeLabel;
+
           return [
-              <img 
-                src={bigPictureUrl} 
+              <img
+                src={bigPictureUrl}
                 alt={filename || t('item.beingReceivedPlaceholder')}
-                title={filename}
-                className="resource-picture fit-down" 
-                onClick={toggleItemFullscreen}
+                title={title}
+                className={classes}
+                style={style}
+                onClick={this.handleImageClick}
+                onMouseDown={this.handleMouseDown}
+                onMouseMove={this.handleMouseMove}
+                onMouseUp={this.handleMouseUp}
+                onMouseLeave={this.handleMouseUp}
+                onTouchStart={this.handleTouchStart}
+                onTouchMove={this.handleTouchMove}
+                onTouchEnd={this.handleMouseUp}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
                 key="image" 
                 id={`item-${index}`} />,
               downscaledWarning
             ];
+        }
         else if (thumbUrl)
             return (
               <img 
@@ -249,10 +558,11 @@ class Item extends Component {
     }
 
     render_text() {
+      const { t } = this.props;
       let index = this.props.multiIndex || 0;
       return (
         <div className="inbox-text" id={`item-${index}`}>
-          <h3>Received text message</h3>
+          <h3>{t('item.receivedTextMessage')}</h3>
           <div>
             <button id="copy-to-clipboard" onClick={copyTextToClipboard}>
               <MdContentCopy />
@@ -333,10 +643,12 @@ function selectReceivedText(){
 }
 
 function copyTextToClipboard() {
+  using("copy/text");
   let text = document.getElementById("text-message").innerText;
   navigator.clipboard.writeText(text).then(function() {
       console.log('Copied text to the clipboard:');
       console.log(text);
+      showCopiedToast();
       let check = document.querySelector('#copy-to-clipboard .checked');
       // check.style.visibility = 'visible';
       check.innerHTML += "✓";
@@ -345,6 +657,29 @@ function copyTextToClipboard() {
       alert('Could not copy text to the clipboard :(');
     });
 
+}
+
+// Copy an already-displayed <img> element to the clipboard as PNG.
+// Used to copy the picture currently shown fullscreen, which may be any
+// image of a multi-share, not necessarily the first one.
+export async function copyImageElementToClipboard(imgElement) {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = imgElement.naturalWidth || imgElement.width;
+    canvas.height = imgElement.naturalHeight || imgElement.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+    // Chrome supports only image/png on the clipboard.
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+    console.log('Copied displayed image to the clipboard in PNG format');
+    showCopiedToast();
+  } catch (err) {
+    console.error('Could not copy image to the clipboard:', err);
+    alert('Could not copy resource to the clipboard :(');
+  }
 }
 
 export default withTranslation()(Item);
